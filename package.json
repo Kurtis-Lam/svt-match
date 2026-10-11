@@ -2,7 +2,7 @@
   "name": "svt-match",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "dependencies": {
     "firebase-admin": "^14.4.0"
