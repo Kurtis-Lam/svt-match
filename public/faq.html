@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAQ – SVT MATCH</title>
+  <link rel="icon" type="image/png" href="imgs/logo.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --pink: #f5c6d0;
+      --blue: #9ec5d9;
+      --pink-deep: #e8889e;
+      --blue-deep: #5a9fc0;
+      --bg1: #f8d7e0;
+      --bg2: #a8d4e6;
+      --glass: rgba(255,255,255,0.78);
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+      min-height: 100vh;
+      color: #1e293b;
+    }
+    .container {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+    }
+
+    /* HEADER */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 32px 0 28px;
+    }
+    .back-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--glass);
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: #475569;
+      font-size: 16px;
+      flex-shrink: 0;
+      backdrop-filter: blur(10px);
+    }
+    .page-title {
+      font-size: 26px;
+      font-weight: 900;
+      background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .page-sub {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* SECTION LABEL */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #94a3b8;
+      margin: 28px 0 12px;
+    }
+
+    /* ─────────────────────────────────────────
+       FAQ ACCORDION
+       ─────────────────────────────────────────
+       HOW TO ADD A NEW QUESTION AND ANSWER:
+       1. Copy the block between the "FAQ ITEM START" and "FAQ ITEM END" comments below.
+       2. Paste it inside the <div class="faq-list"> of the correct section.
+       3. Replace the text in <div class="faq-question"> with your question.
+       4. Replace the text in <div class="faq-body"> with your answer.
+          You can use <p> for paragraphs or <ul><li> for bullet lists inside faq-body.
+       5. Save the file. The show/hide button works automatically — no JS changes needed.
+
+       HOW TO ADD A NEW SECTION:
+       1. Add <div class="section-label">Your Section Title</div>
+       2. Add <div class="faq-list"> … </div> below it.
+       3. Put your FAQ items inside.
+    ───────────────────────────────────────── */
+
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ── FAQ ITEM START ── (copy from here) */
+    .faq-item {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.65);
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+      overflow: hidden;
+      transition: box-shadow 0.2s ease;
+    }
+    .faq-item:hover { box-shadow: 0 6px 22px rgba(0,0,0,0.08); }
+    .faq-question {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      font-family: 'Poppins', sans-serif;
+    }
+    .faq-question-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.4;
+    }
+    .faq-toggle {
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(245,198,208,0.6), rgba(158,197,217,0.6));
+      border: 1px solid rgba(255,255,255,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: #475569;
+      transition: background 0.2s ease, transform 0.3s ease;
+    }
+    .faq-item.open .faq-toggle {
+      transform: rotate(45deg);
+      background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
+      color: white;
+      border-color: transparent;
+    }
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1), padding 0.3s ease;
+    }
+    .faq-item.open .faq-answer {
+      max-height: 600px;
+      padding-bottom: 18px;
+    }
+    .faq-body {
+      padding: 0 20px;
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.7;
+      font-weight: 400;
+    }
+    .faq-body p + p { margin-top: 8px; }
+    .faq-body ul { padding-left: 18px; margin-top: 6px; }
+    .faq-body li { margin-bottom: 4px; }
+    /* ── FAQ ITEM END ── */
+
+    /* CONTACT SECTION */
+    .contact-card {
+      margin-top: 36px;
+      background: linear-gradient(135deg, var(--pink), var(--blue));
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+    }
+    .contact-card h3 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+    .contact-card p {
+      font-size: 13px;
+      color: #475569;
+      margin-bottom: 16px;
+    }
+    .contact-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: white;
+      color: var(--pink-deep);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+      transition: transform 0.15s ease;
+    }
+    .contact-btn:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div>
+        <div class="page-title">FAQ ❓</div>
+        <div class="page-sub">Frequently asked questions</div>
+      </div>
+    </header>
+
+
+    <!-- ═══════════════════════════════════════════
+         SECTION: GETTING STARTED
+         To add a new question here, paste a new .faq-item block inside this .faq-list
+    ═══════════════════════════════════════════ -->
+    <div class="section-label">Getting Started</div>
+    <div class="faq-list">
+
+      <!-- ── FAQ ITEM: copy + edit this block to add a new Q&A ── -->
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-question-text">How do I download SVT MATCH?</span>
+          <span class="faq-toggle"><i class="fas fa-plus"></i></span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-body">
+            <p>SVT MATCH is currently available on Android. Download the APK file from the link on our home page, then install it on your Android device.</p>
+            <p>You may need to enable "Install unknown apps" in your Android settings before installing.</p>
+          </div>
+        </div>
+      </div>
+      <!-- ── END FAQ ITEM ── -->
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-question-text">Is there an iOS version?</span>
+          <span class="faq-toggle"><i class="fas fa-plus"></i></span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-body">
+            <p>An iOS version is currently in development. Stay tuned to the Updates page for announcements!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-question-text">Do I need an account to play?</span>
+          <span class="faq-toggle"><i class="fas fa-plus"></i></span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-body">
+            <p>Yes! You'll need to create an SVT MATCH account to save your progress, collect idol cards, and challenge friends. Registration is free.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end .faq-list -->
+
+
+    <!-- ═══════════════════════════════════════════
+         SECTION: GAMEPLAY
+    ═══════════════════════════════════════════ -->
+    <div class="section-label">Gameplay</div>
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-question-text">How do I earn coins?</span>
+          <span class="faq-toggle"><i class="fas fa-plus"></i></span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-body">
+            <ul>
+              <li>Daily Freebie and Boxes!</li>
+              <li>Leveling up in Minigames!</li>
+              <li>Completing Quests!</li>
+              <li>Marrying Idols to get Offline Rewards!</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-question-text">What are idol card rarities?</span>
+          <span class="faq-toggle"><i class="fas fa-plus"></i></span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-body">
+            <p>Idols come in different rarities, with the price of owning higher for higher rarity idols.</p>
+            <ul>
+              <li><strong>Rare</strong> – Total 5 Idols</li>
+              <li><strong>Super Rare</strong> – Total 3 Idols</li>
+              <li><strong>Epic</strong> – Total 2 Idols</li>
+              <li><strong>Mythic</strong> – Total 2 Idols</li>
+              <li><strong>Legendary</strong> – The one and only S.COUPS</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-question-text">How do friend battles work?</span>
+          <span class="faq-toggle"><i class="fas fa-plus"></i></span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-body">
+            <p>You can challenge any of your friends to a minigame battle. Select a minigame, choose a friend from your friends list, and compete to show your strength!</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end .faq-list -->
+
+
+    <!-- ═══════════════════════════════════════════
+         SECTION: ACCOUNT & TECHNICAL
+    ═══════════════════════════════════════════ -->
+    <div class="section-label">Account & Technical</div>
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-question-text">I forgot my password. What do I do?</span>
+          <span class="faq-toggle"><i class="fas fa-plus"></i></span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-body">
+            <p>Please contact us via the Support page with your SVT username and email address. We'll help you regain access to your account as soon as possible.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-question-text">My coins / progress disappeared. Help!</span>
+          <span class="faq-toggle"><i class="fas fa-plus"></i></span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-body">
+            <p>Your game data is saved to the server, so it should be safe. If your progress seems missing, try logging out and back in. If the issue persists, contact us through the Support page and we'll investigate.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-question-text">The app keeps crashing. What should I do?</span>
+          <span class="faq-toggle"><i class="fas fa-plus"></i></span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-body">
+            <ul>
+              <li>Make sure you have the latest version of the APK installed</li>
+              <li>Restart your device and try again</li>
+              <li>Ensure you have a stable internet connection</li>
+              <li>If the issue continues, submit a bug report via our Support page</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end .faq-list -->
+
+    <!-- CONTACT NUDGE -->
+    <div class="contact-card">
+      <h3>Still have questions? 💌</h3>
+      <p>Our support team is happy to help with anything not covered here.</p>
+      <a href="/support" class="contact-btn">
+        <i class="fas fa-paper-plane"></i>
+        Contact Support
+      </a>
+    </div>
+
+  </div><!-- end .container -->
+
+  <script>
+    function toggleFaq(btn) {
+      const item = btn.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+
+      // Close all open items (comment out the next 3 lines to allow multiple open at once)
+      document.querySelectorAll('.faq-item.open').forEach(el => {
+        el.classList.remove('open');
+      });
+
+      // Toggle clicked item
+      if (!isOpen) {
+        item.classList.add('open');
+      }
+    }
+  </script>
+</body>
+</html>

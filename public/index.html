@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SVT MATCH</title>
+    <link rel="icon" type="image/png" href="imgs/logo.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+    <style>
+        html {
+            overflow-x: hidden;
+        }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        :root {
+            --pink: #f5c6d0;
+            --blue: #9ec5d9;
+            --pink-deep: #e8889e;
+            --blue-deep: #5a9fc0;
+            --bg1: #f8d7e0;
+            --bg2: #a8d4e6;
+            --text: #1e293b;
+            --glass: rgba(255, 255, 255, 0.75);
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+            min-height: 100vh;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* ── NOISE TEXTURE OVERLAY ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 20px 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── HEADER ── */
+        header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 36px 0 20px;
+        }
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 8px 24px rgba(232, 136, 158, 0.35);
+        }
+        .logo-text {
+            font-size: 24px;
+            font-weight: 900;
+            background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            text-align: center;
+            padding: 24px 0 32px;
+        }
+
+        /* ── 3D CAROUSEL ── */
+        .carousel-scene {
+            width: 100%;
+            height: 320px;
+            perspective: 1400px;
+            margin: 0 auto 28px;
+            position: relative;
+        }
+        .carousel-ring {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform-origin: center center;
+        }
+        .idol-card {
+            position: absolute;
+            width: 100px;
+            height: 142px;
+            /* centre each card on the ring's origin */
+            left: calc(50% - 50px);
+            top: calc(50% - 71px);
+            border-radius: 14px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.22);
+            border: 3px solid rgba(255,255,255,0.75);
+            overflow: visible;       /* let ::before (back face) show */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 10px;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        /* SVT gradient back face */
+        .idol-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: rotateY(180deg);
+            z-index: 2;
+        }
+        /* clip inner content to card bounds */
+        .card-inner {
+            position: absolute;
+            inset: 0;
+            border-radius: 11px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 10px;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .idol-card.is-front {
+            border-color: rgba(255,255,255,0.95);
+            box-shadow: 0 24px 60px rgba(0,0,0,0.35), 0 0 0 2px var(--pink-deep);
+        }
+        .card-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 0;
+            border-radius: 11px;
+        }
+        .card-label {
+            position: relative;
+            z-index: 2;
+            font-size: 9px;
+            font-weight: 800;
+            color: rgba(255,255,255,0.95);
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(6px);
+            border-radius: 20px;
+            padding: 2px 9px;
+            letter-spacing: 0.5px;
+        }
+        .card-name {
+            position: relative;
+            z-index: 2;
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            margin-bottom: 4px;
+        }
+        /* gradient overlay at bottom of each card */
+        .card-inner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%);
+            border-radius: 11px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* active-idol spotlight below carousel */
+        .carousel-spotlight {
+            text-align: center;
+            margin-bottom: 4px;
+            height: 22px;
+        }
+        .spotlight-name {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: opacity 0.3s ease;
+        }
+
+        /* dot indicators */
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.15);
+            transition: background 0.3s, transform 0.3s;
+        }
+        .dot.active {
+            background: var(--pink-deep);
+            transform: scale(1.35);
+        }
+
+        .hero-title {
+            font-size: 42px;
+            font-weight: 900;
+            background: linear-gradient(90deg, var(--pink-deep) 0%, #7dd3fc 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+        }
+        .hero-sub {
+            font-size: 15px;
+            font-weight: 500;
+            color: #475569;
+            line-height: 1.6;
+            max-width: 300px;
+            margin: 0 auto 28px;
+        }
+
+        /* ── DOWNLOAD SECTION ── */
+        .download-section {
+            margin-bottom: 36px;
+        }
+        .download-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 14px;
+        }
+        .btn-android {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, var(--pink-deep) 0%, var(--blue-deep) 100%);
+            color: white;
+            border-radius: 18px;
+            font-size: 16px;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 12px 32px rgba(232, 136, 158, 0.4);
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+        .btn-android:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 40px rgba(232, 136, 158, 0.5);
+        }
+        .btn-android:active {
+            transform: scale(0.98);
+        }
+        .btn-android .btn-icon {
+            font-size: 24px;
+        }
+        .btn-android .btn-texts {
+            text-align: left;
+        }
+        .btn-android .btn-small {
+            font-size: 11px;
+            font-weight: 400;
+            opacity: 0.85;
+        }
+        .btn-android .btn-big {
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .ios-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 24px;
+            background: rgba(255, 255, 255, 0.55);
+            border: 1.5px solid rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            backdrop-filter: blur(10px);
+        }
+        .ios-badge i {
+            font-size: 18px;
+            color: #94a3b8;
+        }
+        .ios-soon {
+            font-size: 10px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-left: 4px;
+        }
+
+        /* ── FEATURES ── */
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 36px;
+        }
+        .feat-card {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        }
+        .feat-card .feat-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .feat-card .feat-title {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .feat-card .feat-desc {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        /* ── NAV LINKS ── */
+        .nav-section {
+            margin-bottom: 20px;
+        }
+        .nav-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 14px;
+        }
+        .nav-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .nav-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            text-decoration: none;
+            color: var(--text);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+        }
+        .nav-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+        .nav-card:active {
+            transform: scale(0.98);
+        }
+        .nav-card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .icon-faq {
+            background: linear-gradient(135deg, #fce4ec, #f48fb1);
+        }
+        .icon-updates {
+            background: linear-gradient(135deg, #e3f2fd, #90caf9);
+        }
+        .icon-support {
+            background: linear-gradient(135deg, #f3e5f5, #ce93d8);
+        }
+        .nav-card-info {
+            flex: 1;
+        }
+        .nav-card-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        .nav-card-desc {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .nav-card-arrow {
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        footer p {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        footer p span {
+            background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+
+        <section class="hero">
+            <!-- 3D Carousel Ring -->
+            <div class="carousel-scene">
+                <div class="carousel-ring" id="carouselRing"></div>
+            </div>
+            <div class="carousel-dots" id="carouselDots" style="display:none;"></div>
+
+            <h1 class="hero-title">SVT MATCH</h1>
+            <p class="hero-sub">Collect SEVENTEEN idol cards, challenge friends, and become the ultimate CARAT.</p>
+        </section>
+
+        <!-- Download Buttons -->
+        <section class="download-section">
+
+            <!-- ✏️ Replace YOUR_GOOGLE_DRIVE_APK_LINK with your actual Google Drive share link -->
+            <a href="https://drive.google.com/drive/folders/1yqRzlG3ZjAUiPhz-L6jKSq84AOy1JDgu" class="btn-android" target="_blank" rel="noopener">
+                <span class="btn-icon"><i class="fab fa-android"></i></span>
+                <span class="btn-texts">
+                    <span class="btn-small">Download for</span><br>
+                    <span class="btn-big">Android APK</span>
+                </span>
+                <i class="fas fa-download" style="margin-left:auto;opacity:0.8;"></i>
+            </a>
+
+            <div class="ios-badge">
+                <i class="fab fa-apple"></i>
+                <span>iOS version</span>
+                <span class="ios-soon">COMING SOON</span>
+            </div>
+        </section>
+
+        <!-- Feature highlights -->
+        <section class="features">
+            <div class="feat-card">
+                <div class="feat-icon">🃏</div>
+                <div class="feat-title">Idol Cards</div>
+                <div class="feat-desc">Collect SEVENTEEN idol cards of different rarities</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">⚔️</div>
+                <div class="feat-title">Battles</div>
+                <div class="feat-desc">Challenge friends in real-time minigame battles</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">🎮</div>
+                <div class="feat-title">Minigames</div>
+                <div class="feat-desc">Level up with fun daily minigame challenges</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">🏆</div>
+                <div class="feat-title">Daily Rewards</div>
+                <div class="feat-desc">Log in daily and earn awesome rewards</div>
+            </div>
+        </section>
+
+        <!-- Navigation -->
+        <section class="nav-section">
+            <div class="nav-title">More</div>
+            <div class="nav-cards">
+                <a href="/faq" class="nav-card">
+                    <div class="nav-card-icon icon-faq">❓</div>
+                    <div class="nav-card-info">
+                        <div class="nav-card-title">FAQ</div>
+                        <div class="nav-card-desc">Common questions answered</div>
+                    </div>
+                    <i class="fas fa-chevron-right nav-card-arrow"></i>
+                </a>
+                <a href="/updates" class="nav-card">
+                    <div class="nav-card-icon icon-updates">📢</div>
+                    <div class="nav-card-info">
+                        <div class="nav-card-title">Updates</div>
+                        <div class="nav-card-desc">Latest patch notes & new features</div>
+                    </div>
+                    <i class="fas fa-chevron-right nav-card-arrow"></i>
+                </a>
+                <a href="/support" class="nav-card">
+                    <div class="nav-card-icon icon-support">💌</div>
+                    <div class="nav-card-info">
+                        <div class="nav-card-title">Support & Feedback</div>
+                        <div class="nav-card-desc">Report bugs or share your thoughts</div>
+                    </div>
+                    <i class="fas fa-chevron-right nav-card-arrow"></i>
+                </a>
+            </div>
+        </section>
+
+        <footer>
+            <p>Made with 💗 for <span>CARATS</span> everywhere</p>
+        </footer>
+    </div>
+    <script>
+    (function () {
+        const idols = [
+            { name: "S.COUPS",  folder: "scoups",   rarity: "LEADER",  color: "#e8889e" },
+            { name: "JEONGHAN", folder: "jeonghan", rarity: "RARE",    color: "#9e88e8" },
+            { name: "JOSHUA",   folder: "joshua",   rarity: "EPIC",    color: "#88b4e8" },
+            { name: "JUN",      folder: "jun",      rarity: "RARE",    color: "#e8c888" },
+            { name: "HOSHI",    folder: "hoshi",    rarity: "EPIC",    color: "#e888c8" },
+            { name: "WONWOO",   folder: "wonwoo",   rarity: "RARE",    color: "#88e8b4" },
+            { name: "WOOZI",    folder: "woozi",    rarity: "LEGEND",  color: "#e8d488" },
+            { name: "THE8",     folder: "the8",     rarity: "RARE",    color: "#88e8e8" },
+            { name: "MINGYU",   folder: "mingyu",   rarity: "EPIC",    color: "#e89e88" },
+            { name: "DK",       folder: "dk",       rarity: "RARE",    color: "#b488e8" },
+            { name: "SEUNGKWAN",folder: "seungkwan",rarity: "EPIC",    color: "#88e8a0" },
+            { name: "VERNON",   folder: "vernon",   rarity: "RARE",    color: "#e888a0" },
+            { name: "DINO",     folder: "dino",     rarity: "EPIC",    color: "#88a0e8" },
+        ];
+
+        const N = idols.length;
+        const RADIUS = 290;       // px – wider ring so 13 cards don't overlap
+        const AUTO_MS = 2000;     // ms per step
+        const anglePerCard = 360 / N;
+
+        const ring   = document.getElementById("carouselRing");
+        const nameEl = document.getElementById("spotlightName") || { textContent: "" };
+        const dotsEl = document.getElementById("carouselDots");
+
+        // Place every card once at its fixed slot, facing outward.
+        // Cards don't move — the whole RING rotates via CSS transform on the ring element.
+        // Each card is rotated by its own slot angle so it always faces outward.
+        const cards = idols.map((idol, i) => {
+            const slotAngle = i * anglePerCard; // degrees around the ring
+
+            const card = document.createElement("div");
+            card.className = "idol-card";
+            // Fixed slot transform: rotate card to its position, push out by RADIUS,
+            // then rotateY again so the face points outward (away from center).
+            card.style.transform =
+                `rotateY(${slotAngle}deg) translateZ(${RADIUS}px)`;
+            card.innerHTML = `
+                <div class="card-inner">
+                    <img src="imgs/${idol.folder}/1.jpg" alt="${idol.name}" class="card-img"
+                         onerror="this.style.display='none';this.parentElement.parentElement.style.setProperty('--fb','1');" />
+                </div>
+            `;
+            card.addEventListener("click", () => goTo(i));
+            ring.appendChild(card);
+
+            const dot = document.createElement("div");
+            dot.className = "dot";
+            dot.addEventListener("click", () => goTo(i));
+            dotsEl.appendChild(dot);
+
+            return { card, dot };
+        });
+
+        // Ring rotation state — we rotate the whole ring so the chosen card faces front (toward viewer).
+        // Front = card at slotAngle whose negated angle faces 0° = toward viewer.
+        // To bring card[i] to front: ring rotateY = -(i * anglePerCard)
+        let currentRingAngle = 0;   // actual displayed angle (lerped)
+        let targetRingAngle  = 0;   // target angle
+        let currentIdx = 0;
+        let autoTimer = null;
+        let rafId = null;
+
+        // Drag state
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartRingAngle = 0;
+
+        function applyRingAngle(angle) {
+            ring.style.transform = `rotateY(${angle}deg)`;
+        }
+
+        function updateActive() {
+            // Which card is closest to front (ring angle negated → slot index)
+            const norm = ((-targetRingAngle % 360) + 360) % 360;
+            const front = Math.round(norm / anglePerCard) % N;
+
+            cards.forEach((c, i) => {
+                const isFront = i === front;
+                c.card.classList.toggle("is-front", isFront);
+                c.dot.classList.toggle("active", isFront);
+            });
+
+            if (nameEl.textContent !== idols[front].name) {
+                nameEl.textContent = idols[front].name;
+            }
+            currentIdx = front;
+        }
+
+        function lerp(a, b, t) { return a + (b - a) * t; }
+
+        function animate() {
+            const diff = targetRingAngle - currentRingAngle;
+            if (Math.abs(diff) > 0.05) {
+                currentRingAngle = lerp(currentRingAngle, targetRingAngle, 0.09);
+            } else {
+                currentRingAngle = targetRingAngle;
+            }
+            applyRingAngle(currentRingAngle);
+            rafId = requestAnimationFrame(animate);
+        }
+
+        function goTo(idx) {
+            // Rotate ring so card[idx] faces the viewer.
+            // Each step RIGHT means ring rotates more negative (counterclockwise when viewed from above).
+            // Target ring angle = -(idx * anglePerCard), but we accumulate to avoid wrap jumps.
+            const targetBase = -(idx * anglePerCard);
+
+            // Find the equivalent target closest to currentRingAngle to avoid spinning the long way
+            let delta = targetBase - ((currentRingAngle % 360 + 360) % 360 <= 180
+                ? currentRingAngle % 360
+                : currentRingAngle % 360 - 360);
+
+            // Simpler: just accumulate steps
+            const currentSteps = Math.round(-currentRingAngle / anglePerCard);
+            let stepsTo = idx - (currentSteps % N + N) % N;
+            if (stepsTo > N / 2) stepsTo -= N;
+            if (stepsTo < -N / 2) stepsTo += N;
+            targetRingAngle = currentRingAngle - stepsTo * anglePerCard;
+
+            updateActive();
+            resetAuto();
+        }
+
+        // Step RIGHT: next card clockwise = index+1, ring rotates more negative
+        function stepRight() {
+            targetRingAngle -= anglePerCard;
+            currentIdx = ((Math.round(-targetRingAngle / anglePerCard)) % N + N) % N;
+            updateActive();
+        }
+
+        function resetAuto() {
+            clearInterval(autoTimer);
+            autoTimer = setInterval(stepRight, AUTO_MS);
+        }
+
+        // Drag / swipe
+        function onDragStart(e) {
+            isDragging = true;
+            const touch = e.touches ? e.touches[0] : e;
+            dragStartX = touch.clientX;
+            dragStartY = touch.clientY; // add this
+            dragStartRingAngle = targetRingAngle;
+            clearInterval(autoTimer);
+        }
+        function onDragMove(e) {
+            if (!isDragging) return;
+            const touch = e.touches ? e.touches[0] : e;
+            const dx = touch.clientX - dragStartX;
+            const dy = touch.clientY - (dragStartY || touch.clientY); // track vertical too
+
+            // Only hijack if clearly a horizontal swipe
+            if (Math.abs(dx) < Math.abs(dy)) {
+                isDragging = false; // let the scroll happen instead
+                return;
+            }
+
+            // Prevent the page from panning horizontally during carousel drag
+            if (e.cancelable) e.preventDefault();
+
+            targetRingAngle = dragStartRingAngle + dx * 0.4;
+            applyRingAngle(targetRingAngle);
+            updateActive();
+        }
+        function onDragEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+            // Snap to nearest slot
+            const nearest = Math.round(-targetRingAngle / anglePerCard);
+            targetRingAngle = -(nearest * anglePerCard);
+            currentIdx = ((nearest % N) + N) % N;
+            updateActive();
+            resetAuto();
+        }
+
+        ring.addEventListener("mousedown",  onDragStart);
+        window.addEventListener("mousemove", onDragMove);
+        window.addEventListener("mouseup",   onDragEnd);
+        ring.addEventListener("touchstart",  onDragStart, { passive: true });
+        window.addEventListener("touchmove", onDragMove,  { passive: false });
+        window.addEventListener("touchend",  onDragEnd);
+
+        // Init
+        applyRingAngle(0);
+        updateActive();
+        animate();
+        resetAuto();
+    })();
+    </script>
+</body>
+</html>
