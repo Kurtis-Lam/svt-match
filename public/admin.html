@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin – SVT MATCH</title>
+  <link rel="icon" type="image/png" href="imgs/logo.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --pink: #f5c6d0; --blue: #9ec5d9;
+      --pink-deep: #e8889e; --blue-deep: #5a9fc0;
+      --bg1: #f8d7e0; --bg2: #a8d4e6;
+      --glass: rgba(255,255,255,0.82);
+      --text: #1e293b; --muted: #64748b; --faint: #94a3b8;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+      min-height: 100vh; color: var(--text);
+    }
+
+    /* ─── LOGIN GATE ─── */
+    #loginGate {
+      min-height: 100vh; display: flex;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .login-card {
+      background: var(--glass); backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.7); border-radius: 28px;
+      padding: 44px 36px; width: 100%; max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.12); text-align: center;
+    }
+    .login-icon {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
+      border-radius: 20px; margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; box-shadow: 0 12px 30px rgba(232,136,158,0.3);
+    }
+    .login-title { font-size: 22px; font-weight: 900; margin-bottom: 6px; }
+    .login-sub   { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+
+    .pw-wrap { position: relative; margin-bottom: 12px; }
+    .pw-input {
+      width: 100%; padding: 14px 50px 14px 16px;
+      background: rgba(255,255,255,0.9);
+      border: 2px solid transparent; border-radius: 14px;
+      font-family: 'Poppins', sans-serif; font-size: 15px;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .pw-input.is-password { letter-spacing: 2px; text-align: center; }
+    .pw-input:focus { border-color: var(--pink-deep); box-shadow: 0 0 0 4px rgba(232,136,158,0.12); }
+    .pw-eye {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--faint); font-size: 16px;
+    }
+    .btn-login {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
+      color: white; border: none; border-radius: 14px;
+      font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 10px 28px rgba(232,136,158,0.35);
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .btn-login:hover { transform: translateY(-2px); }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .login-error {
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+      color: #dc2626; border-radius: 10px; padding: 10px 14px;
+      font-size: 13px; margin-top: 10px; display: none;
+    }
+
+    /* ─── ADMIN SHELL ─── */
+    #adminShell { display: none; min-height: 100vh; }
+
+    .topbar {
+      background: var(--glass); backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.6);
+      padding: 0 24px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-logo {
+      font-size: 16px; font-weight: 900;
+      background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .admin-badge {
+      padding: 4px 12px;
+      background: linear-gradient(135deg, rgba(245,198,208,0.5), rgba(158,197,217,0.5));
+      border: 1px solid rgba(255,255,255,0.7); border-radius: 20px;
+      font-size: 11px; font-weight: 700; color: var(--muted);
+    }
+    .btn-logout {
+      padding: 6px 14px; background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.2); border-radius: 10px;
+      color: #dc2626; font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: 'Poppins', sans-serif;
+    }
+    .hamburger-btn {
+      display: flex; flex-direction: column; gap: 5px;
+      background: none; border: none; cursor: pointer; padding: 5px;
+    }
+    .hamburger-line { width: 22px; height: 3px; background: var(--text); border-radius: 3px; }
+
+    /* ─── LAYOUT ─── */
+    .admin-layout {
+      position: relative;
+      min-height: calc(100vh - 60px);
+    }
+
+    .sidebar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 220px;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(255,255,255,0.6);
+      padding: 20px 12px;
+      transition: transform 0.3s ease;
+      z-index: 100;
+      transform: translateX(0);
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+
+    .admin-main {
+      flex: 1;
+      padding: 28px;
+      overflow-y: auto;
+      width: 100%;
+      margin-left: 0;
+    }
+
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      background: var(--glass); backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(255,255,255,0.6);
+      padding: 20px 12px;
+      transition: transform 0.3s ease;
+    }
+    .sidebar.collapsed { transform: translateX(-100%); }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: 14px;
+      cursor: pointer; margin-bottom: 4px;
+      font-size: 14px; font-weight: 600; color: var(--muted);
+      transition: all 0.2s;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.6); }
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(245,198,208,0.5), rgba(158,197,217,0.5));
+      color: var(--text);
+    }
+    .nav-item .nav-icon { font-size: 18px; width: 22px; text-align: center; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel-title {
+      font-size: 22px; font-weight: 900; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    /* ─── Shared components ─── */
+    .card {
+      background: var(--glass); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.7); border-radius: 20px;
+      padding: 24px; box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+      margin-bottom: 16px;
+    }
+    .field-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--faint); margin-bottom: 6px;
+    }
+    .field-input {
+      width: 100%; padding: 11px 14px;
+      background: rgba(255,255,255,0.9);
+      border: 2px solid transparent; border-radius: 12px;
+      font-family: 'Poppins', sans-serif; font-size: 14px;
+      outline: none; transition: border-color 0.2s;
+    }
+    .field-input:focus { border-color: var(--pink-deep); }
+    .field-input[readonly] { background: rgba(255,255,255,0.5); color: var(--muted); }
+    textarea.field-input { resize: vertical; min-height: 90px; line-height: 1.6; }
+
+    .btn {
+      padding: 10px 18px; border-radius: 12px; border: none;
+      font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: transform 0.15s, opacity 0.2s;
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
+      color: white; box-shadow: 0 6px 18px rgba(232,136,158,0.3);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.8);
+      color: var(--text); box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .btn-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #dc2626; }
+    .btn-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); color: #16a34a; }
+    .btn-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); color: #d97706; }
+    .btn-sm { padding: 7px 12px; font-size: 12px; border-radius: 10px; }
+
+    .tag {
+      display: inline-block; padding: 3px 10px;
+      border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .tag-pink   { background: rgba(245,198,208,0.5); color: var(--pink-deep); }
+    .tag-blue   { background: rgba(158,197,217,0.5); color: var(--blue-deep); }
+    .tag-green  { background: rgba(34,197,94,0.1);   color: #16a34a; }
+    .tag-red    { background: rgba(239,68,68,0.1);   color: #dc2626; }
+    .tag-gray   { background: rgba(148,163,184,0.15); color: var(--faint); }
+    .tag-orange { background: rgba(245,158,11,0.12); color: #d97706; }
+
+    .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 16px 0; }
+    .msg-box     { padding: 12px 16px; border-radius: 12px; font-size: 13px; margin-top: 12px; }
+    .msg-error   { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);   color: #dc2626; }
+    .msg-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);   color: #16a34a; }
+
+    /* ─── Search + suggestions ─── */
+    .search-bar  { display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-start; }
+    .search-wrap { position: relative; flex: 1; }
+    .search-suggestions {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: rgba(255,255,255,0.97); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.9); border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.13); z-index: 200;
+      overflow: hidden; display: none;
+    }
+    .search-suggestions.visible { display: block; }
+    .suggestion-item {
+      padding: 10px 16px; cursor: pointer;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.05); transition: background 0.13s;
+    }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover { background: rgba(245,198,208,0.18); }
+    .sug-avatar {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(245,198,208,0.6), rgba(158,197,217,0.6));
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .sug-username { font-size: 14px; font-weight: 700; }
+    .sug-display  { font-size: 11px; color: var(--faint); margin-top: 1px; }
+
+    /* ─── User profile ─── */
+    .user-profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .info-val { font-size: 15px; font-weight: 600; margin-top: 4px; word-break: break-all; }
+    .pw-reveal-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .pw-text { font-size: 15px; font-weight: 600; letter-spacing: 3px; color: var(--muted); }
+    .pw-text.revealed { letter-spacing: normal; color: var(--text); }
+    .uid-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .uid-input { flex: 1; font-size: 12px; font-family: 'Courier New', Courier, monospace; padding: 8px 12px; color: var(--muted); }
+    .copy-btn {
+      flex-shrink: 0; padding: 8px 14px; border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.8);
+      cursor: pointer; font-size: 12px; font-weight: 700;
+      font-family: 'Poppins', sans-serif; color: var(--muted);
+      display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+    }
+    .copy-btn:hover { background: #fff; color: var(--text); }
+    .copy-btn.copied { color: #16a34a; border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.07); }
+
+    /* ─── Game stats ─── */
+    .coins-section { margin-bottom: 22px; }
+    .coins-stepper { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .mg-table-wrap { overflow-x: auto; margin-bottom: 16px; border-radius: 14px; }
+    .mg-table { width: 100%; border-collapse: collapse; min-width: 460px; }
+    .mg-table th {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.6px; color: var(--faint);
+      text-align: left; padding: 9px 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.08); white-space: nowrap;
+    }
+    .mg-table td { padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.04); vertical-align: middle; }
+    .mg-table tbody tr:last-child td { border-bottom: none; }
+    .step-group { display: flex; align-items: center; gap: 5px; }
+    .step-btn {
+      height: 28px; min-width: 28px; padding: 0 7px; flex-shrink: 0;
+      border-radius: 8px; border: 1px solid rgba(0,0,0,0.1);
+      background: rgba(255,255,255,0.85); cursor: pointer;
+      font-size: 12px; font-weight: 700; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text); font-family: 'Poppins', sans-serif;
+      transition: background 0.1s, transform 0.1s; white-space: nowrap;
+    }
+    .step-btn:hover  { background: #fff; transform: scale(1.08); }
+    .step-btn:active { transform: scale(0.94); }
+    .stat-num { width: 72px; text-align: center; padding: 7px 6px; font-size: 14px; font-weight: 600; }
+
+    /* ─── Online history ─── */
+    .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .history-table th {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--faint);
+      text-align: left; padding: 8px 12px; border-bottom: 1px solid rgba(0,0,0,0.07);
+    }
+    .history-table td { padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.04); }
+    .history-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .history-bar {
+      height: 6px; border-radius: 3px;
+      background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep)); min-width: 4px;
+    }
+
+    /* ─── Updates ─── */
+    .bullet-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+    .bullet-row  { display: flex; align-items: center; gap: 8px; }
+    .bullet-dot-icon { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep)); }
+    .bullet-row .field-input { flex: 1; }
+    .remove-bullet {
+      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+      color: #dc2626; cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pub-update-item { padding: 16px; background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.8); border-radius: 14px; margin-bottom: 10px; }
+    .pub-update-header { display: flex; align-items: center; justify-content: space-between; }
+    .pub-update-title  { font-size: 14px; font-weight: 700; }
+    .pub-update-bullets { font-size: 12px; color: var(--muted); margin-top: 8px; padding-left: 12px; }
+    .pub-update-bullets li { margin-bottom: 3px; }
+
+    /* ─── Support panel ─── */
+    .support-filter-bar {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      border: 2px solid transparent; background: rgba(255,255,255,0.6);
+      cursor: pointer; font-family: 'Poppins', sans-serif; color: var(--muted);
+      transition: all 0.15s;
+    }
+    .filter-btn.active {
+      background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
+      color: white; border-color: transparent;
+    }
+    .filter-btn:not(.active):hover { background: rgba(255,255,255,0.9); color: var(--text); }
+
+    .support-item {
+      padding: 18px; background: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.8); border-radius: 16px;
+      margin-bottom: 10px; transition: box-shadow 0.2s;
+    }
+    .support-item:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    .support-item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; cursor: pointer; }
+    .support-item-title  { font-size: 14px; font-weight: 700; }
+    .support-item-meta   { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .support-detail {
+      margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid rgba(0,0,0,0.07); display: none;
+    }
+    .support-item.expanded .support-detail { display: block; }
+    .detail-row   { margin-bottom: 12px; }
+    .detail-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--faint); margin-bottom: 4px; }
+    .detail-val   { font-size: 13px; color: var(--text); line-height: 1.6; }
+
+    /* ─── Chat ─── */
+    .chat-section {
+      margin-top: 16px; border-top: 1px solid rgba(0,0,0,0.07); padding-top: 14px;
+    }
+    .chat-section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--faint); margin-bottom: 10px;
+    }
+    .chat-messages {
+      height: 220px; overflow-y: auto; padding: 10px;
+      background: rgba(255,255,255,0.45); border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.7); margin-bottom: 10px;
+    }
+    .chat-msg { margin-bottom: 12px; display: flex; flex-direction: column; }
+    .chat-msg-admin { align-items: flex-end; }
+    .chat-msg-user  { align-items: flex-start; }
+    .chat-bubble {
+      max-width: 78%; padding: 9px 13px; border-radius: 14px;
+      font-size: 13px; line-height: 1.5; word-break: break-word;
+    }
+    .chat-msg-admin .chat-bubble {
+      background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
+      color: white; border-bottom-right-radius: 4px;
+    }
+    .chat-msg-user .chat-bubble {
+      background: rgba(255,255,255,0.95); color: var(--text);
+      border: 1px solid rgba(0,0,0,0.08); border-bottom-left-radius: 4px;
+    }
+    .chat-meta { font-size: 10px; color: var(--faint); margin-top: 3px; }
+    .chat-input-row { display: flex; gap: 8px; align-items: center; }
+    .chat-input { flex: 1; padding: 10px 14px; font-size: 13px; }
+    .chat-pending-note {
+      padding: 10px 14px; border-radius: 10px; font-size: 12px;
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+      color: #d97706; margin-top: 10px;
+    }
+    .chat-empty {
+      text-align: center; padding: 20px; color: var(--faint); font-size: 12px;
+    }
+
+    /* ─── Analytics panel ─── */
+    .chart-toggle-group {
+      display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .chart-toggle-btn {
+      padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      border: 2px solid rgba(232,136,158,0.3);
+      background: rgba(255,255,255,0.65);
+      cursor: pointer; font-family: 'Poppins', sans-serif; color: var(--muted);
+      transition: all 0.15s;
+    }
+    .chart-toggle-btn.active {
+      background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
+      color: white; border-color: transparent;
+    }
+    .chart-toggle-btn:not(.active):hover { background: rgba(255,255,255,0.95); color: var(--text); }
+    .analytics-section-title { font-size: 15px; font-weight: 800; margin-bottom: 14px; }
+    .chart-wrap { position: relative; height: 270px; }
+    .chart-loader {
+      position: absolute; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      color: var(--faint); font-size: 13px; gap: 8px;
+    }
+    .chart-note {
+      font-size: 11px; color: var(--faint); margin-top: 8px; font-style: italic;
+    }
+    .econ-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 14px;
+    }
+    .econ-tile {
+      background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.85);
+      border-radius: 18px; padding: 22px 16px; text-align: center;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    .econ-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--faint); margin-bottom: 8px;
+    }
+    .econ-val {
+      font-size: 30px; font-weight: 900;
+      background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .econ-sub { font-size: 11px; color: var(--faint); margin-top: 4px; }
+    .analytics-refresh-btn { float: right; font-size: 12px; margin-top: -2px; }
+
+    /* ─── Real-time flash animation ─── */
+    @keyframes flashGreen {
+      0%   { background: rgba(34,197,94,0.0); box-shadow: none; }
+      20%  { background: rgba(34,197,94,0.22); box-shadow: 0 0 0 3px rgba(34,197,94,0.18); }
+      100% { background: rgba(34,197,94,0.0); box-shadow: none; }
+    }
+    @keyframes flashGreenInput {
+      0%   { border-color: transparent; background: rgba(255,255,255,0.9); }
+      20%  { border-color: #22c55e; background: rgba(34,197,94,0.10); }
+      100% { border-color: transparent; background: rgba(255,255,255,0.9); }
+    }
+    .flash-green {
+      animation: flashGreen 1.4s ease forwards;
+      border-radius: 8px;
+    }
+    .flash-green-input {
+      animation: flashGreenInput 1.4s ease forwards !important;
+    }
+    .seconds-live-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 700; color: #16a34a;
+      background: rgba(34,197,94,0.10); border: 1px solid rgba(34,197,94,0.25);
+      border-radius: 20px; padding: 2px 8px; margin-left: 8px;
+      vertical-align: middle;
+    }
+    .seconds-live-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+      animation: livePulse 1.5s infinite;
+    }
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════ LOGIN GATE ════════════════════ -->
+<div id="loginGate">
+  <div class="login-card">
+    <div class="login-icon">🔐</div>
+    <div class="login-title">Admin Access</div>
+    <div class="login-sub">SVT MATCH Admin Panel</div>
+
+    <div id="authSection">
+      <div style="margin-bottom:10px;">
+        <div class="pw-wrap" style="margin-bottom:0;">
+          <input type="email" class="pw-input" id="adminEmail"
+            placeholder="Admin email" style="padding-right:16px;"
+            onkeydown="if(event.key==='Enter')signInAdmin()" />
+        </div>
+      </div>
+      <div class="pw-wrap">
+        <input type="password" class="pw-input is-password" id="adminAuthPw"
+          placeholder="Account password"
+          onkeydown="if(event.key==='Enter')signInAdmin()" />
+        <button class="pw-eye" onclick="toggleAuthPw()" type="button">
+          <i class="fas fa-eye" id="authEyeIcon"></i>
+        </button>
+      </div>
+      <button class="btn-login" onclick="signInAdmin()">
+        <i class="fas fa-sign-in-alt" style="margin-right:8px;"></i> Sign In
+      </button>
+      <div class="login-error" id="authError"></div>
+    </div>
+
+    <div id="secretSection" style="display:none;">
+      <div style="margin:16px 0; border-top:1px solid rgba(0,0,0,0.1);"></div>
+      <div class="pw-wrap">
+        <input type="password" class="pw-input is-password" id="adminSharedPw"
+          placeholder="Shared admin password"
+          onkeydown="if(event.key==='Enter')verifyAdminPassword()" />
+        <button class="pw-eye" onclick="toggleSharedPw()" type="button">
+          <i class="fas fa-eye" id="sharedEyeIcon"></i>
+        </button>
+      </div>
+      <button class="btn-login" onclick="verifyAdminPassword()">
+        <i class="fas fa-lock" style="margin-right:8px;"></i> Enter Panel
+      </button>
+      <div class="login-error" id="sharedError"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════ ADMIN SHELL ════════════════════ -->
+<div id="adminShell">
+
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <button class="hamburger-btn" onclick="toggleSidebar()" title="Toggle menu">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+        <div class="topbar-logo">⚙️ SVT MATCH ADMIN</div>
+      </div>
+    <div class="topbar-right">
+      <div class="admin-badge" id="adminEmailBadge">Admin</div>
+      <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+  </div>
+
+  <div class="admin-layout">
+    <div class="sidebar collapsed" id="mainSidebar">
+      <div class="nav-item active" id="nav-users" onclick="switchPanel('users',this)">
+        <span class="nav-icon">👤</span> Users
+      </div>
+      <div class="nav-item" id="nav-analytics" onclick="switchPanel('analytics',this)">
+        <span class="nav-icon">📊</span> Analytics
+      </div>
+      <div class="nav-item" id="nav-updates" onclick="switchPanel('updates',this)">
+        <span class="nav-icon">📢</span> Updates
+      </div>
+      <div class="nav-item" id="nav-support" onclick="switchPanel('support',this)">
+        <span class="nav-icon">💌</span> Support
+        <span class="tag tag-orange" id="supportCount" style="margin-left:auto;display:none;"></span>
+      </div>
+    </div>
+
+    <div class="admin-main">
+
+      <!-- ══════ USERS PANEL ══════ -->
+      <div class="panel active" id="panel-users">
+        <div class="panel-title">👤 User Management</div>
+        <div class="card">
+          <div class="field-label">Search by Username</div>
+          <div class="search-bar">
+            <div class="search-wrap">
+              <input class="field-input" id="userSearchInput"
+                placeholder="Type a username…" autocomplete="off"
+                oninput="onSearchInput()"
+                onkeydown="if(event.key==='Enter')searchUser();if(event.key==='Escape')hideSuggestions()" />
+              <div class="search-suggestions" id="searchSuggestions"></div>
+            </div>
+            <button class="btn btn-primary" onclick="searchUser()">
+              <i class="fas fa-search"></i> Search
+            </button>
+          </div>
+          <div id="searchMsg"></div>
+        </div>
+
+        <div id="userResult" style="display:none;">
+          <div class="card">
+            <div style="font-size:16px;font-weight:800;margin-bottom:16px;">Profile</div>
+            <div class="user-profile-grid">
+              <div style="grid-column: span 2; display: flex; justify-content: center; margin-bottom: 12px;">
+                <img id="userAvatarImg" src="./imgs/assets/default_avatar.png" alt="avatar"
+                  style="width:80px;height:80px;border-radius:20px;object-fit:cover;border:2px solid var(--pink-deep);box-shadow:0 8px 20px rgba(0,0,0,0.1);" />
+              </div>
+              <div>
+                <div class="field-label">Username</div>
+                <div class="info-val" id="dispUsername">—</div>
+              </div>
+              <div>
+                <div class="field-label">Display Name</div>
+                <div class="info-val" id="dispDisplayName">—</div>
+              </div>
+              <div>
+                <div class="field-label">Password</div>
+                <button class="btn btn-sm btn-danger" style="margin-top:8px;" onclick="resetPassword()">
+                  <i class="fas fa-key"></i> Reset to carat17
+                </button>
+              </div>
+              <div>
+                <div class="field-label">Last Seen (HKT)</div>
+                <div class="info-val" id="dispLastSeen">—</div>
+              </div>
+            </div>
+            <div>
+              <div class="field-label">User ID</div>
+              <div class="uid-row">
+                <input class="field-input uid-input" id="userUidField" readonly />
+                <button class="copy-btn" id="copyUidBtn" onclick="copyUID()">
+                  <i class="fas fa-copy"></i> Copy
+                </button>
+              </div>
+            </div>
+            <div id="resetPwMsg"></div>
+          </div>
+
+          <div class="card">
+            <div style="font-size:16px;font-weight:800;margin-bottom:18px;">Game Stats</div>
+            <div class="coins-section">
+              <div class="field-label">Coins</div>
+              <div class="coins-stepper">
+                <input class="field-input" type="number" id="editCoins" min="0" style="width:120px;" />
+              </div>
+            </div>
+            <div class="mg-table-wrap">
+              <table class="mg-table">
+                <thead>
+                  <tr>
+                    <th>Minigame</th><th>Level</th><th>Streak</th><th>Best Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="tag tag-pink" style="font-size:12px;">Showtime</span></td>
+                    <td><div class="step-group">
+                      <button class="step-btn" onclick="adj('editMg1Level',-1)">−</button>
+                      <input class="field-input stat-num" type="number" id="editMg1Level" min="1" />
+                      <button class="step-btn" onclick="adj('editMg1Level',1)">+</button>
+                    </div></td>
+                    <td><div class="step-group">
+                      <button class="step-btn" onclick="adj('editMg1Streak',-1)">−</button>
+                      <input class="field-input stat-num" type="number" id="editMg1Streak" min="0" />
+                      <button class="step-btn" onclick="adj('editMg1Streak',1)">+</button>
+                    </div></td>
+                    <td><div class="step-group">
+                      <button class="step-btn" onclick="adj('editMg1Score',-1)">−</button>
+                      <input class="field-input stat-num" type="number" id="editMg1Score" min="0" step="0.01" />
+                      <button class="step-btn" onclick="adj('editMg1Score',1)">+</button>
+                    </div></td>
+                  </tr>
+                  <tr>
+                    <td><span class="tag tag-blue" style="font-size:12px;">Spotlight</span></td>
+                    <td><div class="step-group">
+                      <button class="step-btn" onclick="adj('editMg2Level',-1)">−</button>
+                      <input class="field-input stat-num" type="number" id="editMg2Level" min="1" />
+                      <button class="step-btn" onclick="adj('editMg2Level',1)">+</button>
+                    </div></td>
+                    <td><div class="step-group">
+                      <button class="step-btn" onclick="adj('editMg2Streak',-1)">−</button>
+                      <input class="field-input stat-num" type="number" id="editMg2Streak" min="0" />
+                      <button class="step-btn" onclick="adj('editMg2Streak',1)">+</button>
+                    </div></td>
+                    <td><div class="step-group">
+                      <button class="step-btn" onclick="adj('editMg2Score',-1)">−</button>
+                      <input class="field-input stat-num" type="number" id="editMg2Score" min="0" />
+                      <button class="step-btn" onclick="adj('editMg2Score',1)">+</button>
+                    </div></td>
+                  </tr>
+                  <tr>
+                    <td><span class="tag tag-gray" style="font-size:12px;">Snakeventeen</span></td>
+                    <td><div class="step-group">
+                      <button class="step-btn" onclick="adj('editMg3Level',-1)">−</button>
+                      <input class="field-input stat-num" type="number" id="editMg3Level" min="1" />
+                      <button class="step-btn" onclick="adj('editMg3Level',1)">+</button>
+                    </div></td>
+                    <td><div class="step-group">
+                      <button class="step-btn" onclick="adj('editMg3Streak',-1)">−</button>
+                      <input class="field-input stat-num" type="number" id="editMg3Streak" min="0" />
+                      <button class="step-btn" onclick="adj('editMg3Streak',1)">+</button>
+                    </div></td>
+                    <td><div class="step-group">
+                      <button class="step-btn" onclick="adj('editMg3Score',-1)">−</button>
+                      <input class="field-input stat-num" type="number" id="editMg3Score" min="0" />
+                      <button class="step-btn" onclick="adj('editMg3Score',1)">+</button>
+                    </div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button class="btn btn-primary" onclick="saveStats()">
+              <i class="fas fa-save"></i> Save Changes
+            </button>
+            <div id="statsSaveMsg"></div>
+          </div>
+
+          <div class="card">
+            <div style="font-size:16px;font-weight:800;margin-bottom:16px;">⏱ Seconds Online History
+              <span class="seconds-live-badge" id="secondsLiveBadge" style="display:none;">
+                <span class="seconds-live-dot"></span> LIVE
+              </span>
+            </div>
+            <div id="historyContent">
+              <div style="color:var(--faint);font-size:13px;">No history data.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ══════ ANALYTICS PANEL ══════ -->
+      <div class="panel" id="panel-analytics">
+        <div class="panel-title">
+          📊 Analytics
+          <button class="btn btn-secondary btn-sm analytics-refresh-btn"
+                  onclick="loadAnalytics(true)">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+        </div>
+
+        <!-- ── 1. New Registrations ── -->
+        <div class="card">
+          <div class="analytics-section-title">👥 New User Registrations</div>
+          <div class="chart-toggle-group" id="joinToggle">
+            <button class="chart-toggle-btn active" onclick="setJoinRange('7d',this)">Past 7 Days</button>
+            <button class="chart-toggle-btn"        onclick="setJoinRange('30d',this)">Past 30 Days</button>
+            <button class="chart-toggle-btn"        onclick="setJoinRange('all',this)">All Time</button>
+          </div>
+          <div class="chart-wrap">
+            <div class="chart-loader" id="joinLoader">
+              <i class="fas fa-spinner fa-spin"></i> Loading…
+            </div>
+            <canvas id="joinCanvas" style="display:none;"></canvas>
+          </div>
+        </div>
+
+        <!-- ── 1b. Cumulative Users ── -->
+        <div class="card">
+          <div class="analytics-section-title">📈 Cumulative User Count</div>
+          <div class="chart-toggle-group" id="cumulToggle">
+            <button class="chart-toggle-btn active" onclick="setCumulRange('7d',this)">Past 7 Days</button>
+            <button class="chart-toggle-btn"        onclick="setCumulRange('30d',this)">Past 30 Days</button>
+            <button class="chart-toggle-btn"        onclick="setCumulRange('all',this)">All Time</button>
+          </div>
+          <div class="chart-wrap">
+            <div class="chart-loader" id="cumulLoader">
+              <i class="fas fa-spinner fa-spin"></i> Loading…
+            </div>
+            <canvas id="cumulCanvas" style="display:none;"></canvas>
+          </div>
+        </div>
+
+        <!-- ── 2. Online Time ── -->
+        <div class="card">
+          <div class="analytics-section-title">⏱ Total Time Online (All Users)</div>
+          <div class="chart-toggle-group" id="onlineToggle">
+            <button class="chart-toggle-btn active" onclick="setOnlineRange('24h',this)">Past 24 h</button>
+            <button class="chart-toggle-btn"        onclick="setOnlineRange('7d',this)">Past 7 Days</button>
+            <button class="chart-toggle-btn"        onclick="setOnlineRange('30d',this)">Past 30 Days</button>
+            <button class="chart-toggle-btn"        onclick="setOnlineRange('all',this)">All Time</button>
+          </div>
+          <div class="chart-wrap">
+            <div class="chart-loader" id="onlineLoader">
+              <i class="fas fa-spinner fa-spin"></i> Loading…
+            </div>
+            <canvas id="onlineCanvas" style="display:none;"></canvas>
+          </div>
+          <div class="chart-note" id="onlineNote"></div>
+        </div>
+
+        <!-- ── 3. Economy ── -->
+        <div class="card">
+          <div class="analytics-section-title">💰 Platform Economy</div>
+          <div class="econ-grid">
+            <div class="econ-tile">
+              <div class="econ-label">Total Coins Earned</div>
+              <div class="econ-val"  id="econCoins">—</div>
+              <div class="econ-sub">across all users</div>
+            </div>
+            <div class="econ-tile">
+              <div class="econ-label">Registered Users</div>
+              <div class="econ-val"  id="econUsers">—</div>
+              <div class="econ-sub">total accounts</div>
+            </div>
+            <div class="econ-tile">
+              <div class="econ-label">Avg Coins / User</div>
+              <div class="econ-val"  id="econAvg">—</div>
+              <div class="econ-sub">mean earned</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ══════ UPDATES PANEL ══════ -->
+      <div class="panel" id="panel-updates">
+        <div class="panel-title">📢 Updates</div>
+        <div class="card">
+          <div style="font-size:16px;font-weight:800;margin-bottom:16px;">Publish New Update</div>
+          <div style="margin-bottom:14px;">
+            <div class="field-label">Title</div>
+            <input class="field-input" id="updateTitle" placeholder="e.g. v1.2 – New Idol Cards & Bug Fixes" />
+          </div>
+          <div>
+            <div class="field-label">Bullet Points</div>
+            <div class="bullet-list" id="bulletList"></div>
+            <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="addBullet()">
+              <i class="fas fa-plus"></i> Add Point
+            </button>
+          </div>
+          <div class="divider"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px;">Preview</div>
+          <div id="updatePreview" style="font-size:13px;color:var(--text);line-height:1.7;"></div>
+          <div style="margin-top:16px;">
+            <button class="btn btn-primary" onclick="publishUpdate()">
+              <i class="fas fa-paper-plane"></i> Publish Update
+            </button>
+          </div>
+          <div id="publishMsg"></div>
+        </div>
+        <div class="card">
+          <div style="font-size:16px;font-weight:800;margin-bottom:14px;">Published Updates</div>
+          <div id="publishedList"><div style="color:var(--faint);font-size:13px;">Loading…</div></div>
+        </div>
+      </div>
+
+
+      <!-- ══════ SUPPORT PANEL ══════ -->
+      <div class="panel" id="panel-support">
+        <div class="panel-title">💌 Support Submissions</div>
+
+        <div class="card" style="padding:16px 20px;">
+          <!-- Filter bar -->
+          <div class="support-filter-bar">
+            <span style="font-size:13px;font-weight:700;color:var(--muted);">Filter:</span>
+            <button class="filter-btn active" onclick="filterSupport('all',this)">All</button>
+            <button class="filter-btn" onclick="filterSupport('pending',this)">
+              🕐 Pending <span id="pendingBadge" style="display:none;"></span>
+            </button>
+            <button class="filter-btn" onclick="filterSupport('open',this)">💬 Open</button>
+            <button class="filter-btn" onclick="filterSupport('resolved',this)">✅ Resolved</button>
+          </div>
+          <div id="supportList"><div style="color:var(--faint);font-size:13px;">Loading…</div></div>
+        </div>
+      </div>
+
+    </div><!-- end admin-main -->
+  </div><!-- end admin-layout -->
+</div><!-- end adminShell -->
+
+
+<script>
+  // ══════════════════════════════════════
+  // Firebase Config
+  // ══════════════════════════════════════
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBfpCJrqAul3meDQ764dUetTxQvf0_iOK8",
+    authDomain:        "svt-match.firebaseapp.com",
+    databaseURL:       "https://svt-match-default-rtdb.firebaseio.com",
+    projectId:         "svt-match",
+    storageBucket:     "svt-match.firebasestorage.app",
+    messagingSenderId: "16709407764",
+    appId:             "1:16709407764:android:85fc7f8e04478fbe0c4301"
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  const db   = firebase.firestore();
+  const rtdb = firebase.database();
+  const auth = firebase.auth();
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      document.getElementById('authSection').style.display   = 'none';
+      document.getElementById('secretSection').style.display = 'block';
+      const badge = document.getElementById('adminEmailBadge');
+      if (badge) badge.textContent = adminDisplayName();
+    } else {
+      document.getElementById('authSection').style.display   = 'block';
+      document.getElementById('secretSection').style.display = 'none';
+    }
+  });
+
+  let authenticated = false;
+  let adminSession = null;
+  const API_BASE = (window.__API_BASE__ || '').replace(/\/$/, '');
+
+  async function apiFetch(path, options = {}) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not signed in');
+    const idToken = await user.getIdToken();
+    const headers = Object.assign({ 'Authorization': 'Bearer ' + idToken }, options.headers || {});
+    if (adminSession && adminSession.expiresAt > Date.now()) headers['X-Admin-Session'] = adminSession.token;
+    if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+    const res = await fetch(API_BASE + path, {
+      method: options.method || (options.body !== undefined ? 'POST' : 'GET'),
+      headers,
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined
+    });
+    let data = null;
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) {
+      if (res.status === 401 && data && /session/i.test(data.error || '')) adminSession = null;
+      throw new Error((data && data.error) || ('Request failed (' + res.status + ')'));
+    }
+    return data;
+  }
+
+  // Admin display-name: shows only the username part before '@'
+  function adminDisplayName() {
+    const em = (auth.currentUser && auth.currentUser.email) || '';
+    const atIdx = em.indexOf('@');
+    return atIdx > 0 ? em.slice(0, atIdx) : (em || 'Admin');
+  }
+
+  // ══════════════════════════════════════
+  // Minigame field-name mapping
+  // ══════════════════════════════════════
+  const MG_FIELDS = [
+    ['level',            'streak',             'bestTimeSec'],
+    ['spotlightLevel',   'spotlightStreak',    'spotlightBestCorrect'],
+    ['snakeventeenLevel','snakeventeenStreak', 'snakeventeenLongestLength'],
+  ];
+
+  // ══════════════════════════════════════
+  // AUTH
+  // ══════════════════════════════════════
+  async function signInAdmin() {
+    const email    = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('adminAuthPw').value;
+    const errEl    = document.getElementById('authError');
+    errEl.style.display = 'none';
+    if (!email || !password) {
+      errEl.textContent = 'Please enter email and password.'; errEl.style.display = 'block'; return;
+    }
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+      document.getElementById('authSection').style.display   = 'none';
+      document.getElementById('secretSection').style.display = 'block';
+    } catch(e) {
+      errEl.textContent = e.message; errEl.style.display = 'block';
+    }
+  }
+
+  async function verifyAdminPassword() {
+    const sharedPw = document.getElementById('adminSharedPw').value;
+    const errEl    = document.getElementById('sharedError');
+    errEl.style.display = 'none';
+    if (!sharedPw) return;
+    try {
+      const data = await apiFetch('/api/admin/verify', { body: { password: sharedPw } });
+      adminSession = { token: data.sessionToken, expiresAt: data.expiresAt };
+      authenticated = true;
+      document.getElementById('adminSharedPw').value = '';
+      document.getElementById('loginGate').style.display  = 'none';
+      document.getElementById('adminShell').style.display = 'block';
+      onAdminReady();
+    } catch(e) {
+      errEl.textContent = e.message || 'Access denied.'; errEl.style.display = 'block';
+    }
+  }
+
+  function toggleAuthPw() {
+    const input = document.getElementById('adminAuthPw');
+    const icon  = document.getElementById('authEyeIcon');
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    icon.className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
+    input.classList.toggle('is-password', !isPass);
+  }
+
+  function toggleSharedPw() {
+    const input = document.getElementById('adminSharedPw');
+    const icon  = document.getElementById('sharedEyeIcon');
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    icon.className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
+    input.classList.toggle('is-password', !isPass);
+  }
+
+  function toggleSidebar() {
+    document.getElementById('mainSidebar').classList.toggle('collapsed');
+  }
+
+  function collapseSidebar() {
+    const sidebar = document.getElementById('mainSidebar');
+    if (sidebar && !sidebar.classList.contains('collapsed')) {
+      sidebar.classList.add('collapsed');
+      
+      // Also hide overlay if it exists
+      const overlay = document.getElementById('sidebarOverlay');
+      if (overlay) overlay.classList.remove('active');
+    }
+  }
+
+  function logout() {
+    // Cleanup chat listeners
+    Object.values(chatListeners).forEach(unsub => { try { unsub(); } catch(e){} });
+    chatListeners = {};
+    expandedTickets.clear();
+    // Cleanup real-time user listener
+    if (currentUserListener) { currentUserListener(); currentUserListener = null; }
+    if (secondsRefreshTimer) { clearInterval(secondsRefreshTimer); secondsRefreshTimer = null; }
+    authenticated = false;
+    adminSession = null;
+    auth.signOut();
+    document.getElementById('adminShell').style.display  = 'none';
+    document.getElementById('loginGate').style.display   = 'flex';
+    document.getElementById('authSection').style.display   = 'block';
+    document.getElementById('secretSection').style.display = 'none';
+    document.getElementById('adminEmail').value    = '';
+    document.getElementById('adminAuthPw').value   = '';
+    document.getElementById('adminSharedPw').value = '';
+  }
+
+  // ══════════════════════════════════════
+  // INIT
+  // ══════════════════════════════════════
+  function onAdminReady() {
+    addBullet();
+    loadPublishedUpdates();
+    loadSupportTickets();
+    renderBulletPreview();
+    document.addEventListener('click', e => {
+      const input = document.getElementById('userSearchInput');
+      const box   = document.getElementById('searchSuggestions');
+      if (input && box && !input.contains(e.target) && !box.contains(e.target)) hideSuggestions();
+    });
+  }
+
+  // ══════════════════════════════════════
+  // NAVIGATION
+  // ══════════════════════════════════════
+  function switchPanel(name, el) {
+    // Active panel and nav styling
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    el.classList.add('active');
+    const sidebarNav = document.getElementById('nav-' + name);
+    if (sidebarNav) sidebarNav.classList.add('active');
+
+    // Automatically collapse sidebar after selection
+    collapseSidebar();
+  }
+
+  // ══════════════════════════════════════
+  // HELPERS
+  // ══════════════════════════════════════
+  function toHKT(ts) {
+    if (ts === null || ts === undefined) return '—';
+    let d;
+    if (ts && typeof ts.toDate === 'function') d = ts.toDate();
+    else if (typeof ts === 'number' && ts > 0)  d = new Date(ts);
+    else if (typeof ts === 'string' && ts)       d = new Date(ts);
+    else return '—';
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleString('en-HK', {
+      timeZone: 'Asia/Hong_Kong',
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  }
+
+  function toHKTDate(ts) {
+    if (!ts) return '—';
+    const d = typeof ts === 'number' ? new Date(ts) : (ts.toDate ? ts.toDate() : new Date(ts));
+    if (isNaN(d.getTime())) return String(ts);
+    return d.toLocaleString('en-HK', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function fmtSecs(s) {
+    if (!s) return '0s';
+    s = Math.round(s);
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    let str = '';
+    if (h) str += h + 'h ';
+    if (m) str += m + 'm ';
+    str += sec + 's';
+    return str.trim();
+  }
+
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className    = 'msg-box ' + (type === 'error' ? 'msg-error' : 'msg-success');
+    el.textContent  = text;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+  }
+
+  function adj(fieldId, delta) {
+    const input = document.getElementById(fieldId);
+    if (!input) return;
+    const min = parseFloat(input.min) || 0;
+    input.value = Math.max(min, (parseFloat(input.value) || 0) + delta);
+    flashById(fieldId);
+  }
+
+  function copyUID() {
+    const val = document.getElementById('userUidField').value;
+    if (!val) return;
+    navigator.clipboard.writeText(val).then(() => {
+      const btn = document.getElementById('copyUidBtn');
+      btn.classList.add('copied');
+      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 2000);
+    });
+  }
+
+  // ══════════════════════════════════════
+  // USERS
+  // ══════════════════════════════════════
+  let currentUserKey  = null;
+  let currentUserData = null;
+  let allUsersCache   = null;
+  let searchDebounce  = null;
+  let currentUserListener = null; // Firebase real-time listener unsubscribe
+  let secondsRefreshTimer = null; // interval for seconds online polling
+
+  // ── Flash animation helper ──
+  function flashElement(el) {
+    if (!el) return;
+    el.classList.remove('flash-green', 'flash-green-input');
+    void el.offsetWidth; // force reflow to restart animation
+    const isInput = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT';
+    el.classList.add(isInput ? 'flash-green-input' : 'flash-green');
+    setTimeout(() => el.classList.remove('flash-green', 'flash-green-input'), 1500);
+  }
+
+  function flashById(id) { flashElement(document.getElementById(id)); }
+
+  async function loadAllUsers() {
+    if (allUsersCache) return allUsersCache;
+    const result = await apiFetch('/api/admin/users?view=search');
+    allUsersCache = result.users || [];
+    return allUsersCache;
+  }
+
+  function onSearchInput() {
+    const term = document.getElementById('userSearchInput').value.trim().toLowerCase();
+    clearTimeout(searchDebounce);
+    if (term.length < 1) { hideSuggestions(); return; }
+    searchDebounce = setTimeout(() => fetchSuggestions(term), 280);
+  }
+
+  async function fetchSuggestions(term) {
+    try {
+      const all = await loadAllUsers();
+      const results = all.filter(u => {
+        const uname = (u.data.username || '').toLowerCase();
+        const dname = (u.data.displayName || u.data.display_name || '').toLowerCase();
+        return uname.includes(term) || dname.includes(term);
+      }).slice(0, 8);
+      if (!results.length) { hideSuggestions(); return; }
+      showSuggestions(results);
+    } catch(e) { hideSuggestions(); }
+  }
+
+  function showSuggestions(results) {
+    const box = document.getElementById('searchSuggestions');
+    box.innerHTML = results.map(r => {
+      const username    = escapeHtml(r.data.username || '(no username)');
+      const displayName = escapeHtml(r.data.displayName || r.data.display_name || '');
+      const avatar      = escapeHtml((r.data.displayName || r.data.username || '?').charAt(0).toUpperCase());
+      return `<div class="suggestion-item" onclick="selectSuggestion('${escapeHtml(r.uid)}',event)">
+        <div class="sug-avatar">${avatar}</div>
+        <div>
+          <div class="sug-username">${username}</div>
+          <div class="sug-display">${displayName}</div>
+        </div>
+      </div>`;
+    }).join('');
+    box.classList.add('visible');
+  }
+
+  function hideSuggestions() {
+    document.getElementById('searchSuggestions')?.classList.remove('visible');
+  }
+
+  async function selectSuggestion(uid, event) {
+    event.stopPropagation();
+    hideSuggestions();
+    try {
+      const [userSnap, psSnap] = await Promise.all([
+        rtdb.ref('users/' + uid).once('value'),
+        rtdb.ref('users/' + uid + '/playerState').once('value'),
+      ]);
+      if (!userSnap.exists()) return;
+      const userData    = userSnap.val();
+      const playerState = psSnap.val() || {};
+      currentUserKey  = uid;
+      currentUserData = { ...userData, ...playerState };
+      document.getElementById('userSearchInput').value = currentUserData.username || '';
+      document.getElementById('searchMsg').innerHTML   = '';
+      renderUserResult(uid, currentUserData, playerState);
+      attachUserListener(uid);
+    } catch(e) { console.error('selectSuggestion error:', e); }
+  }
+
+  async function searchUser() {
+    const term = document.getElementById('userSearchInput').value.trim().toLowerCase();
+    if (!term) return;
+    hideSuggestions();
+    const msgEl = document.getElementById('searchMsg');
+    msgEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0;">Searching…</div>';
+    document.getElementById('userResult').style.display = 'none';
+    currentUserKey = null; currentUserData = null;
+    if (currentUserListener) { currentUserListener(); currentUserListener = null; }
+    if (secondsRefreshTimer) { clearInterval(secondsRefreshTimer); secondsRefreshTimer = null; }
+    const badge = document.getElementById('secondsLiveBadge');
+    if (badge) badge.style.display = 'none';
+    try {
+      const all   = await loadAllUsers();
+      const match = all.find(u => (u.data.username || '').toLowerCase() === term);
+      if (!match) { msgEl.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0;">❌ User not found.</div>'; return; }
+      const uid = match.uid;
+      const [userSnap, psSnap] = await Promise.all([
+        rtdb.ref('users/' + uid).once('value'),
+        rtdb.ref('users/' + uid + '/playerState').once('value'),
+      ]);
+      if (!userSnap.exists()) { msgEl.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0;">❌ User not found.</div>'; return; }
+      const userData    = userSnap.val();
+      const playerState = psSnap.val() || {};
+      currentUserKey  = uid;
+      currentUserData = { ...userData, ...playerState };
+      msgEl.innerHTML = '';
+      renderUserResult(uid, currentUserData, playerState);
+      attachUserListener(uid);
+    } catch(e) {
+      msgEl.innerHTML = `<div style="color:#dc2626;font-size:13px;padding:8px 0;">Error: ${e.message}</div>`;
+    }
+  }
+
+  function renderUserResult(uid, data, playerState) {
+    document.getElementById('userResult').style.display = 'block';
+    document.getElementById('userUidField').value          = uid;
+    document.getElementById('dispUsername').textContent    = data.username    || '—';
+    document.getElementById('dispDisplayName').textContent = data.displayName || data.display_name || '—';
+    document.getElementById('dispLastSeen').textContent    = toHKT(data.analytics?.lastSeenAt || data.lastSeenAt || data.lastSeen);
+    const avatarEl = document.getElementById('userAvatarImg');
+    if (avatarEl) {
+      let avatarSrc = './imgs/assets/default_avatar.png';
+      if (playerState) {
+        if (playerState.equippedAvatarKey) avatarSrc = `./imgs/assets/avatars/${playerState.equippedAvatarKey}`;
+        else if (playerState.equippedIdolKey) avatarSrc = `./imgs/${playerState.equippedIdolKey}/1.jpg`;
+      }
+      avatarEl.src = avatarSrc;
+    }
+    document.getElementById('editCoins').value = data.coins ?? 0;
+    MG_FIELDS.forEach(([lk, sk, bk], i) => {
+      const n = i + 1;
+      const streakVal = i === 0 ? (data[sk] ?? data.streak ?? 0) : (data[sk] ?? 0);
+      document.getElementById(`editMg${n}Level`).value  = data[lk] ?? (i === 0 ? 1 : 0);
+      document.getElementById(`editMg${n}Streak`).value = streakVal;
+      document.getElementById(`editMg${n}Score`).value  = data[bk] ?? 0;
+    });
+    const historyData = (data.analytics && data.analytics.secondsOnline) || null;
+    renderHistory(historyData);
+  }
+
+  // ── Real-time Firebase listener for the current user ──
+  function attachUserListener(uid) {
+    // Detach any existing listener
+    if (currentUserListener) { currentUserListener(); currentUserListener = null; }
+    if (secondsRefreshTimer) { clearInterval(secondsRefreshTimer); secondsRefreshTimer = null; }
+
+    // Show LIVE badge
+    const badge = document.getElementById('secondsLiveBadge');
+    if (badge) badge.style.display = 'inline-flex';
+
+    // Listen to playerState in real-time
+    const ref = rtdb.ref('users/' + uid + '/playerState');
+    const handler = ref.on('value', snap => {
+      if (!snap.exists()) return;
+      const ps = snap.val();
+      const prev = currentUserData || {};
+
+      // Detect and animate changed fields
+      const fieldMap = {
+        coins:                  'editCoins',
+        level:                  'editMg1Level',
+        streak:                 'editMg1Streak',
+        bestTimeSec:            'editMg1Score',
+        spotlightLevel:         'editMg2Level',
+        spotlightStreak:        'editMg2Streak',
+        spotlightBestCorrect:   'editMg2Score',
+        snakeventeenLevel:      'editMg3Level',
+        snakeventeenStreak:     'editMg3Streak',
+        snakeventeenLongestLength: 'editMg3Score',
+      };
+
+      Object.entries(fieldMap).forEach(([key, elId]) => {
+        const newVal = ps[key];
+        const oldVal = prev[key];
+        if (newVal !== undefined && newVal !== oldVal) {
+          const el = document.getElementById(elId);
+          if (el) {
+            el.value = newVal;
+            flashById(elId);
+          }
+        }
+      });
+
+      // Handle streak alias
+      if (ps.streak !== undefined && ps.streak !== prev.streak) {
+        const el = document.getElementById('editMg1Streak');
+        if (el && el.value != ps.streak) { el.value = ps.streak; flashById('editMg1Streak'); }
+      }
+
+      Object.assign(currentUserData, ps);
+    });
+
+    currentUserListener = () => ref.off('value', handler);
+
+    // Also listen to top-level user node for profile fields (lastSeen etc.)
+    const userRef = rtdb.ref('users/' + uid);
+    const userHandler = userRef.on('value', snap => {
+      if (!snap.exists()) return;
+      const ud = snap.val();
+      const prev = currentUserData || {};
+
+      // Animate profile display fields if changed
+      const lastSeen = ud.analytics?.lastSeenAt || ud.lastSeenAt || ud.lastSeen;
+      const prevLastSeen = prev.analytics?.lastSeenAt || prev.lastSeenAt || prev.lastSeen;
+      if (lastSeen !== prevLastSeen) {
+        const el = document.getElementById('dispLastSeen');
+        if (el) { el.textContent = toHKT(lastSeen); flashElement(el); }
+      }
+
+      if (ud.displayName !== prev.displayName) {
+        const el = document.getElementById('dispDisplayName');
+        if (el) { el.textContent = ud.displayName || ud.display_name || '—'; flashElement(el); }
+      }
+
+      // Refresh seconds online history
+      const newHistory = ud.analytics?.secondsOnline || null;
+      renderHistory(newHistory, true); // true = animate changes
+
+      Object.assign(currentUserData, ud);
+    });
+
+    // Attach cleanup for user ref too
+    const prevUnsub = currentUserListener;
+    currentUserListener = () => { prevUnsub(); userRef.off('value', userHandler); };
+
+    // Refresh seconds online every 10 seconds
+    secondsRefreshTimer = setInterval(async () => {
+      if (!currentUserKey) return;
+      try {
+        const snap = await rtdb.ref('users/' + currentUserKey + '/analytics/secondsOnline').once('value');
+        const historyData = snap.val() || null;
+        renderHistory(historyData, true);
+      } catch(e) {}
+    }, 10000);
+  }
+
+  async function resetPassword() {
+    if (!currentUserKey) return;
+    if (!confirm('Generate a new temporary password for this user? Their current password will stop working and they will be signed out.')) return;
+    try {
+      const r = await apiFetch('/api/admin/reset-password', { body: { uid: currentUserKey } });
+      showMsg('resetPwMsg', '✅ Temporary password (shown once): ' + r.password, 'success');
+    } catch(e) { showMsg('resetPwMsg', '❌ Error: ' + e.message, 'error'); }
+  }
+
+  async function saveStats() {
+    if (!currentUserKey) return;
+    const updates = { coins: parseInt(document.getElementById('editCoins').value) || 0 };
+    MG_FIELDS.forEach(([lk, sk, bk], i) => {
+      const n = i + 1;
+      updates[lk] = parseInt(document.getElementById(`editMg${n}Level`).value) || (i === 0 ? 1 : 0);
+      updates[sk] = parseInt(document.getElementById(`editMg${n}Streak`).value) || 0;
+      updates[bk] = i === 0
+        ? (parseFloat(document.getElementById(`editMg${n}Score`).value) || 0)
+        : (parseInt(document.getElementById(`editMg${n}Score`).value) || 0);
+    });
+    updates.streak = updates[MG_FIELDS[0][1]];
+    try {
+      const saved = await apiFetch('/api/admin/update-player', { body: { uid: currentUserKey, updates } });
+      Object.assign(currentUserData, saved.updates);
+      showMsg('statsSaveMsg', '✅ Stats saved successfully.', 'success');
+      // Flash all saved fields to confirm
+      flashById('editCoins');
+      MG_FIELDS.forEach((_, i) => {
+        const n = i + 1;
+        flashById(`editMg${n}Level`);
+        flashById(`editMg${n}Streak`);
+        flashById(`editMg${n}Score`);
+      });
+    } catch(e) { showMsg('statsSaveMsg', '❌ Error: ' + e.message, 'error'); }
+  }
+
+  function renderHistory(history, animate = false) {
+    const el = document.getElementById('historyContent');
+    if (!history || !Object.keys(history).length) {
+      el.innerHTML = '<div style="color:var(--faint);font-size:13px;">No history recorded.</div>'; return;
+    }
+    const entries = Object.entries(history).sort((a, b) => b[0].localeCompare(a[0]));
+    const vals  = entries.map(([,v]) => v);
+    const maxVal = Math.max(...vals);
+    const minVal = Math.min(...vals);
+
+    // Get previous values for change detection
+    const prevRows = {};
+    if (animate) {
+      el.querySelectorAll('tr[data-date]').forEach(row => {
+        prevRows[row.dataset.date] = row.dataset.secs;
+      });
+    }
+
+    let html = `<table class="history-table">
+      <thead><tr><th>Date (HKT)</th><th>Time Online</th><th></th></tr></thead><tbody>`;
+    entries.forEach(([dateKey, secs]) => {
+      const barW  = Math.round((secs / maxVal) * 140);
+      const label = /^\d{10,}$/.test(dateKey) ? toHKTDate(parseInt(dateKey)) : dateKey;
+      const isMax = secs === maxVal;
+      const isMin = secs === minVal && maxVal !== minVal;
+      const rowStyle = isMax ? 'background:rgba(34,197,94,0.15);' : isMin ? 'background:rgba(239,68,68,0.1);' : '';
+      const changed = animate && prevRows[dateKey] !== undefined && String(prevRows[dateKey]) !== String(secs);
+      html += `<tr style="${rowStyle}" data-date="${dateKey}" data-secs="${secs}" ${changed ? 'class="flash-green"' : ''}>
+        <td><strong>${label}</strong>${isMax ? ' 🥇' : ''}${isMin ? ' 🥈' : ''}</td>
+        <td>${fmtSecs(secs)}</td>
+        <td><div class="history-bar-wrap"><div class="history-bar" style="width:${barW}px;"></div></div></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  // ══════════════════════════════════════
+  // UPDATES
+  // ══════════════════════════════════════
+  let bulletCount = 0;
+
+  function addBullet(val = '') {
+    bulletCount++;
+    const id  = 'bullet-' + bulletCount;
+    const div = document.createElement('div');
+    div.className = 'bullet-row'; div.id = id;
+    div.innerHTML = `
+      <div class="bullet-dot-icon"></div>
+      <input class="field-input" type="text" placeholder="Bullet point…"
+        value="${val.replace(/"/g,'&quot;')}" oninput="renderBulletPreview()" />
+      <button class="remove-bullet" onclick="removeBullet('${id}')"><i class="fas fa-times"></i></button>`;
+    document.getElementById('bulletList').appendChild(div);
+    renderBulletPreview();
+  }
+
+  function removeBullet(id) { document.getElementById(id)?.remove(); renderBulletPreview(); }
+
+  function getBullets() {
+    return Array.from(document.querySelectorAll('#bulletList .bullet-row input'))
+      .map(i => i.value.trim()).filter(Boolean);
+  }
+
+  function renderBulletPreview() {
+    const title   = document.getElementById('updateTitle').value.trim();
+    const bullets = getBullets();
+    let html = '';
+    if (title)   html += `<div style="font-size:16px;font-weight:800;margin-bottom:10px;">${title}</div>`;
+    if (bullets.length) {
+      html += '<ul style="padding-left:14px;">';
+      bullets.forEach(b => { html += `<li style="margin-bottom:5px;color:#475569;">${b}</li>`; });
+      html += '</ul>';
+    }
+    if (!html) html = '<span style="color:var(--faint);">Preview will appear here…</span>';
+    document.getElementById('updatePreview').innerHTML = html;
+  }
+
+  async function publishUpdate() {
+    const title   = document.getElementById('updateTitle').value.trim();
+    const bullets = getBullets();
+    if (!title)          { showMsg('publishMsg','❌ Please enter a title.','error'); return; }
+    if (!bullets.length) { showMsg('publishMsg','❌ Add at least one bullet point.','error'); return; }
+    try {
+      await db.collection('updates').add({ title, bullets, publishedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      document.getElementById('updateTitle').value    = '';
+      document.getElementById('bulletList').innerHTML = '';
+      bulletCount = 0;
+      addBullet(); renderBulletPreview();
+      showMsg('publishMsg','✅ Update published!','success');
+      loadPublishedUpdates();
+    } catch(e) { showMsg('publishMsg','❌ Error: ' + e.message,'error'); }
+  }
+
+  async function loadPublishedUpdates() {
+    const el = document.getElementById('publishedList');
+    el.innerHTML = '<div style="color:var(--faint);font-size:13px;">Loading…</div>';
+    try {
+      const snap = await db.collection('updates').orderBy('publishedAt','desc').limit(20).get();
+      if (snap.empty) { el.innerHTML = '<div style="color:var(--faint);font-size:13px;">No updates published yet.</div>'; return; }
+      let html = '';
+      snap.docs.forEach(doc => {
+        const d    = doc.data();
+        const date = d.publishedAt ? toHKT(d.publishedAt) : 'Draft';
+        const bHTML = (d.bullets || []).map(b => `<li>${b}</li>`).join('');
+        html += `<div class="pub-update-item">
+          <div class="pub-update-header">
+            <div class="pub-update-title">${d.title||'Untitled'}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--faint);">${date}</span>
+              <button class="btn btn-sm btn-danger" onclick="deleteUpdate('${doc.id}',this)"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+          ${bHTML ? `<ul class="pub-update-bullets">${bHTML}</ul>` : ''}
+        </div>`;
+      });
+      el.innerHTML = html;
+    } catch(e) { el.innerHTML = `<div style="color:#dc2626;font-size:13px;">Error: ${e.message}</div>`; }
+  }
+
+  async function deleteUpdate(id, btn) {
+    if (!confirm('Delete this update?')) return;
+    btn.disabled = true;
+    try { await db.collection('updates').doc(id).delete(); loadPublishedUpdates(); }
+    catch(e) { alert('Error: ' + e.message); btn.disabled = false; }
+  }
+
+  // ══════════════════════════════════════
+  // SUPPORT — core data
+  // ══════════════════════════════════════
+  let allTickets     = [];
+  let currentFilter  = 'all';
+  let expandedTickets = new Set();
+  let chatListeners  = {}; // ticketId → unsubscribe fn
+
+  async function loadSupportTickets() {
+    const el = document.getElementById('supportList');
+    el.innerHTML = '<div style="color:var(--faint);font-size:13px;">Loading…</div>';
+    try {
+      const snap = await db.collection('support').orderBy('submittedAt','desc').get();
+      allTickets  = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      updateSupportCounts();
+      renderTickets();
+    } catch(e) {
+      el.innerHTML = `<div style="color:#dc2626;font-size:13px;">Error: ${e.message}</div>`;
+    }
+  }
+
+  function updateSupportCounts() {
+    const pendingCount = allTickets.filter(t => (t.status || 'pending') === 'pending').length;
+    // Top-level sidebar badge
+    const countEl = document.getElementById('supportCount');
+    if (pendingCount > 0) { countEl.textContent = pendingCount; countEl.style.display = 'inline-block'; }
+    else countEl.style.display = 'none';
+    // Pending filter badge
+    const pendingBadge = document.getElementById('pendingBadge');
+    if (pendingBadge) {
+      if (pendingCount > 0) {
+        pendingBadge.textContent    = `(${pendingCount})`;
+        pendingBadge.style.display  = 'inline';
+        pendingBadge.style.fontWeight = '800';
+        pendingBadge.style.marginLeft = '3px';
+      } else {
+        pendingBadge.style.display = 'none';
+      }
+    }
+  }
+
+  function filterSupport(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTickets();
+  }
+
+  function renderTickets() {
+    const el = document.getElementById('supportList');
+    const tickets = currentFilter === 'all'
+      ? allTickets
+      : allTickets.filter(t => (t.status || 'pending') === currentFilter);
+
+    if (!tickets.length) {
+      el.innerHTML = '<div style="color:var(--faint);font-size:13px;padding:12px 0;">No tickets found.</div>';
+      return;
+    }
+
+    const catColor = { 'Bug Report':'tag-red','Account Issue':'tag-blue','Feedback':'tag-pink','Other':'tag-gray','Others':'tag-gray','Refunds':'tag-orange' };
+
+    let html = '';
+    tickets.forEach(t => {
+      const date   = t.submittedAt ? toHKT(t.submittedAt) : '—';
+      const status = t.status || 'pending';
+      const isExpanded = expandedTickets.has(t.id);
+
+      let statusTag;
+      if (status === 'resolved') {
+        statusTag = '<span class="tag tag-green status-tag">✅ Resolved</span>';
+      } else if (status === 'open') {
+        statusTag = '<span class="tag tag-blue status-tag">💬 Open</span>';
+      } else {
+        statusTag = '<span class="tag tag-orange status-tag">🕐 Pending</span>';
+      }
+
+      const username = t.username || t.svtUsername || '?';
+
+      // Detail content
+      const openedByRow = status === 'open' && t.openedBy
+        ? `<div class="detail-row">
+             <div class="detail-label">Opened By</div>
+             <div class="detail-val">${t.openedBy}${t.openedAt ? ' · ' + toHKT(t.openedAt) : ''}</div>
+           </div>`
+        : '';
+
+      // Chat section — only for open/resolved
+      let chatHTML = '';
+      if (status === 'open') {
+        chatHTML = `
+          <div class="chat-section">
+            <div class="chat-section-title"><i class="fas fa-comments" style="margin-right:6px;"></i>Ticket Chat</div>
+            <div class="chat-messages" id="msgs-${t.id}">
+              <div class="chat-empty">Loading messages…</div>
+            </div>
+            <div class="chat-input-row">
+              <input class="field-input chat-input" id="chatIn-${t.id}"
+                placeholder="Reply to user…"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminMsg('${t.id}')}" />
+              <button class="btn btn-primary btn-sm" onclick="sendAdminMsg('${t.id}')">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>`;
+      } else if (status === 'resolved') {
+        chatHTML = `
+          <div class="chat-section">
+            <div class="chat-section-title"><i class="fas fa-comments" style="margin-right:6px;"></i>Ticket Chat (Resolved)</div>
+            <div class="chat-messages" id="msgs-${t.id}">
+              <div class="chat-empty">Loading messages…</div>
+            </div>
+          </div>`;
+      } else {
+        // Pending — no chat yet
+        chatHTML = `<div class="chat-pending-note">
+          <i class="fas fa-info-circle" style="margin-right:6px;"></i>
+          Opening this ticket enables the chat channel. The user will be notified.
+        </div>`;
+      }
+
+      // Action buttons
+      let actionBtns = '';
+      if (status === 'pending') {
+        actionBtns = `
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openTicketManually('${t.id}',this)">
+            <i class="fas fa-folder-open"></i> Open Ticket
+          </button>`;
+      } else if (status === 'open') {
+        actionBtns = `
+          <button class="btn btn-success btn-sm" onclick="event.stopPropagation();markResolved('${t.id}',this)">
+            <i class="fas fa-check"></i> Mark Resolved
+          </button>`;
+      } else {
+        actionBtns = `
+          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();markOpen('${t.id}',this)">
+            <i class="fas fa-undo"></i> Reopen
+          </button>`;
+      }
+
+      html += `<div class="support-item${isExpanded ? ' expanded' : ''}" id="ticket-${t.id}">
+        <div class="support-item-header" onclick="toggleTicket('${t.id}')">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;">
+              ${statusTag}
+              <span class="tag ${catColor[t.category]||'tag-gray'}">${t.category||'Other'}</span>
+            </div>
+            <div class="support-item-title">${t.title||'(No title)'}</div>
+            <div class="support-item-meta">@${username} · ${date}</div>
+          </div>
+          <i class="fas fa-chevron-${isExpanded ? 'up' : 'down'}" style="color:var(--faint);font-size:13px;margin-top:4px;flex-shrink:0;"></i>
+        </div>
+        <div class="support-detail">
+          <div class="detail-row"><div class="detail-label">Email</div><div class="detail-val">${t.email||'—'}</div></div>
+          <div class="detail-row"><div class="detail-label">SVT Username</div><div class="detail-val">@${username}</div></div>
+          <div class="detail-row"><div class="detail-label">Submitted</div><div class="detail-val">${date}</div></div>
+          ${openedByRow}
+          <div class="detail-row"><div class="detail-label">Description</div><div class="detail-val">${(t.description||'').replace(/\n/g,'<br>')}</div></div>
+          ${chatHTML}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+            ${actionBtns}
+            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteTicket('${t.id}',this)">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    el.innerHTML = html;
+
+    // Re-start chat listeners for expanded open/resolved tickets
+    expandedTickets.forEach(id => {
+      const ticket = allTickets.find(t => t.id === id);
+      const status = ticket?.status || 'pending';
+      if ((status === 'open' || status === 'resolved') && !chatListeners[id]) {
+        startChatListener(id);
+      }
+    });
+  }
+
+  // ── Toggle expand/collapse ──
+  function toggleTicket(id) {
+    if (expandedTickets.has(id)) {
+      // Collapse
+      expandedTickets.delete(id);
+      if (chatListeners[id]) { chatListeners[id](); delete chatListeners[id]; }
+      renderTickets();
+    } else {
+      // Expand
+      expandedTickets.add(id);
+      const ticket = allTickets.find(t => t.id === id);
+      const status = ticket?.status || 'pending';
+      if (status === 'pending') {
+        // Auto-open on expand
+        autoOpenTicket(id);
+      } else {
+        renderTickets();
+        startChatListener(id);
+      }
+    }
+  }
+
+  async function autoOpenTicket(id) {
+    const adminEmail = adminDisplayName();
+    try {
+      await db.collection('support').doc(id).update({
+        status:   'open',
+        openedBy: adminEmail,
+        openedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      const t = allTickets.find(x => x.id === id);
+      if (t) { t.status = 'open'; t.openedBy = adminEmail; t.openedAt = new Date(); }
+      updateSupportCounts();
+    } catch(e) { console.error('autoOpenTicket error:', e); }
+    renderTickets();
+    startChatListener(id);
+  }
+
+  async function openTicketManually(id, btn) {
+    btn.disabled = true;
+    const adminEmail = adminDisplayName();
+    try {
+      await db.collection('support').doc(id).update({
+        status:   'open',
+        openedBy: adminEmail,
+        openedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      const t = allTickets.find(x => x.id === id);
+      if (t) { t.status = 'open'; t.openedBy = adminEmail; t.openedAt = new Date(); }
+      updateSupportCounts();
+      if (!expandedTickets.has(id)) expandedTickets.add(id);
+      renderTickets();
+      startChatListener(id);
+    } catch(e) { alert('Error: ' + e.message); btn.disabled = false; }
+  }
+
+  async function markResolved(id, btn) {
+    if (!confirm('Mark this ticket as resolved? The chat will become read-only.')) return;
+    btn.disabled = true;
+    try {
+      await db.collection('support').doc(id).update({
+        status:     'resolved',
+        resolvedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      const t = allTickets.find(x => x.id === id);
+      if (t) t.status = 'resolved';
+      updateSupportCounts();
+      // Stop active listener and restart as read-only
+      if (chatListeners[id]) { chatListeners[id](); delete chatListeners[id]; }
+      renderTickets();
+      startChatListener(id);
+    } catch(e) { btn.disabled = false; alert('Error: ' + e.message); }
+  }
+
+  async function markOpen(id, btn) {
+    btn.disabled = true;
+    const adminEmail = adminDisplayName();
+    try {
+      await db.collection('support').doc(id).update({
+        status:   'open',
+        openedBy: adminEmail,
+        openedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      const t = allTickets.find(x => x.id === id);
+      if (t) { t.status = 'open'; t.openedBy = adminEmail; }
+      updateSupportCounts();
+      renderTickets();
+      startChatListener(id);
+    } catch(e) { btn.disabled = false; alert('Error: ' + e.message); }
+  }
+
+  async function deleteTicket(id, btn) {
+    if (!confirm('Delete this support ticket permanently?')) return;
+    btn.disabled = true;
+    try {
+      if (chatListeners[id]) { chatListeners[id](); delete chatListeners[id]; }
+      expandedTickets.delete(id);
+      await db.collection('support').doc(id).delete();
+      allTickets = allTickets.filter(t => t.id !== id);
+      updateSupportCounts();
+      renderTickets();
+    } catch(e) { btn.disabled = false; alert('Error: ' + e.message); }
+  }
+
+  // ══════════════════════════════════════
+  // CHAT
+  // ══════════════════════════════════════
+  function startChatListener(ticketId) {
+    // Cleanup any existing listener
+    if (chatListeners[ticketId]) { chatListeners[ticketId](); delete chatListeners[ticketId]; }
+
+    const unsubscribe = db.collection('support').doc(ticketId)
+      .collection('messages').orderBy('sentAt', 'asc')
+      .onSnapshot(snap => {
+        const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderChatMessages(ticketId, messages);
+      }, err => {
+        const el = document.getElementById('msgs-' + ticketId);
+        if (el) el.innerHTML = `<div class="chat-empty" style="color:#dc2626;">Error loading messages: ${err.message}</div>`;
+      });
+
+    chatListeners[ticketId] = unsubscribe;
+  }
+
+  function renderChatMessages(ticketId, messages) {
+    const el = document.getElementById('msgs-' + ticketId);
+    if (!el) return;
+
+    if (!messages.length) {
+      el.innerHTML = '<div class="chat-empty">No messages yet — be the first to reply!</div>';
+      return;
+    }
+
+    el.innerHTML = messages.map(m => {
+      const isAdmin = m.senderRole === 'admin';
+      const time    = m.sentAt ? toHKT(m.sentAt) : '';
+      const name    = m.senderName || (isAdmin ? 'Admin' : 'User');
+      return `<div class="chat-msg ${isAdmin ? 'chat-msg-admin' : 'chat-msg-user'}">
+        <div class="chat-bubble">${escapeHtml(m.text || '')}</div>
+        <div class="chat-meta">${escapeHtml(name)} · ${time}</div>
+      </div>`;
+    }).join('');
+
+    // Scroll to bottom
+    el.scrollTop = el.scrollHeight;
+  }
+
+  async function sendAdminMsg(ticketId) {
+    const input = document.getElementById('chatIn-' + ticketId);
+    const text  = input?.value.trim();
+    if (!text) return;
+    input.value = '';
+    try {
+      await db.collection('support').doc(ticketId).collection('messages').add({
+        text,
+        senderId:   auth.currentUser?.uid  || 'admin',
+        senderName: adminDisplayName(),
+        senderRole: 'admin',
+        sentAt:     firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(e) {
+      input.value = text; // Restore on error
+      alert('Error sending message: ' + e.message);
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // ══════════════════════════════════════
+  // Misc listeners
+  // ══════════════════════════════════════
+  window.addEventListener('load', () => {
+    document.getElementById('updateTitle')?.addEventListener('input', renderBulletPreview);
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // ANALYTICS
+  // ══════════════════════════════════════════════════════════
+
+  /* ── state ── */
+  let _analyticsReady = false;
+  let _aData = null;          // { joinsByDay, secondsByDay, totalCoins, totalUsers }
+  let _joinChart   = null;
+  let _cumulChart  = null;
+  let _onlineChart = null;
+  let _joinRange   = '7d';
+  let _cumulRange  = '7d';
+  let _onlineRange = '24h';
+
+  /* ── Intercept switchPanel to lazy-load ── */
+  const __origSwitch = switchPanel;
+  switchPanel = function (name, el) {
+    __origSwitch(name, el);
+    if (name === 'analytics' && !_analyticsReady) loadAnalytics(false);
+  };
+
+  /* ═══ Main loader ═══ */
+  async function loadAnalytics(force) {
+    if (_analyticsReady && !force) return;
+    _analyticsReady = false;
+    _aData = null;
+
+    // Show spinners, hide canvases
+    ['joinLoader','cumulLoader','onlineLoader'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.style.display = 'flex'; el.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Loading…'; }
+    });
+    ['joinCanvas','cumulCanvas','onlineCanvas'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    ['econCoins','econUsers','econAvg'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '—'; });
+
+    try {
+      const { joinsByDay, secondsByDay, totalCoins, totalUsers } = await apiFetch('/api/admin/users?view=analytics');
+
+      _aData = { joinsByDay, secondsByDay, totalCoins, totalUsers };
+      _analyticsReady = true;
+
+      _renderEconomy();
+      _renderJoinChart();
+      _renderCumulChart();
+      _renderOnlineChart();
+
+    } catch (err) {
+      ['joinLoader','cumulLoader','onlineLoader'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = `<span style="color:#dc2626;"><i class="fas fa-exclamation-triangle"></i>&nbsp;Error: ${err.message}</span>`;
+      });
+    }
+  }
+
+  /* ═══ Economy tiles ═══ */
+  function _renderEconomy() {
+    if (!_aData) return;
+    const { totalCoins, totalUsers } = _aData;
+    const avg = totalUsers > 0 ? Math.round(totalCoins / totalUsers) : 0;
+    _setEl('econCoins', _fmtNum(totalCoins));
+    _setEl('econUsers', _fmtNum(totalUsers));
+    _setEl('econAvg',   _fmtNum(avg));
+  }
+
+  /* ═══ Join chart ═══ */
+  function setJoinRange(r, btn) {
+    _joinRange = r;
+    _activateToggle('joinToggle', btn);
+    if (_analyticsReady) _renderJoinChart();
+  }
+
+  function _renderJoinChart() {
+    if (!_aData) return;
+    const { labels, values } = _buildDailyData(_aData.joinsByDay, _joinRange);
+    _joinChart = _drawChart(
+      'joinCanvas', 'joinLoader', _joinChart,
+      { labels, values, type: 'bar',
+        color1: '#e8889e', color2: '#f5c6d0',
+        label: 'New Users',
+        tipFn: v => `${Math.round(v)} new user${v !== 1 ? 's' : ''}` }
+    );
+  }
+
+  /* ═══ Cumulative chart ═══ */
+  function setCumulRange(r, btn) {
+    _cumulRange = r;
+    _activateToggle('cumulToggle', btn);
+    if (_analyticsReady) _renderCumulChart();
+  }
+
+  function _renderCumulChart() {
+    if (!_aData) return;
+    const { joinsByDay } = _aData;
+    const allKeys = Object.keys(joinsByDay).sort();
+    if (!allKeys.length) {
+      _showLoader('cumulLoader', 'No data yet.');
+      return;
+    }
+
+    // Build full cumulative map from earliest join to today
+    const fullCumul = {};
+    let running = 0;
+    const today = _todayStr();
+    const startDate = new Date(allKeys[0]);
+    const endDate   = new Date(today);
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const k = d.toISOString().slice(0, 10);
+      running += (joinsByDay[k] || 0);
+      fullCumul[k] = running;
+    }
+
+    let labels, values;
+    if (_cumulRange === 'all') {
+      labels = Object.keys(fullCumul).sort();
+      values = labels.map(k => fullCumul[k]);
+    } else {
+      const days = _cumulRange === '7d' ? 7 : 30;
+      labels = _dateRange(days);
+      // seed = cumulative count on the day just before our window
+      const windowStart = labels[0];
+      const prevKeys = Object.keys(fullCumul).filter(k => k < windowStart).sort();
+      const seed = prevKeys.length ? fullCumul[prevKeys[prevKeys.length - 1]] : 0;
+      values = labels.map(k => fullCumul[k] !== undefined ? fullCumul[k] : seed);
+    }
+
+    _cumulChart = _drawChart(
+      'cumulCanvas', 'cumulLoader', _cumulChart,
+      { labels, values, type: 'line',
+        color1: '#5a9fc0', color2: '#9ec5d9',
+        label: 'Total Users',
+        tipFn: v => `${Math.round(v)} user${v !== 1 ? 's' : ''} total` }
+    );
+  }
+
+  /* ═══ Online chart ═══ */
+  function setOnlineRange(r, btn) {
+    _onlineRange = r;
+    _activateToggle('onlineToggle', btn);
+    if (_analyticsReady) _renderOnlineChart();
+  }
+
+  function _renderOnlineChart() {
+    if (!_aData) return;
+    const noteEl = document.getElementById('onlineNote');
+
+    let labels, values;
+    const sd = _aData.secondsByDay;
+    const today = _todayStr();
+
+    if (_onlineRange === '24h') {
+      // Day-resolution data: show today + yesterday for context
+      const yesterday = _dateRange(2)[0];
+      labels = [yesterday, today];
+      values = labels.map(d => sd[d] || 0);
+      if (noteEl) noteEl.textContent = 'ℹ Data is stored at daily resolution — showing today vs yesterday.';
+    } else {
+      if (noteEl) noteEl.textContent = '';
+      ({ labels, values } = _buildDailyData(sd, _onlineRange));
+    }
+
+    _onlineChart = _drawChart(
+      'onlineCanvas', 'onlineLoader', _onlineChart,
+      { labels, values, type: 'line',
+        color1: '#a78bfa', color2: '#f472b6',
+        label: 'Time Online',
+        tipFn: v => _fmtSecs(v),
+        yTickFn: v => _fmtSecs(v) }
+    );
+  }
+
+  /* ═══ Shared chart builder ═══ */
+  function _drawChart(canvasId, loaderId, existingChart, opts) {
+    const canvas  = document.getElementById(canvasId);
+    const loader  = document.getElementById(loaderId);
+    if (!canvas) return existingChart;
+
+    if (loader)  loader.style.display = 'none';
+    canvas.style.display = 'block';
+    if (existingChart) existingChart.destroy();
+
+    const { labels, values, type, color1, color2, label, tipFn, yTickFn } = opts;
+
+    const isDark = type === 'bar';
+    const dsConfig = {
+      label,
+      data: values,
+      borderColor: color1,
+      backgroundColor: isDark ? color1 + 'cc' : color1 + '28',
+      fill: !isDark,
+      tension: 0.38,
+      pointRadius: isDark ? 0 : 5,
+      pointHoverRadius: 8,
+      pointBackgroundColor: color1,
+      borderRadius: isDark ? 6 : 0,
+      borderWidth: 2,
+    };
+
+    const yTicksCb = yTickFn
+      ? { callback: yTickFn }
+      : {};
+
+    return new Chart(canvas, {
+      type,
+      data: { labels, datasets: [dsConfig] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 400 },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(255,255,255,0.97)',
+            titleColor: '#1e293b',
+            bodyColor: '#1e293b',
+            borderColor: 'rgba(0,0,0,0.08)',
+            borderWidth: 1,
+            titleFont: { family: 'Poppins', weight: '700', size: 12 },
+            bodyFont:  { family: 'Poppins', weight: '600', size: 13 },
+            padding: 12, cornerRadius: 12,
+            callbacks: { label: ctx => tipFn(ctx.parsed.y) }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(0,0,0,0.04)' },
+            ticks: {
+              font: { family: 'Poppins', size: 10 }, color: '#94a3b8',
+              maxRotation: 45, maxTicksLimit: 12,
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,0.05)' },
+            ticks: Object.assign(
+              { font: { family: 'Poppins', size: 10 }, color: '#94a3b8' },
+              yTicksCb
+            )
+          }
+        }
+      }
+    });
+  }
+
+  /* ═══ Data helpers ═══ */
+  function _buildDailyData(dayMap, range) {
+    if (range === 'all') {
+      const allKeys = Object.keys(dayMap).sort();
+      if (!allKeys.length) return { labels: [], values: [] };
+      const start = new Date(allKeys[0]);
+      const end   = new Date(_todayStr());
+      const labels = [], values = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const k = d.toISOString().slice(0, 10);
+        labels.push(k);
+        values.push(dayMap[k] || 0);
+      }
+      return { labels, values };
+    }
+    const days = range === '30d' ? 30 : 7;
+    const labels = _dateRange(days);
+    return { labels, values: labels.map(d => dayMap[d] || 0) };
+  }
+
+  function _dateRange(n) {
+    const out = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      out.push(d.toISOString().slice(0, 10));
+    }
+    return out;
+  }
+
+  function _todayStr() { return new Date().toISOString().slice(0, 10); }
+
+  /* ═══ Formatting helpers ═══ */
+  function _fmtNum(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(Math.round(n));
+  }
+
+  function _fmtSecs(s) {
+    if (!s || s === 0) return '0 s';
+    s = Math.round(s);
+    if (s < 60)    return s + ' s';
+    if (s < 3600)  return (s / 60).toFixed(1)    + ' min';
+    if (s < 86400) return (s / 3600).toFixed(2)  + ' hr';
+    return               (s / 86400).toFixed(2)   + ' days';
+  }
+
+  /* ═══ UI utils ═══ */
+  function _activateToggle(groupId, btn) {
+    document.querySelectorAll(`#${groupId} .chart-toggle-btn`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function _setEl(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+
+  function _showLoader(id, msg) {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'flex'; el.innerHTML = msg; }
+  }
+
+</script>
+</body>
+</html>
