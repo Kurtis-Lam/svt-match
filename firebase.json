@@ -1,0 +1,45 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "**/serviceAccountKey*.json",
+      "**/*.py"
+    ],
+    "rewrites": [
+      {
+        "source": "/game",
+        "destination": "/gameplay/game.html"
+      },
+      {
+        "source": "/gamedev",
+        "destination": "/gameplay/gamedev.html"
+      },
+      {
+        "source": "/admin",
+        "destination": "/admin.html"
+      },
+      {
+        "source": "/faq",
+        "destination": "/faq.html"
+      },
+      {
+        "source": "/home",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/support",
+        "destination": "/support.html"
+      },
+      {
+        "source": "/updates",
+        "destination": "/updates.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
