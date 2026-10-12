@@ -3,6 +3,9 @@ node_modules/
 
 public/admin/serviceAccountKey.json
 sampledata.json
+misc.txt
 
 svt.zip
 format.py
+.vercel
+.env*
