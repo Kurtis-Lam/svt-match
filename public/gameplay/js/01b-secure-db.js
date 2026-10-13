@@ -7,22 +7,34 @@
   async function svtApi(path, opts) {
     const o = opts || {};
     const method = o.method || (o.body !== undefined ? 'POST' : 'GET');
-    const headers = {};
-    if (o.auth !== false) {
-      const user = auth.currentUser;
-      if (!user) {
-        const e = new Error('Not signed in');
-        e.code = 'unauthenticated';
-        throw e;
+    const attempt = async (forceRefresh) => {
+      const headers = {};
+      if (o.auth !== false) {
+        const user = auth.currentUser;
+        if (!user) {
+          const e = new Error('Not signed in');
+          e.code = 'unauthenticated';
+          throw e;
+        }
+        headers['Authorization'] = 'Bearer ' + (await user.getIdToken(!!forceRefresh));
       }
-      headers['Authorization'] = 'Bearer ' + (await user.getIdToken(!!o.forceRefresh));
+      if (o.body !== undefined) headers['Content-Type'] = 'application/json';
+      return fetch(API_BASE + path, {
+        method,
+        headers,
+        body: o.body !== undefined ? JSON.stringify(o.body) : undefined
+      });
+    };
+    let res = await attempt(!!o.forceRefresh);
+    if (res.status === 401 && o.auth !== false) {
+      try { res = await attempt(true); } catch (e) {
+        if (e && e.code === 'unauthenticated') throw e;
+        const err = new Error('Session expired. Please sign in again.');
+        err.status = 401;
+        err.code = 'permission-denied';
+        throw err;
+      }
     }
-    if (o.body !== undefined) headers['Content-Type'] = 'application/json';
-    const res = await fetch(API_BASE + path, {
-      method,
-      headers,
-      body: o.body !== undefined ? JSON.stringify(o.body) : undefined
-    });
     let data = null;
     try { data = await res.json(); } catch (e) {}
     if (!res.ok) {
