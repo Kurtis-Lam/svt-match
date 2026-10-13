@@ -26,6 +26,10 @@
       });
     };
     let res = await attempt(!!o.forceRefresh);
+    if (res.status >= 500 && res.status !== 501) {
+      await new Promise((r) => setTimeout(r, 800));
+      try { res = await attempt(false); } catch (e) {}
+    }
     if (res.status === 401 && o.auth !== false) {
       try { res = await attempt(true); } catch (e) {
         if (e && e.code === 'unauthenticated') throw e;
@@ -40,6 +44,7 @@
     if (!res.ok) {
       const err = new Error((data && data.error) || ('Request failed (' + res.status + ')'));
       err.status = res.status;
+      if (data && data.code) err.serverCode = data.code;
       err.code = res.status === 401 || res.status === 403 ? 'permission-denied' : 'api-error';
       throw err;
     }
