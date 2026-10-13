@@ -17,6 +17,11 @@ const SNAKE_STATE = {
   lastMoveTime: 0,
   moveInterval: 300,
   touchStart: null,
+  clockTimer: null,
+  lastMoveDir: 'right',
+  cells: null,
+  cellKinds: null,
+  cellsBound: false,
 };
 
 function confirmExitsnakeventeen() {
@@ -26,6 +31,7 @@ function confirmExitsnakeventeen() {
   }
   // Pause game while modal is open (optional)
   clearInterval(SNAKE_STATE.gameTimer);
+  stopSnakeClock();
   SNAKE_STATE._timerPausedAt = SNAKE_STATE.timeLeft;
   openUndismissibleModal('Exit snakeventeen?', `
     <div class="glass-card rounded-2xl p-4 space-y-2">
@@ -49,20 +55,16 @@ function resumesnakeventeenAfterCancel() {
   SNAKE_STATE.gameOver = false;
   SNAKE_STATE.timeLeft = SNAKE_STATE._timerPausedAt ?? 30;
   document.getElementById('snakeTimer').textContent = String(SNAKE_STATE.timeLeft);
-  SNAKE_STATE.gameTimer = setInterval(moveSnake, 300);
-  // Also restart the countdown interval (similar to original startSnakeGame)
-  const snakeTimerInterval = setInterval(() => {
-    if (SNAKE_STATE.gameOver) {
-      clearInterval(snakeTimerInterval);
-      return;
-    }
-    SNAKE_STATE.timeLeft--;
-    document.getElementById('snakeTimer').textContent = SNAKE_STATE.timeLeft;
-    if (SNAKE_STATE.timeLeft <= 0) {
-      clearInterval(snakeTimerInterval);
-      endSnakeGame();
-    }
-  }, 1000);
+  clearInterval(SNAKE_STATE.gameTimer);
+  SNAKE_STATE.gameTimer = setInterval(moveSnake, SNAKE_STATE.moveInterval);
+  startSnakeClock();
+}
+
+function stopSnakeClock() {
+  if (SNAKE_STATE.clockTimer) {
+    clearInterval(SNAKE_STATE.clockTimer);
+    SNAKE_STATE.clockTimer = null;
+  }
 }
 
 function finalExitsnakeventeen() {
@@ -75,6 +77,7 @@ function finalExitsnakeventeen() {
   if (streakEl) streakEl.textContent = '0';
   // Now fully exit the game
   clearInterval(SNAKE_STATE.gameTimer);
+  stopSnakeClock();
   SNAKE_STATE.gameOver = true;
   showScreen('hubScreen');
   renderHub();
@@ -107,8 +110,11 @@ function opensnakeventeen(battleSpec = null) {
 function initsnakeventeen(battleSpec = null) {
   SNAKE_STATE.snake = [];
   SNAKE_STATE.direction = 'right';
+  SNAKE_STATE.lastMoveDir = 'right';
   SNAKE_STATE.gameOver = false;
   SNAKE_STATE.score = 0;
+  stopSnakeClock();
+  clearInterval(SNAKE_STATE.gameTimer);
   SNAKE_STATE.timeLeft = 30;
   SNAKE_STATE.foodSchedule = (battleSpec && battleSpec.foodSchedule) ? battleSpec.foodSchedule : null;
   SNAKE_STATE.nextFoodIdx = 0;
@@ -147,9 +153,12 @@ function initsnakeventeen(battleSpec = null) {
   document.getElementById('snakeLeftBtn').onclick = () => changeSnakeDirection('left');
   document.getElementById('snakeRightBtn').onclick = () => changeSnakeDirection('right');
   const grid = document.getElementById('snakeGrid');
-  grid.addEventListener('touchstart', handleSnakeTouchStart, false);
-  grid.addEventListener('touchmove', handleSnakeTouchMove, false);
-  grid.addEventListener('touchend', handleSnakeTouchEnd, false);
+  if (!SNAKE_STATE.cellsBound) {
+    grid.addEventListener('touchstart', handleSnakeTouchStart, { passive: true });
+    grid.addEventListener('touchmove', handleSnakeTouchMove, { passive: false });
+    grid.addEventListener('touchend', handleSnakeTouchEnd, { passive: true });
+    SNAKE_STATE.cellsBound = true;
+  }
 }
 
 function startSnakeCountdown() {
@@ -180,10 +189,15 @@ function startSnakeGame() {
   }
   SNAKE_STATE.lastMoveTime = performance.now();
   if (SNAKE_STATE.gameTimer) clearInterval(SNAKE_STATE.gameTimer);
-  SNAKE_STATE.gameTimer = setInterval(moveSnake, 300);
-  const snakeTimerInterval = setInterval(() => {
+  SNAKE_STATE.gameTimer = setInterval(moveSnake, SNAKE_STATE.moveInterval);
+  startSnakeClock();
+}
+
+function startSnakeClock() {
+  stopSnakeClock();
+  SNAKE_STATE.clockTimer = setInterval(() => {
     if (SNAKE_STATE.gameOver) {
-      clearInterval(snakeTimerInterval);
+      stopSnakeClock();
       return;
     }
     SNAKE_STATE.timeLeft--;
@@ -193,9 +207,8 @@ function startSnakeGame() {
       const elapsed = 30 - SNAKE_STATE.timeLeft;
       const nextScheduled = SNAKE_STATE.foodSchedule[SNAKE_STATE.nextFoodIdx];
       if (elapsed >= nextScheduled.appearAtSec) {
-        // Spawn this food
         SNAKE_STATE.food = {
-          x: Math.floor(Math.random() * SNAKE_STATE.gridSize), // position still random but idol is fixed
+          x: Math.floor(Math.random() * SNAKE_STATE.gridSize),
           y: Math.floor(Math.random() * SNAKE_STATE.gridSize),
           idolKey: nextScheduled.idolKey,
           imgSrc: nextScheduled.imgSrc
@@ -204,9 +217,8 @@ function startSnakeGame() {
         SNAKE_STATE.nextFoodIdx++;
       }
     }
-    // —— end schedule ——
     if (SNAKE_STATE.timeLeft <= 0) {
-      clearInterval(snakeTimerInterval);
+      stopSnakeClock();
       endSnakeGame();
     }
   }, 1000);
@@ -215,6 +227,7 @@ function startSnakeGame() {
 function moveSnake() {
   if (SNAKE_STATE.gameOver) return;
   const head = SNAKE_STATE.snake[0];
+  SNAKE_STATE.lastMoveDir = SNAKE_STATE.direction;
   let newHead = {
     x: head.x,
     y: head.y
@@ -278,26 +291,60 @@ function placeSnakeFood() {
   };
 }
 
-function renderSnakeGrid() {
+function ensureSnakeCells() {
   const grid = document.getElementById('snakeGrid');
-  grid.innerHTML = '';
-  for (let y = 0; y < SNAKE_STATE.gridSize; y++) {
-    for (let x = 0; x < SNAKE_STATE.gridSize; x++) {
-      const cell = document.createElement('div');
-      cell.style.position = 'relative';
-      cell.style.width = '100%';
-      cell.style.aspectRatio = '1';
-      cell.style.borderRadius = '8px';
-      cell.style.overflow = 'hidden';
-      cell.style.border = '2px solid rgba(0,0,0,0.3)';
-      if (SNAKE_STATE.food.x === x && SNAKE_STATE.food.y === y) {
-        cell.innerHTML = `<img src="${SNAKE_STATE.food.imgSrc}" style="width:100%;height:100%;object-fit:cover;"/>`;
-      }
-      const isSnake = SNAKE_STATE.snake.some(seg => seg.x === x && seg.y === y);
-      if (isSnake) {
-        cell.innerHTML = `<img src="./imgs/${SNAKE_STATE.headIdolKey}/1.jpg" style="width:100%;height:100%;object-fit:cover;"/>`;
-      }
-      grid.appendChild(cell);
+  const n = SNAKE_STATE.gridSize * SNAKE_STATE.gridSize;
+  if (SNAKE_STATE.cells && SNAKE_STATE.cells.length === n && grid.children.length === n) return;
+  grid.textContent = '';
+  const frag = document.createDocumentFragment();
+  const cells = [];
+  for (let i = 0; i < n; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'sn-cell';
+    const img = document.createElement('img');
+    img.alt = '';
+    img.draggable = false;
+    img.decoding = 'async';
+    cell.appendChild(img);
+    frag.appendChild(cell);
+    cells.push(cell);
+  }
+  grid.appendChild(frag);
+  SNAKE_STATE.cells = cells;
+  SNAKE_STATE.cellKinds = new Array(n).fill('');
+  SNAKE_STATE.cellSrc = new Array(n).fill('');
+}
+
+// Diff-based: only cells whose content changed are touched (no innerHTML rebuild per tick)
+function renderSnakeGrid() {
+  ensureSnakeCells();
+  const size = SNAKE_STATE.gridSize;
+  const want = new Array(size * size).fill('');
+  const src = new Array(size * size).fill('');
+  const f = SNAKE_STATE.food;
+  if (f && f.imgSrc) {
+    const fi = f.y * size + f.x;
+    want[fi] = 'food';
+    src[fi] = f.imgSrc;
+  }
+  const bodySrc = `./imgs/${SNAKE_STATE.headIdolKey}/1.jpg`;
+  const snake = SNAKE_STATE.snake;
+  for (let k = 0; k < snake.length; k++) {
+    const idx = snake[k].y * size + snake[k].x;
+    if (idx < 0 || idx >= want.length) continue;
+    want[idx] = k === 0 ? 'head' : 'body';
+    src[idx] = bodySrc;
+  }
+  const cells = SNAKE_STATE.cells, kinds = SNAKE_STATE.cellKinds, srcs = SNAKE_STATE.cellSrc;
+  for (let i = 0; i < want.length; i++) {
+    if (kinds[i] !== want[i]) {
+      const cls = want[i] === 'head' ? 'sn-cell sn-body sn-head' : want[i] === 'body' ? 'sn-cell sn-body' : want[i] === 'food' ? 'sn-cell sn-food' : 'sn-cell';
+      cells[i].className = cls;
+      kinds[i] = want[i];
+    }
+    if (want[i] && srcs[i] !== src[i]) {
+      cells[i].firstChild.src = src[i];
+      srcs[i] = src[i];
     }
   }
 }
@@ -309,7 +356,7 @@ function changeSnakeDirection(dir) {
     left: 'right',
     right: 'left'
   };
-  if (opposites[dir] === SNAKE_STATE.direction) return;
+  if (opposites[dir] === SNAKE_STATE.lastMoveDir) return;
   SNAKE_STATE.direction = dir;
 }
 
@@ -358,6 +405,7 @@ function openBattleSnakeResultModal(length) {
 function endSnakeGame() {
   const battleCtx = GAME_STATE.battles?.active;
   clearInterval(SNAKE_STATE.gameTimer);
+  stopSnakeClock();
   SNAKE_STATE.gameOver = true;
   const length = SNAKE_STATE.snake.length;
   const passedSnake = SNAKE_STATE.score >= 4;
