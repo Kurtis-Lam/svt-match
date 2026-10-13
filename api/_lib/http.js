@@ -1,8 +1,15 @@
+const DEFAULT_ORIGINS = [
+  'https://svt-match.web.app',
+  'https://svt-match.firebaseapp.com',
+  'https://svt-match.vercel.app'
+];
+
 function allowedOrigins() {
-  return (process.env.ALLOWED_ORIGINS || '')
+  const extra = (process.env.ALLOWED_ORIGINS || '')
     .split(',')
-    .map((s) => s.trim())
+    .map((s) => s.trim().replace(/\/$/, ''))
     .filter(Boolean);
+  return DEFAULT_ORIGINS.concat(extra);
 }
 
 function applyCors(req, res) {
