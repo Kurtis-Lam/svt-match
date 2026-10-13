@@ -33,6 +33,24 @@ function db() {
   return getAdmin().database();
 }
 
+const BAD_KEY_RE = /[.$#\[\]\/\u0000-\u001f\u007f]/g;
+
+function cleanKeys(v) {
+  if (Array.isArray(v)) return v.map(cleanKeys);
+  if (v && typeof v === 'object') {
+    const out = {};
+    for (const k of Object.keys(v)) {
+      if (v[k] === undefined) continue;
+      let nk = k.replace(BAD_KEY_RE, '_');
+      if (!nk) nk = '_';
+      out[nk] = cleanKeys(v[k]);
+    }
+    return out;
+  }
+  if (typeof v === 'number' && !Number.isFinite(v)) return 0;
+  return v;
+}
+
 function setIn(root, segs, value) {
   if (!segs.length) return value;
   const base = root && typeof root === 'object' ? root : {};
@@ -151,7 +169,7 @@ async function getGuard(uid) {
 }
 
 async function saveGuard(uid, g) {
-  const out = clone(g);
+  const out = cleanKeys(clone(g));
   delete out.banned;
   const keep = await db().ref(`guard/${uid}/banned`).once('value');
   if (keep.exists()) out.banned = keep.val();
@@ -352,7 +370,8 @@ async function processWrite(me, rawOps) {
         else working = setIn(working, o.segs, clone(o.value));
       }
       const g = clone(guard);
-      const out = G.sanitizeOwnState(cur, working, g, now, me);
+      const out = G.sanitizeOwnState(cur, cleanKeys(working), g, now, me);
+      out.state = cleanKeys(clone(out.state));
       out.state.updatedAt = now;
       final = out;
       return out.state;
