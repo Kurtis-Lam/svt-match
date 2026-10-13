@@ -20,27 +20,39 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(ha, hb);
 }
 
-async function verifyIdToken(req) {
+async function verifyIdToken(req, checkRevoked = true) {
   const header = req.headers.authorization || '';
   const match = /^Bearer (.+)$/.exec(header);
   if (!match) throw httpError(401, 'Missing bearer token');
   try {
-    return await getAdmin().auth().verifyIdToken(match[1], true);
+    return await getAdmin().auth().verifyIdToken(match[1], checkRevoked);
   } catch (e) {
     throw httpError(401, 'Invalid or expired token');
   }
 }
 
+async function requireUser(req) {
+  const decoded = await verifyIdToken(req, true);
+  const uid = decoded.uid;
+  const snap = await getAdmin().database().ref(`guard/${uid}/banned`).once('value');
+  if (snap.val()) throw httpError(403, 'This account is suspended');
+  return decoded;
+}
+
 async function isAuthorizedUid(uid) {
   const envUids = (process.env.ADMIN_UIDS || '').split(',').map((s) => s.trim()).filter(Boolean);
   if (envUids.includes(uid)) return true;
-  const snap = await getAdmin().firestore().doc('admin/config').get();
-  const list = snap.exists ? snap.get('authorizedUids') : null;
-  return Array.isArray(list) && list.includes(uid);
+  try {
+    const snap = await getAdmin().firestore().doc('admin/config').get();
+    const list = snap.exists ? snap.get('authorizedUids') : null;
+    return Array.isArray(list) && list.includes(uid);
+  } catch (e) {
+    return false;
+  }
 }
 
 async function requireAdminAccount(req) {
-  const decoded = await verifyIdToken(req);
+  const decoded = await verifyIdToken(req, true);
   if (!(await isAuthorizedUid(decoded.uid))) throw httpError(403, 'Not an authorised admin');
   return decoded;
 }
@@ -63,4 +75,24 @@ async function requireAdminSession(req) {
   return decoded;
 }
 
-module.exports = { requireAdminAccount, requireAdminSession, issueSession, safeEqual };
+async function auditLog(adminUid, action, detail) {
+  try {
+    await getAdmin().database().ref('adminLogs').push({
+      at: Date.now(),
+      by: adminUid,
+      action: String(action).slice(0, 60),
+      detail: JSON.parse(JSON.stringify(detail === undefined ? null : detail))
+    });
+  } catch (e) {
+    console.error('[audit]', e);
+  }
+}
+
+module.exports = {
+  requireUser,
+  requireAdminAccount,
+  requireAdminSession,
+  issueSession,
+  safeEqual,
+  auditLog
+};
