@@ -576,6 +576,13 @@
       <div class="nav-item active" id="nav-users" onclick="switchPanel('users',this)">
         <span class="nav-icon">👤</span> Users
       </div>
+      <div class="nav-item" id="nav-players" onclick="switchPanel('players',this)">
+        <span class="nav-icon">🧑‍🤝‍🧑</span> Players
+      </div>
+      <div class="nav-item" id="nav-audit" onclick="switchPanel('audit',this)">
+        <span class="nav-icon">🛡</span> Audit
+        <span class="tag tag-orange" id="auditCount" style="margin-left:auto;display:none;"></span>
+      </div>
       <div class="nav-item" id="nav-analytics" onclick="switchPanel('analytics',this)">
         <span class="nav-icon">📊</span> Analytics
       </div>
@@ -738,9 +745,102 @@
               <div style="color:var(--faint);font-size:13px;">No history data.</div>
             </div>
           </div>
+
+          <div class="card" id="accountCard">
+            <div style="font-size:16px;font-weight:800;margin-bottom:14px;">🛡 Account &amp; Anti-cheat</div>
+            <div id="accountInfo" style="font-size:13px;color:var(--muted);line-height:1.8;">Loading…</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+              <button class="btn btn-warning btn-sm" id="banBtn" onclick="accountAction('ban')"><i class="fas fa-ban"></i> Ban</button>
+              <button class="btn btn-success btn-sm" id="unbanBtn" onclick="accountAction('unban')" style="display:none;"><i class="fas fa-check"></i> Unban</button>
+              <button class="btn btn-secondary btn-sm" onclick="accountAction('revoke')"><i class="fas fa-right-from-bracket"></i> Sign out everywhere</button>
+              <button class="btn btn-secondary btn-sm" onclick="accountAction('rename')"><i class="fas fa-pen"></i> Rename</button>
+              <button class="btn btn-secondary btn-sm" onclick="accountAction('clear-flags')"><i class="fas fa-eraser"></i> Clear flags</button>
+              <button class="btn btn-secondary btn-sm" onclick="accountAction('reset-budgets')"><i class="fas fa-gauge"></i> Reset rate budgets</button>
+              <button class="btn btn-danger btn-sm" onclick="accountAction('delete')"><i class="fas fa-trash"></i> Delete account</button>
+            </div>
+            <div id="accountMsg"></div>
+            <div style="font-size:13px;font-weight:800;margin:18px 0 8px;">Recent anti-cheat flags</div>
+            <div id="accountFlags" style="font-size:12px;color:var(--muted);">None.</div>
+          </div>
+
+          <div class="card" id="extraStatsCard">
+            <div style="font-size:16px;font-weight:800;margin-bottom:14px;">More player data</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+              <div><div class="field-label">Display name</div><input class="field-input" id="xDisplayName" maxlength="30" /></div>
+              <div><div class="field-label">Rings</div><input class="field-input" type="number" id="xRings" min="0" /></div>
+              <div><div class="field-label">Total coins earned</div><input class="field-input" type="number" id="xTotalEarned" min="0" /></div>
+              <div><div class="field-label">Battle wins</div><input class="field-input" type="number" id="xWins" min="0" /></div>
+              <div><div class="field-label">Battle losses</div><input class="field-input" type="number" id="xLosses" min="0" /></div>
+              <div><div class="field-label">Levels completed</div><input class="field-input" type="number" id="xLevelsDone" min="0" /></div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:14px;" onclick="saveExtraStats()"><i class="fas fa-save"></i> Save</button>
+            <div id="extraStatsMsg"></div>
+          </div>
+
+          <div class="card" id="rawCard">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div style="font-size:16px;font-weight:800;">Raw data editor</div>
+              <button class="btn btn-secondary btn-sm" onclick="loadAccountPanel(currentUserKey)"><i class="fas fa-rotate"></i> Reload</button>
+            </div>
+            <pre id="rawView" style="max-height:360px;overflow:auto;background:rgba(15,23,42,0.05);border-radius:12px;padding:12px;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;"></pre>
+            <div class="field-label" style="margin-top:12px;">Path (relative to this player, e.g. playerState/ownedIdols/key)</div>
+            <input class="field-input" id="rawPath" placeholder="playerState/coins" />
+            <div class="field-label" style="margin-top:10px;">Value (JSON)</div>
+            <textarea class="field-input" id="rawValue" rows="3" placeholder='12345 or "text" or {"a":1}'></textarea>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-primary btn-sm" onclick="rawApply('set')">Set value</button>
+              <button class="btn btn-danger btn-sm" onclick="rawApply('remove')">Remove path</button>
+            </div>
+            <div id="rawMsg"></div>
+          </div>
         </div>
       </div>
 
+
+      <!-- ══════ PLAYERS PANEL ══════ -->
+      <div class="panel" id="panel-players">
+        <div class="panel-title">🧑‍🤝‍🧑 All Players</div>
+        <div class="card">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <input class="field-input" id="playersFilter" placeholder="Filter by username or display name…" oninput="renderPlayers()" style="flex:1;min-width:200px;" />
+            <select class="field-input" id="playersSort" onchange="renderPlayers()" style="width:auto;">
+              <option value="coins">Sort: Coins</option>
+              <option value="level">Sort: Showtime level</option>
+              <option value="totalCoinsEarned">Sort: Total earned</option>
+              <option value="battleWins">Sort: Battle wins</option>
+              <option value="strikes">Sort: Cheat flags</option>
+              <option value="lastSeenAt">Sort: Last seen</option>
+              <option value="username">Sort: Username</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="loadPlayers(true)"><i class="fas fa-rotate"></i> Refresh</button>
+          </div>
+          <div id="playersSummary" style="margin-top:12px;font-size:13px;color:var(--muted);"></div>
+          <div style="overflow-x:auto;margin-top:12px;">
+            <table class="mg-table" style="min-width:860px;">
+              <thead>
+                <tr><th>Player</th><th>Showtime</th><th>Spotlight</th><th>Snake</th><th>Coins</th><th>Earned</th><th>W / L</th><th>Friends</th><th>Last seen</th><th>Status</th></tr>
+              </thead>
+              <tbody id="playersBody"><tr><td colspan="10" style="color:var(--faint);">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ AUDIT PANEL ══════ -->
+      <div class="panel" id="panel-audit">
+        <div class="panel-title">🛡 Anti-cheat &amp; Audit</div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="font-size:16px;font-weight:800;">Flagged players</div>
+            <button class="btn btn-secondary btn-sm" onclick="loadAudit()"><i class="fas fa-rotate"></i> Refresh</button>
+          </div>
+          <div id="flagsList" style="font-size:13px;color:var(--faint);">Loading…</div>
+        </div>
+        <div class="card">
+          <div style="font-size:16px;font-weight:800;margin-bottom:12px;">Admin action log</div>
+          <div id="logsList" style="font-size:13px;color:var(--faint);">Loading…</div>
+        </div>
+      </div>
 
       <!-- ══════ ANALYTICS PANEL ══════ -->
       <div class="panel" id="panel-analytics">
@@ -2222,6 +2322,217 @@
     if (el) { el.style.display = 'flex'; el.innerHTML = msg; }
   }
 
+</script>
+<script>
+  /* ═══ Player control extension ═══ */
+  let _players = [];
+  let _playersLoaded = false;
+  let _acct = null;
+
+  function _ago(ms) {
+    if (!ms) return '—';
+    const d = Math.max(0, Date.now() - ms);
+    const m = Math.floor(d / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + 'm ago';
+    const h = Math.floor(m / 60);
+    if (h < 48) return h + 'h ago';
+    return Math.floor(h / 24) + 'd ago';
+  }
+  function _num(n) { return Number(n || 0).toLocaleString(); }
+
+  async function loadPlayers(force) {
+    if (_playersLoaded && !force) { renderPlayers(); return; }
+    document.getElementById('playersBody').innerHTML = '<tr><td colspan="10" style="color:var(--faint);">Loading…</td></tr>';
+    try {
+      const r = await apiFetch('/api/admin/users?view=list');
+      _players = r.players || [];
+      _playersLoaded = true;
+      renderPlayers();
+    } catch (e) {
+      document.getElementById('playersBody').innerHTML = '<tr><td colspan="10" style="color:#dc2626;">' + escapeHtml(e.message) + '</td></tr>';
+    }
+  }
+
+  function renderPlayers() {
+    const q = (document.getElementById('playersFilter').value || '').trim().toLowerCase();
+    const key = document.getElementById('playersSort').value;
+    let rows = _players.filter(p => !q || (p.username || '').toLowerCase().includes(q) || (p.displayName || '').toLowerCase().includes(q));
+    rows.sort((a, b) => key === 'username' ? (a.username || '').localeCompare(b.username || '') : (Number(b[key]) || 0) - (Number(a[key]) || 0));
+    const flagged = _players.filter(p => p.strikes > 0).length;
+    const banned = _players.filter(p => p.banned).length;
+    document.getElementById('playersSummary').textContent = rows.length + ' of ' + _players.length + ' players · ' + flagged + ' flagged · ' + banned + ' banned';
+    document.getElementById('playersBody').innerHTML = rows.slice(0, 500).map(p => {
+      const status = p.banned ? '<span class="tag tag-orange">Banned</span>' : (p.strikes ? '<span class="tag tag-orange">' + p.strikes + ' flags</span>' : '<span class="tag tag-gray">OK</span>');
+      return '<tr style="cursor:pointer;" data-user="' + escapeHtml(p.username) + '" onclick="openPlayer(this.dataset.user)">' +
+        '<td><b>' + escapeHtml(p.username || '—') + '</b><div style="font-size:11px;color:var(--faint);">' + escapeHtml(p.displayName || '') + '</div></td>' +
+        '<td>' + _num(p.level) + '</td><td>' + _num(p.spotlightLevel) + '</td><td>' + _num(p.snakeventeenLevel) + '</td>' +
+        '<td>' + _num(p.coins) + '</td><td>' + _num(p.totalCoinsEarned) + '</td>' +
+        '<td>' + _num(p.battleWins) + ' / ' + _num(p.battleLosses) + '</td><td>' + _num(p.friends) + '</td>' +
+        '<td>' + _ago(p.lastSeenAt) + '</td><td>' + status + '</td></tr>';
+    }).join('') || '<tr><td colspan="10" style="color:var(--faint);">No players match.</td></tr>';
+  }
+
+  function openPlayer(username) {
+    if (!username) return;
+    switchPanel('users', document.getElementById('nav-users'));
+    document.getElementById('userSearchInput').value = username;
+    searchUser();
+  }
+
+  async function loadAccountPanel(uid) {
+    if (!uid) return;
+    document.getElementById('accountInfo').textContent = 'Loading…';
+    try {
+      _acct = await apiFetch('/api/admin/user?uid=' + encodeURIComponent(uid));
+      renderAccountPanel();
+    } catch (e) {
+      document.getElementById('accountInfo').innerHTML = '<span style="color:#dc2626;">' + escapeHtml(e.message) + '</span>';
+    }
+  }
+
+  function renderAccountPanel() {
+    if (!_acct) return;
+    const a = _acct.account, g = _acct.guard, u = _acct.user || {}, ps = u.playerState || {}, st = ps.stats || {};
+    const dt = v => v ? toHKT(Date.parse(v)) : '—';
+    const rows = [
+      ['Login email', a ? escapeHtml(a.email || '—') : '<i>no Auth record</i>'],
+      ['Auth status', a ? (a.disabled ? '<span class="tag tag-orange">Disabled</span>' : 'Active') : '—'],
+      ['Account created', a ? dt(a.createdAt) : '—'],
+      ['Last sign-in', a ? dt(a.lastSignInAt) : '—'],
+      ['Game status', g.banned ? '<span class="tag tag-orange">Banned</span> ' + escapeHtml(g.banned.reason || '') : 'Active'],
+      ['Anti-cheat flags', g.strikes ? '<b>' + g.strikes + '</b> (last ' + _ago(g.lastFlagAt) + ')' : 'None'],
+      ['Legacy password in DB', _acct.hasLegacyPassword ? '<span class="tag tag-orange">Present</span> (remove via raw editor: password)' : 'No']
+    ];
+    document.getElementById('accountInfo').innerHTML = rows.map(r => '<div><span style="display:inline-block;min-width:150px;color:var(--faint);">' + r[0] + '</span>' + r[1] + '</div>').join('');
+    document.getElementById('banBtn').style.display = g.banned ? 'none' : '';
+    document.getElementById('unbanBtn').style.display = g.banned ? '' : 'none';
+    document.getElementById('accountFlags').innerHTML = (g.flags || []).slice().reverse().map(f =>
+      '<div style="padding:6px 0;border-bottom:1px solid rgba(15,23,42,0.06);"><b>' + escapeHtml(f.type) + '</b> · ' + toHKT(f.t) + '<div>' + escapeHtml(f.detail || '') + '</div></div>'
+    ).join('') || 'None.';
+    document.getElementById('xDisplayName').value = u.displayName || '';
+    document.getElementById('xRings').value = ps.rings ?? 0;
+    document.getElementById('xTotalEarned').value = st.totalCoinsEarned ?? 0;
+    document.getElementById('xWins').value = st.battleWins ?? 0;
+    document.getElementById('xLosses').value = st.battleLosses ?? 0;
+    document.getElementById('xLevelsDone').value = st.levelsCompleted ?? 0;
+    document.getElementById('rawView').textContent = JSON.stringify(u, null, 2);
+  }
+
+  async function accountAction(action) {
+    const uid = currentUserKey;
+    if (!uid) return;
+    const name = (_acct && _acct.user && _acct.user.username) || '';
+    const body = { uid, action };
+    if (action === 'ban') {
+      const reason = prompt('Reason for banning ' + name + '? (optional)');
+      if (reason === null) return;
+      body.reason = reason;
+    } else if (action === 'unban') {
+      if (!confirm('Unban ' + name + '?')) return;
+    } else if (action === 'revoke') {
+      if (!confirm('Sign ' + name + ' out of all devices?')) return;
+    } else if (action === 'rename') {
+      const n = prompt('New username for ' + name + ':');
+      if (!n) return;
+      body.username = n;
+    } else if (action === 'clear-flags') {
+      if (!confirm('Clear all anti-cheat flags for ' + name + '?')) return;
+    } else if (action === 'reset-budgets') {
+      if (!confirm('Reset hourly earning/level budgets for ' + name + '?')) return;
+    } else if (action === 'delete') {
+      const typed = prompt('This permanently deletes ' + name + ' and removes them from everyone\'s lists.\nType the username to confirm:');
+      if (typed === null) return;
+      if (typed.trim().toLowerCase() !== name.toLowerCase()) { showMsg('accountMsg', '❌ Username did not match. Nothing was deleted.', 'error'); return; }
+      body.confirm = true;
+    }
+    try {
+      const r = await apiFetch('/api/admin/account', { body });
+      if (action === 'delete') {
+        document.getElementById('userResult').style.display = 'none';
+        currentUserKey = null;
+        _playersLoaded = false;
+        showMsg('searchMsg', '✅ Account deleted.', 'success');
+        return;
+      }
+      if (action === 'rename') {
+        document.getElementById('dispUsername').textContent = r.username;
+        document.getElementById('userSearchInput').value = r.username;
+        _playersLoaded = false;
+      }
+      showMsg('accountMsg', '✅ Done.', 'success');
+      await loadAccountPanel(uid);
+    } catch (e) { showMsg('accountMsg', '❌ ' + e.message, 'error'); }
+  }
+
+  async function saveExtraStats() {
+    if (!currentUserKey) return;
+    const updates = {
+      displayName: document.getElementById('xDisplayName').value.trim(),
+      rings: parseInt(document.getElementById('xRings').value) || 0,
+      'stats.totalCoinsEarned': parseInt(document.getElementById('xTotalEarned').value) || 0,
+      'stats.battleWins': parseInt(document.getElementById('xWins').value) || 0,
+      'stats.battleLosses': parseInt(document.getElementById('xLosses').value) || 0,
+      'stats.levelsCompleted': parseInt(document.getElementById('xLevelsDone').value) || 0
+    };
+    try {
+      await apiFetch('/api/admin/update-player', { body: { uid: currentUserKey, updates } });
+      showMsg('extraStatsMsg', '✅ Saved.', 'success');
+      _playersLoaded = false;
+      await loadAccountPanel(currentUserKey);
+    } catch (e) { showMsg('extraStatsMsg', '❌ ' + e.message, 'error'); }
+  }
+
+  async function rawApply(op) {
+    if (!currentUserKey) return;
+    const path = document.getElementById('rawPath').value.trim().replace(/^\/+|\/+$/g, '');
+    if (!path) { showMsg('rawMsg', '❌ Enter a path.', 'error'); return; }
+    const body = { uid: currentUserKey, op, path };
+    if (op === 'set') {
+      try { body.value = JSON.parse(document.getElementById('rawValue').value); }
+      catch (e) { showMsg('rawMsg', '❌ Value must be valid JSON.', 'error'); return; }
+    } else if (!confirm('Remove users/' + currentUserKey + '/' + path + ' ?')) return;
+    try {
+      await apiFetch('/api/admin/raw', { body });
+      showMsg('rawMsg', '✅ Applied.', 'success');
+      await loadAccountPanel(currentUserKey);
+    } catch (e) { showMsg('rawMsg', '❌ ' + e.message, 'error'); }
+  }
+
+  async function loadAudit() {
+    const fl = document.getElementById('flagsList');
+    const ll = document.getElementById('logsList');
+    try {
+      const [f, l] = await Promise.all([apiFetch('/api/admin/users?view=flags'), apiFetch('/api/admin/users?view=logs')]);
+      const badge = document.getElementById('auditCount');
+      if (badge) { badge.textContent = f.rows.length; badge.style.display = f.rows.length ? '' : 'none'; }
+      fl.innerHTML = f.rows.map(r =>
+        '<div style="padding:10px 0;border-bottom:1px solid rgba(15,23,42,0.06);">' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><b style="color:var(--text);cursor:pointer;" data-user="' + escapeHtml(r.username) + '" onclick="openPlayer(this.dataset.user)">' + escapeHtml(r.username || r.uid) + '</b>' +
+        '<span class="tag tag-orange">' + r.strikes + ' flags</span>' + (r.banned ? '<span class="tag tag-orange">Banned</span>' : '') +
+        '<span style="color:var(--faint);">last ' + _ago(r.lastFlagAt) + '</span></div>' +
+        (r.flags || []).slice(-3).map(x => '<div style="font-size:12px;color:var(--muted);margin-top:4px;">' + escapeHtml(x.type) + ' — ' + escapeHtml(x.detail || '') + '</div>').join('') +
+        '</div>').join('') || 'No flagged players.';
+      ll.innerHTML = l.logs.map(x =>
+        '<div style="padding:8px 0;border-bottom:1px solid rgba(15,23,42,0.06);"><b style="color:var(--text);">' + escapeHtml(x.action) + '</b> · ' + toHKT(x.at) +
+        '<div style="font-size:12px;color:var(--muted);word-break:break-all;">' + escapeHtml(JSON.stringify(x.detail || {})).slice(0, 400) + '</div></div>').join('') || 'No admin actions yet.';
+    } catch (e) {
+      fl.innerHTML = '<span style="color:#dc2626;">' + escapeHtml(e.message) + '</span>';
+    }
+  }
+
+  const __origRenderUser = renderUserResult;
+  renderUserResult = function (uid, data, playerState) {
+    __origRenderUser(uid, data, playerState);
+    loadAccountPanel(uid);
+  };
+
+  const __origSwitch2 = switchPanel;
+  switchPanel = function (name, el) {
+    __origSwitch2(name, el);
+    if (name === 'players') loadPlayers(false);
+    if (name === 'audit') loadAudit();
+  };
 </script>
 </body>
 </html>
