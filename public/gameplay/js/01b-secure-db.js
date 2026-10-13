@@ -1,7 +1,7 @@
 (function () {
   if (typeof db === 'undefined' || !db || typeof auth === 'undefined' || !auth) return;
 
-  const API_BASE = String(window.__SVT_API_BASE__ || 'https://svt-match.web.app').replace(/\/$/, '');
+  const API_BASE = String(window.__SVT_API_BASE__ || 'https://svt-match.vercel.app').replace(/\/$/, '');
   window.SVT_API_BASE = API_BASE;
 
   async function svtApi(path, opts) {
