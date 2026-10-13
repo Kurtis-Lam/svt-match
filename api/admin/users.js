@@ -8,10 +8,47 @@ function joinKey(jd) {
   return null;
 }
 
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
 module.exports = handler(['GET'], async (req, res) => {
   await requireAdminSession(req);
   const view = (req.query && req.query.view) || 'search';
-  const snap = await getAdmin().database().ref('users').once('value');
+  const db = getAdmin().database();
+
+  if (view === 'logs') {
+    const snap = await db.ref('adminLogs').orderByKey().limitToLast(200).once('value');
+    const logs = [];
+    snap.forEach((c) => { logs.push({ id: c.key, ...(c.val() || {}) }); });
+    logs.reverse();
+    return send(res, 200, { logs });
+  }
+
+  if (view === 'flags') {
+    const [guardSnap, usersSnap] = await Promise.all([db.ref('guard').once('value'), db.ref('users').once('value')]);
+    const names = {};
+    usersSnap.forEach((c) => { const u = c.val() || {}; names[c.key] = u.username || ''; });
+    const rows = [];
+    guardSnap.forEach((c) => {
+      const g = c.val() || {};
+      if (!g.strikes && !g.banned) return;
+      const flags = Array.isArray(g.flags) ? g.flags : Object.values(g.flags || {});
+      rows.push({
+        uid: c.key,
+        username: names[c.key] || '',
+        strikes: n(g.strikes),
+        banned: !!g.banned,
+        lastFlagAt: n(g.lastFlagAt),
+        flags: flags.slice(-10)
+      });
+    });
+    rows.sort((a, b) => b.strikes - a.strikes);
+    return send(res, 200, { rows });
+  }
+
+  const snap = await db.ref('users').once('value');
 
   if (view === 'search') {
     const users = [];
@@ -24,6 +61,37 @@ module.exports = handler(['GET'], async (req, res) => {
       });
     });
     return send(res, 200, { users });
+  }
+
+  if (view === 'list') {
+    const guardSnap = await db.ref('guard').once('value');
+    const guards = guardSnap.val() || {};
+    const players = [];
+    snap.forEach((child) => {
+      const u = child.val() || {};
+      const ps = u.playerState || {};
+      const st = ps.stats || {};
+      const g = guards[child.key] || {};
+      const friends = ps.friends && ps.friends.list ? Object.keys(ps.friends.list).length : 0;
+      players.push({
+        uid: child.key,
+        username: u.username || '',
+        displayName: u.displayName || '',
+        joinDate: u.joinDate || null,
+        lastSeenAt: (u.analytics && u.analytics.lastSeenAt) || null,
+        level: n(ps.level),
+        spotlightLevel: n(ps.spotlightLevel),
+        snakeventeenLevel: n(ps.snakeventeenLevel),
+        coins: n(ps.coins),
+        totalCoinsEarned: n(st.totalCoinsEarned),
+        battleWins: n(st.battleWins),
+        battleLosses: n(st.battleLosses),
+        friends,
+        strikes: n(g.strikes),
+        banned: !!g.banned
+      });
+    });
+    return send(res, 200, { players });
   }
 
   if (view === 'analytics') {
