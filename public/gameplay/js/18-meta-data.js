@@ -27,7 +27,7 @@ const META = {
 
   // ── Season Points (SP) ────────────────────────────────────────────────────
   SP: {
-    pass: 10, fail: 3, elite: 5,        // elite = <20s Showtime / 7+ Spotlight hits / 9+ Snake length
+    pass: 10, fail: 3, elite: 5,        // elite = <20s Showtime / 7+ Spotlight hits / 9+ Snake length / 8+ Echo rounds
     leadBonusEvery: 4,                  // Lead idol: +1 SP per 4 mastery levels (Lv4 → +1, Lv8 → +2)
     fullRunsPerDay: 12, overflow: 1,    // anti-grind: after 12 runs/day each run is worth 1 SP
     win: 40, tie: 20, loss: 15,         // friend battles
@@ -50,8 +50,8 @@ const META = {
   GOALS: [
     { id: 'runs',   label: 'Complete 25 runs',        target: 25, sp: 50 },
     { id: 'wins',   label: 'Win 3 friend battles',    target: 3,  sp: 50 },
-    { id: 'triple', label: 'Pass all 3 game modes',   target: 3,  sp: 40 },
+    { id: 'triple', label: 'Pass all 4 game modes',   target: 4,  sp: 50 },
   ],
 
-  GAME_LABEL: { showtime: 'Showtime', spotlight: 'Spotlight', snakeventeen: 'Snakeventeen' },
+  GAME_LABEL: { showtime: 'Showtime', spotlight: 'Spotlight', snakeventeen: 'Snakeventeen', echo: 'Choreo Echo' },
 };
