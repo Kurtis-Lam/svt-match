@@ -1,21 +1,25 @@
+// Origins that may call the API from a browser. Built-in defaults mean CORS keeps
+// working even if the ALLOWED_ORIGINS env var is missing or mistyped on Vercel.
+// ALLOWED_ORIGINS (comma-separated) adds extra origins on top of these.
 const DEFAULT_ORIGINS = [
   'https://svt-match.web.app',
   'https://svt-match.firebaseapp.com',
   'https://svt-match.vercel.app'
 ];
 
+function normOrigin(s) {
+  return String(s || '').trim().replace(/\/+$/, '').toLowerCase();
+}
+
 function allowedOrigins() {
-  const extra = (process.env.ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((s) => s.trim().replace(/\/$/, ''))
-    .filter(Boolean);
-  return DEFAULT_ORIGINS.concat(extra);
+  const extra = (process.env.ALLOWED_ORIGINS || '').split(',').map(normOrigin).filter(Boolean);
+  return Array.from(new Set(DEFAULT_ORIGINS.map(normOrigin).concat(extra)));
 }
 
 function applyCors(req, res) {
   const origin = req.headers.origin;
   const list = allowedOrigins();
-  if (origin && list.includes(origin)) {
+  if (origin && list.includes(normOrigin(origin))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Session');
@@ -78,4 +82,4 @@ function rateLimit(key, limit, windowMs) {
   if (entry.count > limit) throw httpError(429, 'Too many attempts, try again later');
 }
 
-module.exports = { handler, send, httpError, rateLimit };
+module.exports = { applyCors, handler, send, httpError, rateLimit };
