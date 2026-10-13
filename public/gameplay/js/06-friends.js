@@ -6,12 +6,12 @@ async function findUserByUsername(username) {
   const u = normalizeUsername(username);
   if (!u) return null;
   if (db) {
-    const snap = await db.ref('users').orderByChild('username').equalTo(u).once('value');
-    const val = snap.val();
-    if (!val) return null;
-    const id = Object.keys(val)[0];
+    const res = await svtApi('/api/game/find-user?u=' + encodeURIComponent(u));
+    if (!res || !res.found || !res.user) return null;
+    const id = res.user.id;
+    const snap = await db.ref(`users/${id}`).once('value');
     return {
-      ...val[id],
+      ...(snap.val() || res.user),
       id
     };
   } else {
@@ -742,56 +742,8 @@ async function acceptFriendRequest(reqId) {
 
   try {
     if (db) {
-      // Step 1: Remove the request from my incoming
-      await db.ref(`users/${currentUser.id}/friendRequests/incoming/${reqId}`).remove();
-
-      // Step 2: Remove the request from the sender's outgoing
-      await db.ref(`users/${otherUserId}/friendRequests/outgoing/${reqId}`).remove();
-
-      // Step 3: Add each other to their friends lists (playerState/friends/list)
-      const meMeta = {
-        userId: currentUser.id,
-        username: currentUser.username,
-        displayName: currentUser.displayName || currentUser.username,
-        level: Number(GAME_STATE.level || 1),
-        avatarSrc: equippedAvatarSrc(),
-        totalLoveLevel: 0,   // will be refreshed later
-        spotlightLevel: GAME_STATE.spotlightLevel || 0,
-        snakeventeenLevel: GAME_STATE.snakeventeenLevel || 0
-      };
-
-      // Fetch or build the other user's meta (latest info)
-      const otherData = await getPlayerStateByUserId(otherUserId);
-      const otherUser = otherData?.user || {};
-      const otherPS = otherData?.playerState || {};
-      const otherMeta = {
-        userId: otherUserId,
-        username: otherUser?.username || req.fromUsername,
-        displayName: otherUser?.displayName || otherPS?.displayName || req.fromDisplayName || req.fromUsername,
-        level: Number(otherPS?.level || 1),
-        avatarSrc: otherPS?.equippedIdolKey ? `./imgs/${otherPS.equippedIdolKey}/1.jpg` : (req.fromAvatarSrc || './imgs/assets/default_avatar.png'),
-        totalLoveLevel: 0,
-        spotlightLevel: otherPS?.spotlightLevel || 0,
-        snakeventeenLevel: otherPS?.snakeventeenLevel || 0
-      };
-
-      // Update my friends list
-      const myListRef = db.ref(`users/${currentUser.id}/playerState/friends/list`);
-      const myListSnap = await myListRef.once('value');
-      let myList = myListSnap.val() || [];
-      myList = Array.isArray(myList) ? myList : Object.values(myList);
-      myList = myList.filter(f => f.userId !== otherUserId);
-      myList.push(otherMeta);
-      await myListRef.set(myList);
-
-      // Update other user's friends list
-      const otherListRef = db.ref(`users/${otherUserId}/playerState/friends/list`);
-      const otherListSnap = await otherListRef.once('value');
-      let otherList = otherListSnap.val() || [];
-      otherList = Array.isArray(otherList) ? otherList : Object.values(otherList);
-      otherList = otherList.filter(f => f.userId !== currentUser.id);
-      otherList.push(meMeta);
-      await otherListRef.set(otherList);
+      const accepted = await svtApi('/api/game/friend-accept', { body: { reqId } });
+      const myList = Array.isArray(accepted && accepted.list) ? accepted.list : [];
 
       // Also update local state
       GAME_STATE.friends.list = myList;
