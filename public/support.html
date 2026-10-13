@@ -900,47 +900,8 @@
             return;
           }
         }
-
-        // Legacy RTDB path
-        const snap = await rtdb
-          .ref('users')
-          .orderByChild('username')
-          .equalTo(username)
-          .once('value');
-        const val = snap.val();
-
-        if (!val) { setLoginError('User not found.'); return; }
-
-        const existingId   = Object.keys(val)[0];
-        const existingUser = val[existingId];
-
-        if (existingUser.password !== password) {
-          setLoginError('Incorrect password.');
-          return;
-        }
-
-        let newUid = existingId;
-        try {
-          const cred  = await auth.createUserWithEmailAndPassword(fakeEmail, password);
-          newUid = cred.user.uid;
-        } catch (createErr) {
-          setLoginError('Migration failed: ' + createErr.message);
-          return;
-        }
-
-        if (newUid !== existingId) {
-          const fullSnap = await rtdb.ref(`users/${existingId}`).once('value');
-          await rtdb.ref(`users/${newUid}`).set(fullSnap.val() || {});
-          await rtdb.ref(`users/${existingId}`).remove();
-        }
-
-        currentUser = {
-          id: newUid,
-          username: existingUser.username || username,
-          displayName: existingUser.displayName || existingUser.username || username
-        };
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        showSupportScreen();
+        setLoginError('Account not found. Check your username and password, or create an account in the game first.');
+        return;
 
       } catch (e) {
         setLoginError('Login failed: ' + e.message);
