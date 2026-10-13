@@ -1,0 +1,82 @@
+/* Season & Mastery UI — self-contained (no Tailwind dependency) */
+#seasonHubCard { margin: 0 0 12px; }
+.ss-hub-card {
+  position: relative; width: 100%; text-align: left; border: 1px solid rgba(255,255,255,.7);
+  border-radius: 22px; padding: 14px 16px; color: #0f172a; cursor: pointer;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--theme1) 55%, white), color-mix(in srgb, var(--theme2) 55%, white));
+  box-shadow: 0 10px 24px rgba(15,23,42,.08); transition: transform .12s ease;
+}
+.ss-hub-card:active { transform: scale(.99); }
+.ss-hub-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ss-hub-title { font-weight: 900; font-size: 15px; }
+.ss-hub-left { font-size: 11px; font-weight: 800; opacity: .65; white-space: nowrap; }
+.ss-hub-sub { margin-top: 6px; font-size: 11px; font-weight: 700; opacity: .8; }
+.ss-ready {
+  position: absolute; top: -8px; right: 12px; background: #ef4444; color: #fff; font-size: 10px;
+  font-weight: 900; padding: 3px 9px; border-radius: 999px; box-shadow: 0 4px 10px rgba(239,68,68,.35);
+}
+
+.ss-bar { height: 9px; border-radius: 999px; background: rgba(15,23,42,.1); overflow: hidden; margin-top: 8px; }
+.ss-bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--theme1), var(--theme2)); filter: saturate(1.4) brightness(.92); transition: width .5s ease; }
+.ss-bar-lg { height: 12px; }
+.ss-bar-sm { height: 6px; margin-top: 6px; }
+
+.ss-header { padding: 16px; display: flex; align-items: center; justify-content: space-between; }
+.ss-scroll { flex: 1; overflow-y: auto; padding: 0 16px 120px; -webkit-overflow-scrolling: touch; }
+
+.ss-banner {
+  border-radius: 24px; padding: 16px; color: #0f172a; border: 1px solid rgba(255,255,255,.7);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--theme1) 70%, white), color-mix(in srgb, var(--theme2) 70%, white));
+  box-shadow: 0 14px 30px rgba(15,23,42,.1);
+}
+.ss-banner-top { display: flex; justify-content: space-between; align-items: flex-end; }
+.ss-eyebrow { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; opacity: .6; }
+.ss-big { font-size: 34px; font-weight: 900; line-height: 1.05; }
+.ss-big small { font-size: 14px; opacity: .6; }
+.ss-right { text-align: right; }
+.ss-tier { font-weight: 900; font-size: 18px; }
+.ss-left { font-size: 12px; font-weight: 700; opacity: .65; }
+.ss-banner-sub { margin-top: 8px; font-size: 12px; font-weight: 700; opacity: .8; }
+.ss-last { margin-top: 6px; font-size: 11px; font-weight: 700; opacity: .6; }
+
+.ss-tabs { display: flex; gap: 6px; margin: 14px 0 12px; background: rgba(255,255,255,.6); padding: 4px; border-radius: 16px; }
+.ss-tab { position: relative; flex: 1; border: 0; background: transparent; padding: 9px 4px; border-radius: 12px; font-weight: 800; font-size: 13px; color: #475569; cursor: pointer; }
+.ss-tab.on { background: #fff; color: #0f172a; box-shadow: 0 4px 12px rgba(15,23,42,.1); }
+.ss-tab em { position: absolute; top: 6px; right: 12px; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
+
+.ss-seg { display: inline-flex; background: rgba(255,255,255,.6); padding: 3px; border-radius: 12px; margin-bottom: 10px; }
+.ss-seg button { border: 0; background: transparent; padding: 6px 16px; border-radius: 9px; font-weight: 800; font-size: 12px; color: #475569; cursor: pointer; }
+.ss-seg button.on { background: #fff; color: #0f172a; box-shadow: 0 3px 8px rgba(15,23,42,.1); }
+
+.ss-list { display: flex; flex-direction: column; gap: 8px; }
+.ss-row {
+  display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 18px;
+  background: rgba(255,255,255,.78); border: 1px solid rgba(255,255,255,.8); box-shadow: 0 6px 16px rgba(15,23,42,.05);
+}
+.ss-row.reached { background: #fff; }
+.ss-row.claimed { opacity: .6; }
+.ss-row.me { outline: 2px solid color-mix(in srgb, var(--theme2) 80%, #0f172a); }
+.ss-num { width: 30px; height: 30px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 13px; background: linear-gradient(135deg, var(--theme1), var(--theme2)); color: #0f172a; }
+.ss-av { width: 40px; height: 40px; flex: none; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.ss-mid { flex: 1; min-width: 0; }
+.ss-name { font-weight: 900; font-size: 14px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ss-sub { font-size: 11px; font-weight: 700; color: #64748b; margin-top: 2px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.ss-act { flex: none; text-align: right; font-size: 13px; color: #0f172a; }
+.ss-act small { color: #64748b; }
+.ss-chip { display: inline-flex; align-items: center; gap: 3px; background: rgba(15,23,42,.06); border-radius: 999px; padding: 1px 7px; font-weight: 800; color: #334155; }
+.ss-coin { width: 1em; height: 1em; }
+.ss-claim { border: 0; cursor: pointer; padding: 8px 14px; border-radius: 12px; font-weight: 900; font-size: 12px; color: #0f172a; background: linear-gradient(135deg, var(--theme1), var(--theme2)); box-shadow: 0 6px 14px rgba(15,23,42,.15); animation: ssPulse 1.6s ease-in-out infinite; }
+@keyframes ssPulse { 50% { transform: scale(1.05); } }
+@media (prefers-reduced-motion: reduce) { .ss-claim { animation: none; } .ss-bar > i { transition: none; } }
+.ss-done { font-weight: 800; font-size: 12px; color: #16a34a; }
+.ss-lock { font-weight: 800; font-size: 11px; color: #94a3b8; }
+.ss-lv { font-weight: 900; font-size: 13px; background: rgba(15,23,42,.07); padding: 4px 10px; border-radius: 999px; }
+.ss-lead { font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 6px; background: #0f172a; color: #fff; vertical-align: middle; }
+
+.ss-card { margin-top: 10px; padding: 14px; border-radius: 18px; background: rgba(255,255,255,.78); font-size: 12px; font-weight: 700; color: #475569; line-height: 1.5; }
+.ss-fandom { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 0 10px; }
+.ss-fandom-r { text-align: right; font-size: 12px; color: #334155; }
+.ss-note { margin: 12px 4px 0; font-size: 11px; font-weight: 600; color: #64748b; line-height: 1.5; }
+
+.ss-back { width: 40px; height: 40px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: #475569; background: rgba(255,255,255,.8); box-shadow: 0 4px 12px rgba(15,23,42,.1); }
+.ss-title { font-weight: 800; font-size: 16px; color: #1f2937; }
