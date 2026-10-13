@@ -12,6 +12,7 @@ function getAdmin() {
     throw new Error('Missing Firebase environment variables');
   }
 
+  if (projectId !== 'svt-match') console.error('[firebase] FIREBASE_PROJECT_ID is "' + projectId + '" but the game uses "svt-match" - ID tokens will be rejected');
   admin.initializeApp({
     credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
     databaseURL

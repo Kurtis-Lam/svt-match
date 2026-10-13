@@ -20,32 +20,44 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(ha, hb);
 }
 
+function authFail(status, message, code) {
+  const e = httpError(status, message);
+  e.code = code || '';
+  return e;
+}
+
 async function verifyIdToken(req, checkRevoked = true) {
   const header = req.headers.authorization || '';
   const match = /^Bearer (.+)$/.exec(header);
   if (!match) throw httpError(401, 'Missing bearer token');
   const token = match[1];
+  const admin = getAdmin();
   try {
-    return await getAdmin().auth().verifyIdToken(token, checkRevoked);
+    return await admin.auth().verifyIdToken(token, false);
   } catch (e) {
-    const code = e && e.code ? String(e.code) : '';
-    if (code === 'auth/id-token-revoked') throw httpError(401, 'Session was revoked, please sign in again');
-    if (code === 'auth/id-token-expired') throw httpError(401, 'Invalid or expired token');
-    if (checkRevoked && code !== 'auth/argument-error' && !code.startsWith('auth/id-token') && !code.startsWith('auth/invalid')) {
-      try {
-        return await getAdmin().auth().verifyIdToken(token, false);
-      } catch (e2) {
-        console.error('[auth] verifyIdToken failed:', e2 && e2.code, e2 && e2.message);
-      }
-    } else {
-      console.error('[auth] verifyIdToken failed:', code, e && e.message);
-    }
-    throw httpError(401, 'Invalid or expired token');
+    const code = e && e.code ? String(e.code) : 'unknown';
+    console.error('[auth] verifyIdToken failed:', code, e && e.message);
+    if (code === 'auth/id-token-expired') throw authFail(401, 'Invalid or expired token', code);
+    // auth/argument-error with an "aud"/"iss" message means FIREBASE_PROJECT_ID / service account
+    // on Vercel belongs to a different Firebase project than the one the game signs in with.
+    throw authFail(401, 'Invalid or expired token (' + code + ')', code);
+  }
+}
+
+async function checkNotRevoked(uid, iat) {
+  try {
+    const user = await getAdmin().auth().getUser(uid);
+    const validSince = user.tokensValidAfterTime ? Date.parse(user.tokensValidAfterTime) / 1000 : 0;
+    if (validSince && iat && iat < validSince) throw authFail(401, 'Session was revoked, please sign in again', 'auth/id-token-revoked');
+  } catch (e) {
+    if (e && e.code === 'auth/id-token-revoked') throw e;
+    console.error('[auth] revocation check skipped:', e && e.code, e && e.message);
   }
 }
 
 async function requireUser(req) {
-  const decoded = await verifyIdToken(req, true);
+  const decoded = await verifyIdToken(req, false);
+  await checkNotRevoked(decoded.uid, decoded.iat);
   const uid = decoded.uid;
   const snap = await getAdmin().database().ref(`guard/${uid}/banned`).once('value');
   if (snap.val()) throw httpError(403, 'This account is suspended');
@@ -65,7 +77,8 @@ async function isAuthorizedUid(uid) {
 }
 
 async function requireAdminAccount(req) {
-  const decoded = await verifyIdToken(req, true);
+  const decoded = await verifyIdToken(req, false);
+  await checkNotRevoked(decoded.uid, decoded.iat);
   if (!(await isAuthorizedUid(decoded.uid))) throw httpError(403, 'Not an authorised admin');
   return decoded;
 }

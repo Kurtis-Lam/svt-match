@@ -8,8 +8,9 @@ module.exports = handler(['POST'], async (req, res) => {
   if (!match) throw httpError(401, 'Missing bearer token');
   let decoded;
   try {
-    decoded = await getAdmin().auth().verifyIdToken(match[1], true);
+    decoded = await getAdmin().auth().verifyIdToken(match[1], false);
   } catch (e) {
+    console.error('[register] verifyIdToken failed:', e && e.code, e && e.message);
     throw httpError(401, 'Invalid or expired token');
   }
   rateLimit(`register:${decoded.uid}`, 5, 10 * 60 * 1000);
