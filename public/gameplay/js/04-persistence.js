@@ -13,6 +13,20 @@ function _snapshotState() {
   _lastSavedLevel = GAME_STATE.level;
 }
 
+window.__svtOnServerClamp = function (v) {
+  if (!v) return;
+  if (typeof v.coins === 'number') GAME_STATE.coins = v.coins;
+  if (typeof v.level === 'number') GAME_STATE.level = v.level;
+  if (typeof v.spotlightLevel === 'number') GAME_STATE.spotlightLevel = v.spotlightLevel;
+  if (typeof v.snakeventeenLevel === 'number') GAME_STATE.snakeventeenLevel = v.snakeventeenLevel;
+  if (typeof v.rings === 'number') GAME_STATE.rings = v.rings;
+  if (typeof v.totalCoinsEarned === 'number' && GAME_STATE.stats) GAME_STATE.stats.totalCoinsEarned = v.totalCoinsEarned;
+  _snapshotState();
+  try { savePlayerStateLocal(); } catch (e) {}
+  try { renderHub(); } catch (e) {}
+  try { showToast('Some progress did not pass the server check and was corrected.', 'error'); } catch (e) {}
+};
+
 function _detectTampering() {
   const coinDelta  = GAME_STATE.coins - _lastSavedCoins;
   const levelDelta = GAME_STATE.level - _lastSavedLevel;
