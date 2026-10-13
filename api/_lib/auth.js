@@ -24,9 +24,22 @@ async function verifyIdToken(req, checkRevoked = true) {
   const header = req.headers.authorization || '';
   const match = /^Bearer (.+)$/.exec(header);
   if (!match) throw httpError(401, 'Missing bearer token');
+  const token = match[1];
   try {
-    return await getAdmin().auth().verifyIdToken(match[1], checkRevoked);
+    return await getAdmin().auth().verifyIdToken(token, checkRevoked);
   } catch (e) {
+    const code = e && e.code ? String(e.code) : '';
+    if (code === 'auth/id-token-revoked') throw httpError(401, 'Session was revoked, please sign in again');
+    if (code === 'auth/id-token-expired') throw httpError(401, 'Invalid or expired token');
+    if (checkRevoked && code !== 'auth/argument-error' && !code.startsWith('auth/id-token') && !code.startsWith('auth/invalid')) {
+      try {
+        return await getAdmin().auth().verifyIdToken(token, false);
+      } catch (e2) {
+        console.error('[auth] verifyIdToken failed:', e2 && e2.code, e2 && e2.message);
+      }
+    } else {
+      console.error('[auth] verifyIdToken failed:', code, e && e.message);
+    }
     throw httpError(401, 'Invalid or expired token');
   }
 }
