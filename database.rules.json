@@ -1,0 +1,49 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      ".indexOn": ["username"],
+      ".read": "auth != null || (query.orderByChild == 'username' && query.equalTo != null)",
+
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+
+        "playerState": {
+          "battles": {
+            "pendingIncoming": { ".write": "auth != null" },
+            "pendingOutgoing": { ".write": "auth != null" },
+            "logs": { ".write": "auth != null" }
+          },
+          "stats": {
+            "battleWins": { ".write": "auth != null" },
+            "battleLosses": { ".write": "auth != null" }
+          },
+          "friends": { ".write": "auth != null" }
+        },
+
+        "friendRequests": {
+          "incoming": {
+            "$reqId": { ".write": "auth != null" }
+          },
+          "outgoing": {
+            "$reqId": { ".write": "auth != null" }
+          }
+        }
+      }
+    },
+
+    "seasons": {
+      "$seasonId": {
+        ".indexOn": ["sp"],
+        ".read": "auth != null",
+
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['sp', 'n', 'u']) && newData.child('sp').isNumber() && newData.child('sp').val() >= 0 && newData.child('sp').val() <= 20000 && (!data.exists() || newData.child('sp').val() >= data.child('sp').val()) && newData.child('n').isString() && newData.child('n').val().length <= 24 && newData.child('u').isNumber() && (!newData.child('a').exists() || (newData.child('a').isString() && newData.child('a').val().length <= 200)) && (!newData.child('t').exists() || newData.child('t').isNumber())"
+        }
+      }
+    }
+  }
+}
