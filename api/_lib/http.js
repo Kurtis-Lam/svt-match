@@ -36,7 +36,9 @@ function handler(methods, fn) {
     } catch (err) {
       const status = err && err.status ? err.status : 500;
       if (status >= 500) console.error('[api]', err);
-      send(res, status, { error: status >= 500 ? 'Internal error' : err.message });
+      const body = { error: status >= 500 && !(err && err.expose) ? 'Internal error' : err.message };
+      if (status >= 500 && err && err.code) body.code = String(err.code).slice(0, 60);
+      send(res, status, body);
     }
   };
 }
