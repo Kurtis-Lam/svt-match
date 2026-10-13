@@ -1138,21 +1138,14 @@ async function submitChangeUsername() {
     return;
   }
 
-  // Check new username isn't taken
-  const snapshot = await db.ref('users').orderByChild('username')
-    .equalTo(newU).once('value').catch(() => null);
-  if (snapshot?.val()) { setModalError('Username already taken.'); return; }
-
-  // Update email in Firebase Auth to match new username
-  const newEmail = usernameToEmail(newU);
-  await auth.currentUser.updateEmail(newEmail);
-
-  // Update RTDB
-  await db.ref(`users/${currentUser.id}`).update({ username: newU });
-  const psSnap = await db.ref(`users/${currentUser.id}/playerState`).once('value');
-  if (psSnap.val()) {
-    await db.ref(`users/${currentUser.id}/playerState`).update({ username: newU });
+  try {
+    await auth.currentUser.getIdToken(true);
+    await svtApi('/api/game/username', { body: { username: newU } });
+  } catch (e) {
+    setModalError(e.message || 'Could not change username.');
+    return;
   }
+  try { await auth.currentUser.reload(); } catch (e) {}
 
   currentUser.username = newU;
   localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -1301,9 +1294,14 @@ async function handleSignup() {
   setLoading('signupBtn', true);
 
   try {
-    // 1. Check username not already taken in Realtime DB
-    const snap = await db.ref('users').orderByChild('username').equalTo(username).once('value');
-    if (snap.val()) {
+    // 1. Check username availability on the server
+    const avail = await svtApi('/api/game/username-available?u=' + encodeURIComponent(username), { auth: false });
+    if (!avail.valid) {
+      showToast(avail.message || 'Invalid username', 'error');
+      setLoading('signupBtn', false);
+      return;
+    }
+    if (!avail.available) {
       showToast('Username already taken', 'error');
       setLoading('signupBtn', false);
       return;
@@ -1317,13 +1315,14 @@ async function handleSignup() {
 
     // 3. Store user profile in Realtime DB
     // NOTE: password is managed by Firebase Auth only – not stored in DB.
-    const userData = {
-      displayName: name,
-      username: username,
-      joinDate: new Date().toISOString().split('T')[0],
-      createdAt: Date.now()
-    };
-    await db.ref(`users/${uid}`).set(userData);
+    let userData;
+    try {
+      const reg = await svtApi('/api/game/register', { body: { username, displayName: name } });
+      userData = reg.user;
+    } catch (regErr) {
+      try { await cred.user.delete(); } catch (e) {}
+      throw regErr;
+    }
 
     // 4. Set currentUser (never cache a password field)
     currentUser = { ...userData, id: uid };
