@@ -1,5 +1,5 @@
 const { handler, send, httpError, rateLimit } = require('../_lib/http');
-const { requireAdminSession } = require('../_lib/auth');
+const { requireAdminSession, auditLog } = require('../_lib/auth');
 const { getAdmin } = require('../_lib/firebase');
 
 const FIELDS = {
@@ -12,7 +12,13 @@ const FIELDS = {
   spotlightBestCorrect: { int: true, min: 0, max: 100000 },
   snakeventeenLevel: { int: true, min: 0, max: 100000 },
   snakeventeenStreak: { int: true, min: 0, max: 100000 },
-  snakeventeenLongestLength: { int: true, min: 0, max: 100000 }
+  snakeventeenLongestLength: { int: true, min: 0, max: 100000 },
+  rings: { int: true, min: 0, max: 1e6 },
+  'stats.totalCoinsEarned': { int: true, min: 0, max: 1e12 },
+  'stats.battleWins': { int: true, min: 0, max: 1e7 },
+  'stats.battleLosses': { int: true, min: 0, max: 1e7 },
+  'stats.levelsCompleted': { int: true, min: 0, max: 1e7 },
+  'stats.kkumaHits': { int: true, min: 0, max: 1e7 }
 };
 
 module.exports = handler(['POST'], async (req, res) => {
@@ -25,19 +31,34 @@ module.exports = handler(['POST'], async (req, res) => {
   if (!body.updates || typeof body.updates !== 'object') throw httpError(400, 'Missing updates');
 
   const clean = {};
+  let displayName = null;
   for (const [key, value] of Object.entries(body.updates)) {
+    if (key === 'displayName') {
+      const name = String(value || '').trim();
+      if (name.length < 2 || name.length > 30 || !/^[\w\s\-'.!?]+$/u.test(name)) throw httpError(400, 'Invalid display name');
+      displayName = name;
+      continue;
+    }
     const rule = FIELDS[key];
     if (!rule) throw httpError(400, `Field not editable: ${key}`);
     const n = Number(value);
     if (!Number.isFinite(n)) throw httpError(400, `Invalid number for ${key}`);
     clean[key] = Math.min(rule.max, Math.max(rule.min, rule.int ? Math.trunc(n) : n));
   }
-  if (!Object.keys(clean).length) throw httpError(400, 'Nothing to update');
+  if (!Object.keys(clean).length && displayName === null) throw httpError(400, 'Nothing to update');
 
-  const ref = getAdmin().database().ref(`users/${uid}/playerState`);
-  const exists = (await getAdmin().database().ref(`users/${uid}`).once('value')).exists();
+  const db = getAdmin().database();
+  const exists = (await db.ref(`users/${uid}`).once('value')).exists();
   if (!exists) throw httpError(404, 'User not found');
 
-  await ref.update(clean);
-  send(res, 200, { ok: true, updates: clean });
+  const updates = {};
+  for (const [key, value] of Object.entries(clean)) updates[`users/${uid}/playerState/${key.replace(/\./g, '/')}`] = value;
+  if (displayName !== null) {
+    updates[`users/${uid}/displayName`] = displayName;
+    const ps = await db.ref(`users/${uid}/playerState`).once('value');
+    if (ps.exists()) updates[`users/${uid}/playerState/displayName`] = displayName;
+  }
+  await db.ref().update(updates);
+  await auditLog(decoded.uid, 'update-player', { uid, updates: { ...clean, ...(displayName !== null ? { displayName } : {}) } });
+  send(res, 200, { ok: true, updates: { ...clean, ...(displayName !== null ? { displayName } : {}) } });
 });
