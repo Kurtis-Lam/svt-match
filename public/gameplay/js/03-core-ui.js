@@ -489,9 +489,9 @@ function animateNumber(el, from, to, duration = 450) {
   function tick(now) {
     const t = Math.min(1, (now - start) / duration);
     const e = 1 - Math.pow(1 - t, 3);
-    el.textContent = String(Math.floor(from + diff * e));
+    el.textContent = formatNumber(Math.floor(from + diff * e));
     if (t < 1) requestAnimationFrame(tick);
-    else el.textContent = String(to);
+    else el.textContent = formatNumber(to);
   }
   requestAnimationFrame(tick);
 }
