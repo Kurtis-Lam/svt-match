@@ -1,3 +1,31 @@
+// ── Leaderboard rows ──────────────────────────────────────────────────────
+function lbRowFromPlayerState(uid, username, displayName, ps, avatarSrc) {
+  const marriedIdols = ps?.marriedIdols || {};
+  const love = ps?.love || {};
+  let totalLoveLevel = 0;
+  Object.keys(marriedIdols).forEach(k => {
+    if (marriedIdols[k]) totalLoveLevel += Number(love[k]?.level || 1);
+  });
+  const best = ps?.stats?.bestTimeSec;
+  return {
+    userId: uid,
+    username,
+    displayName,
+    avatarSrc,
+    totalLoveLevel,
+    level: Number(ps?.level || 1),
+    bestTimeSec: (best == null) ? null : Number(best),
+    bestStreak: Number(ps?.stats?.bestStreak || 0),
+    spotlightLevel: Number(ps?.spotlightLevel || 0),
+    spotlightBestCorrect: Number(ps?.stats?.spotlightBestCorrect || 0),
+    spotlightBestStreak: Number(ps?.stats?.spotlightBestStreak || 0),
+    snakeventeenLevel: Number(ps?.snakeventeenLevel || 0),
+    snakeventeenBestStreak: Number(ps?.stats?.snakeventeenBestStreak || 0),
+    snakeventeenLongestLength: Number(ps?.stats?.snakeventeenLongestLength || 0),
+    echoBestEndless: Number(ps?.meta?.echo?.bestEndless || 0),
+  };
+}
+
 async function fetchLeaderboardRowsFromDb() {
   if (!db) return [];
   const snap = await db.ref('users').once('value');
@@ -8,43 +36,8 @@ async function fetchLeaderboardRowsFromDb() {
     const ps = u?.playerState || null;
     const username = u?.username || ps?.username || '';
     const displayName = u?.displayName || ps?.displayName || username;
-    const level = Number(ps?.level || 1);
-    const best = ps?.stats?.bestTimeSec;
-    const bestTimeSec = (best == null) ? null : Number(best);
-    const bestStreak = Number(ps?.stats?.bestStreak || 0);
-    const spotlightLevel = Number(ps?.spotlightLevel || 0);
-    const spotlightBestCorrect = Number(ps?.stats?.spotlightBestCorrect || 0);
-    const spotlightBestStreak = Number(ps?.stats?.spotlightBestStreak || 0);
-    const snakeventeenLevel = Number(ps?.snakeventeenLevel || 0);
-    const snakeventeenBestStreak = Number(ps?.stats?.snakeventeenBestStreak || 0);
-    const snakeventeenLongestLength = Number(ps?.stats?.snakeventeenLongestLength || 0);
     const avatarSrc = ps?.equippedAvatarKey ? `./imgs/assets/avatars/${ps.equippedAvatarKey}` : (ps?.equippedIdolKey ? `./imgs/${ps.equippedIdolKey}/1.jpg` : './imgs/assets/default_avatar.png');
-    // ── NEW: sum love levels across all married idols ──
-    const marriedIdols = ps?.marriedIdols || {};
-    const love = ps?.love || {};
-    let totalLoveLevel = 0;
-    Object.keys(marriedIdols).forEach(k => {
-      if (marriedIdols[k]) {
-        totalLoveLevel += Number(love[k]?.level || 1);
-      }
-    });
-    // ─────────────────────────────────────────────────
-    rows.push({
-      userId: uid,
-      username,
-      displayName,
-      level,
-      bestTimeSec,
-      bestStreak,
-      spotlightLevel,
-      avatarSrc,
-      totalLoveLevel,
-      spotlightBestCorrect,
-      spotlightBestStreak,
-      snakeventeenLevel,
-      snakeventeenBestStreak,
-      snakeventeenLongestLength
-    });
+    rows.push(lbRowFromPlayerState(uid, username, displayName, ps, avatarSrc));
   });
   return rows.filter(r => r.username);
 }
@@ -54,413 +47,196 @@ function fetchLeaderboardRowsFromLocal() {
   const rows = [];
   Object.keys(users).forEach(uid => {
     const u = users[uid];
-    const psKey = `playerState:${u.username}`;
     let ps = {};
     try {
-      ps = JSON.parse(localStorage.getItem(psKey) || '{}');
+      ps = JSON.parse(localStorage.getItem(`playerState:${u.username}`) || '{}');
     } catch (e) {
       ps = {};
     }
-    const level = Number(ps?.level || 1);
-    const best = ps?.stats?.bestTimeSec;
-    const bestTimeSec = (best == null) ? null : Number(best);
-    const bestStreak = Number(ps?.stats?.bestStreak || 0);
-    const spotlightLevel = Number(ps?.spotlightLevel || 0);
-    const spotlightBestCorrect = Number(ps?.stats?.spotlightBestCorrect || 0);
-    const spotlightBestStreak = Number(ps?.stats?.spotlightBestStreak || 0);
-    const snakeventeenLevel = Number(ps?.snakeventeenLevel || 0);
-    const snakeventeenBestStreak = Number(ps?.stats?.snakeventeenBestStreak || 0);
-    const snakeventeenLongestLength = Number(ps?.stats?.snakeventeenLongestLength || 0);
-    const avatarSrc = ps?.equippedIdolKey ? `./imgs/${ps?.equippedIdolKey}/1.jpg` : './imgs/assets/default_avatar.png';
-    const marriedIdols = ps?.marriedIdols || {};
-    const love = ps?.love || {};
-    let totalLoveLevel = 0;
-    Object.keys(marriedIdols).forEach(k => {
-      if (marriedIdols[k]) totalLoveLevel += Number(love[k]?.level || 1);
-    });
-    rows.push({
-      userId: uid,
-      username: u.username,
-      displayName: u.displayName || u.username,
-      level,
-      bestTimeSec,
-      bestStreak,
-      spotlightLevel,
-      avatarSrc,
-      totalLoveLevel,
-      spotlightBestCorrect,
-      spotlightBestStreak,
-      snakeventeenLevel,
-      snakeventeenBestStreak,
-      snakeventeenLongestLength
-    });
+    const avatarSrc = ps?.equippedIdolKey ? `./imgs/${ps.equippedIdolKey}/1.jpg` : './imgs/assets/default_avatar.png';
+    rows.push(lbRowFromPlayerState(uid, u.username, u.displayName || u.username, ps, avatarSrc));
   });
   return rows;
 }
-const LEADERBOARD_MODE_ORDER = ['totalLoveLevel', 'level', 'bestStreak', 'bestTime', 'spotlightLevel', 'spotlightStreak', 'spotlightCorrect', 'snakeventeenLevel', 'snakeventeenStreak', 'snakeventeenLength'];
-const LEADERBOARD_LABELS = {
-  totalLoveLevel: 'Total Love Level',
-  level: 'Highest Level',
-  bestStreak: 'Best Streak',
-  bestTime: 'Best Time',
-  spotlightLevel: 'Highest Level',
-  spotlightStreak: 'Best Streak',
-  spotlightCorrect: 'Most Correct Hits',
-  snakeventeenLevel: 'Highest Level',
-  snakeventeenStreak: 'Best Streak',
-  snakeventeenLength: 'Longest Length',
-};
-// New: 2-level menu state
-let LB_MENU_LEVEL = 'top'; // 'top' or 'sub'
-let LB_MENU_CAT = null; // 'showtime' | 'spotlight' | 'snakeventeen'
-const LB_TOP_ITEMS = [{
-  id: 'totalLoveLevel',
-  label: 'Total Love Level',
-  icon: 'fa-heart',
-  sub: false
-}, {
-  id: 'showtime',
-  label: 'Showtime',
-  icon: 'fa-layer-group',
-  sub: true
-}, {
-  id: 'spotlight',
-  label: 'Spotlight',
-  icon: 'fa-search',
-  sub: true
-}, {
-  id: 'snakeventeen',
-  label: 'Snakeventeen',
-  icon: 'fa-gamepad',
-  sub: true
-}, ];
-const LB_SUB_ITEMS = {
-  showtime: [{
-    id: 'level',
-    label: 'Highest Level'
-  }, {
-    id: 'bestStreak',
-    label: 'Best Streak'
-  }, {
-    id: 'bestTime',
-    label: 'Best Time'
-  }, ],
-  spotlight: [{
-    id: 'spotlightLevel',
-    label: 'Highest Level'
-  }, {
-    id: 'spotlightStreak',
-    label: 'Best Streak'
-  }, {
-    id: 'spotlightCorrect',
-    label: 'Most Correct Hits'
-  }, ],
-  snakeventeen: [{
-    id: 'snakeventeenLevel',
-    label: 'Highest Level'
-  }, {
-    id: 'snakeventeenStreak',
-    label: 'Best Streak'
-  }, {
-    id: 'snakeventeenLength',
-    label: 'Longest Length'
-  }, ],
-};
+
+// ── Categories & metrics (Choreo Echo only shows the Endless leaderboard) ──
+const LB_CATS = [
+  { id: 'love', label: 'Love', icon: 'fa-heart', metrics: [
+    { id: 'totalLoveLevel', label: 'Total Love Level', unit: 'lv', field: 'totalLoveLevel' }] },
+  { id: 'showtime', label: 'Showtime', icon: 'fa-layer-group', metrics: [
+    { id: 'level', label: 'Highest Level', unit: 'lv', field: 'level' },
+    { id: 'bestStreak', label: 'Best Streak', unit: '🔥', field: 'bestStreak' },
+    { id: 'bestTime', label: 'Best Time', unit: 's', field: 'bestTimeSec', asc: true }] },
+  { id: 'spotlight', label: 'Spotlight', icon: 'fa-magnifying-glass', metrics: [
+    { id: 'spotlightLevel', label: 'Highest Level', unit: 'lv', field: 'spotlightLevel' },
+    { id: 'spotlightStreak', label: 'Best Streak', unit: '🔥', field: 'spotlightBestStreak' },
+    { id: 'spotlightCorrect', label: 'Most Correct Hits', unit: 'hits', field: 'spotlightBestCorrect' }] },
+  { id: 'snakeventeen', label: 'Snakeventeen', icon: 'fa-gamepad', metrics: [
+    { id: 'snakeventeenLevel', label: 'Highest Level', unit: 'lv', field: 'snakeventeenLevel' },
+    { id: 'snakeventeenStreak', label: 'Best Streak', unit: '🔥', field: 'snakeventeenBestStreak' },
+    { id: 'snakeventeenLength', label: 'Longest Length', unit: 'len', field: 'snakeventeenLongestLength' }] },
+  { id: 'echo', label: 'Choreo Echo', icon: 'fa-music', metrics: [
+    { id: 'echoEndless', label: 'Endless Encore · Best Round', unit: 'rounds', field: 'echoBestEndless' }] },
+];
+
 let LEADERBOARD_MODE = 'totalLoveLevel';
+let LB_CACHE = { rows: null, at: 0 };
+let LB_LOAD_TOKEN = 0;
+const LB_CACHE_MS = 60 * 1000;
+
+function lbFindMetric(id) {
+  for (const c of LB_CATS) {
+    const m = c.metrics.find(x => x.id === id);
+    if (m) return { cat: c, metric: m };
+  }
+  return { cat: LB_CATS[0], metric: LB_CATS[0].metrics[0] };
+}
 
 function openLeaderboardModal() {
   showScreen('leaderboardScreen');
   renderLeaderboard(false);
 }
 
-function closeLeaderboardModal() {
-  const overlay = document.getElementById('leaderboardOverlay');
-  overlay.classList.remove('show');
-  overlay.setAttribute('aria-hidden', 'true');
-  document.getElementById('leaderboardModeDropdown').classList.remove('show');
+function lbDropdownOpen(open) {
+  const panel = document.getElementById('lbPanel');
+  const btn = document.getElementById('lbToggle');
+  if (!panel || !btn) return;
+  panel.classList.toggle('show', open);
+  btn.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', String(open));
 }
 
-function toggleLeaderboardModeDropdown(e) {
+function toggleLbDropdown(e) {
   if (e) e.stopPropagation();
-  const screen = document.getElementById('leaderboardScreen');
-  const isScreenVisible = screen && !screen.classList.contains('hidden');
-  document.querySelectorAll('#leaderboardModeDropdown').forEach(dd => {
-    const inScreen = screen && screen.contains(dd);
-    // Only act on the dropdown that belongs to the currently visible context
-    if (isScreenVisible && !inScreen) return;
-    if (!isScreenVisible && inScreen) return;
-    const isOpen = dd.classList.contains('show');
-    dd.classList.toggle('show', !isOpen);
-    dd.style.display = isOpen ? 'none' : 'block';
-  });
+  const panel = document.getElementById('lbPanel');
+  lbDropdownOpen(!(panel && panel.classList.contains('show')));
 }
 
-function setLeaderboardMode(mode) {
-  LEADERBOARD_MODE = mode;
-  // Update all label elements
-  document.querySelectorAll('#leaderboardModeLabel').forEach(label => {
-    label.textContent = LEADERBOARD_LABELS[mode] || mode;
-  });
-  // Update all dropdown menus (both modal and screen)
-  document.querySelectorAll('#leaderboardModeDropdown').forEach(dd => {
-    dd.classList.remove('show');
-    dd.style.display = 'none';
-    const items = dd.querySelectorAll('.dropdown-item');
-    const activeIdx = LEADERBOARD_MODE_ORDER.indexOf(mode);
-    items.forEach((item, i) => {
-      item.classList.toggle('active', i === activeIdx);
-    });
-  });
+document.addEventListener('click', e => {
+  const panel = document.getElementById('lbPanel');
+  if (panel && panel.classList.contains('show') && !panel.contains(e.target)) lbDropdownOpen(false);
+});
+
+function selectLbMetric(id, e) {
+  if (e) e.stopPropagation();
+  LEADERBOARD_MODE = id;
+  lbDropdownOpen(false);
   renderLeaderboard(false);
 }
 
 function renderLeaderboardMenu(hostEl) {
   if (!hostEl) return;
-  // ── 1. Create the dropdown shell ──────────────────────────────────
+  const { cat, metric } = lbFindMetric(LEADERBOARD_MODE);
+  const groups = LB_CATS.map(c => `
+    <div class="lb-group">
+      <div class="lb-group-title"><i class="fas ${c.icon}"></i>${c.label}</div>
+      ${c.metrics.map(m => `
+        <button type="button" class="lb-opt ${m.id === LEADERBOARD_MODE ? 'on' : ''}" onclick="selectLbMetric('${m.id}', event)">
+          <span>${m.label}</span>${m.id === LEADERBOARD_MODE ? '<i class="fas fa-check"></i>' : ''}
+        </button>`).join('')}
+    </div>`).join('');
   hostEl.innerHTML = `
-    <div class="dropdown-shell" style="position:relative; width:100%;">
-      <button class="dropdown-toggle"
-              style="width:100%; justify-content:space-between; padding:12px 14px; border-radius:14px;"
-              id="lbCategoryToggle"
-              onclick="toggleLbCategoryDropdown(event)">
-        <span id="lbCategoryLabel" style="font-weight:900; color:#0f172a;">
-          ${getLbCategoryLabel()}
-        </span>
-        <i class="fas fa-chevron-down" style="font-size:11px; opacity:0.6;"></i>
+    <div class="lb-dd">
+      <button type="button" id="lbToggle" class="lb-toggle" aria-haspopup="listbox" aria-expanded="false" onclick="toggleLbDropdown(event)">
+        <span class="lb-toggle-ico"><i class="fas ${cat.icon}"></i></span>
+        <span class="lb-toggle-txt"><small>${cat.label}</small><b>${metric.label}</b></span>
+        <i class="fas fa-chevron-down lb-toggle-chev"></i>
       </button>
-      <div id="lbCategoryDropdown"
-           class="dropdown-panel"
-           style="display:none; position:absolute; top:110%; left:0; right:0; z-index:40;
-                  background:rgba(255,255,255,0.98); border-radius:16px;
-                  box-shadow:0 18px 40px rgba(15,23,42,0.20);
-                  border:1px solid rgba(148,163,184,0.4);
-                  padding:6px; min-width:unset; max-height:400px; overflow-y:auto;">
-        <!-- Content rendered by renderLbCategoryDropdownContent() -->
-      </div>
-    </div>
-  `;
-  // 2. Render the dropdown content (top-level or sub-level based on LB_MENU_LEVEL)
-  renderLbCategoryDropdownContent();
-  // 3. Close dropdown when clicking outside
-  document.addEventListener('click', handleLbDropdownOutsideClick);
-}
-// Which label to show on the dropdown toggle button
-
-function getLbCategoryLabel() {
-  if (LB_MENU_CAT) {
-    const gameLabel = LB_TOP_ITEMS.find(x => x.id === LB_MENU_CAT)?.label || '';
-    const subLabel = LB_SUB_ITEMS[LB_MENU_CAT]?.find(x => x.id === LEADERBOARD_MODE)?.label || '';
-    return `${gameLabel} · ${subLabel}`.trim();
-  }
-  return LB_TOP_ITEMS.find(x => x.id === LEADERBOARD_MODE)?.label || 'Total Love Level';
-}
-// Show / hide the dropdown panel
-
-function toggleLbCategoryDropdown(e) {
-  e.stopPropagation();
-  const dd = document.getElementById('lbCategoryDropdown');
-  if (!dd) return;
-  const isOpen = !dd.classList.contains('show');
-  dd.classList.toggle('show', isOpen);
-  dd.style.display = isOpen ? 'block' : 'none';
-}
-// Close dropdown and remove outside click listener
-
-function closeLbCategoryDropdown() {
-  const dd = document.getElementById('lbCategoryDropdown');
-  if (dd) {
-    dd.classList.remove('show');
-    dd.style.display = 'none';
-  }
-  // We can keep the listener, it will just return false if the panel is not open.
-}
-// Event listener for closing dropdown when clicking outside
-
-function handleLbDropdownOutsideClick(e) {
-  const dd = document.getElementById('lbCategoryDropdown');
-  const toggle = document.getElementById('lbCategoryToggle');
-  if (!dd || !toggle) return;
-  if (!dd.contains(e.target) && e.target !== toggle) {
-    closeLbCategoryDropdown();
-  }
+      <div id="lbPanel" class="lb-panel" role="listbox">${groups}</div>
+    </div>`;
 }
 
-function renderLbCategoryDropdownContent() {
-  const panel = document.getElementById('lbCategoryDropdown');
-  if (!panel) return;
-  const itemStyle = `
-    display:flex; align-items:center; justify-content:space-between;
-    padding:12px 14px; border-radius:14px; width:100%;
-    font-weight:800; font-size:13px; color:#0f172a;
-    background:rgba(255,255,255,0.9);
-    border:1px solid rgba(148,163,184,0.3);
-    box-shadow:0 4px 10px rgba(0,0,0,0.04);
-    cursor:pointer; transition: background 0.15s;
-  `;
-  const activeStyle = `
-    background:linear-gradient(135deg,var(--theme1),var(--theme2));
-    border:1px solid rgba(255,255,255,0.5);
-  `;
-  if (LB_MENU_LEVEL === 'top') {
-    panel.innerHTML = LB_TOP_ITEMS.map(item => {
-      const isActive = !item.sub && LEADERBOARD_MODE === item.id;
-      return `
-        <button style="${itemStyle} ${isActive ? activeStyle : ''}"
-                onclick="handleLbMenuItemClick('${item.id}', ${item.sub}, event)">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <i class="fas ${item.icon}" style="width:16px;text-align:center;opacity:0.7;"></i>
-            <span>${item.label}</span>
-          </div>
-          ${item.sub
-            ? '<i class="fas fa-chevron-right" style="font-size:11px;opacity:0.4;"></i>'
-            : (isActive ? '<i class="fas fa-check" style="font-size:11px;"></i>' : '')}
-        </button>
-      `;
-    }).join('');
-  } else if (LB_MENU_LEVEL === 'sub' && LB_MENU_CAT) {
-    const subItems = LB_SUB_ITEMS[LB_MENU_CAT] || [];
-    panel.innerHTML = `
-      <button style="display:flex;align-items:center;gap:8px;padding:10px 14px;
-                    border-radius:14px;width:100%;font-weight:900;font-size:12px;
-                    color:rgba(15,23,42,0.6);background:transparent;border:none;
-                    cursor:pointer;margin-bottom:4px;"
-              onclick="handleLbBackToTop(event)">
-        <i class="fas fa-arrow-left"></i>
-        ${LB_TOP_ITEMS.find(x => x.id === LB_MENU_CAT)?.label || ''}
-      </button>
-      ${subItems.map(item => {
-        const isActive = LEADERBOARD_MODE === item.id;
-        return `
-          <button style="${itemStyle} ${isActive ? activeStyle : ''}"
-                  onclick="handleLbSubItemClick('${item.id}', event)">
-            <span>${item.label}</span>
-            ${isActive ? '<i class="fas fa-check" style="font-size:11px;"></i>' : ''}
-          </button>
-        `;
-      }).join('')}
-    `;
-  }
-}
-// Updated to close the dropdown after selecting a sub‑item
-
-function handleLbSubItemClick(modeId, e) {
-  if (e) e.stopPropagation();
-  LEADERBOARD_MODE = modeId;
-  closeLbCategoryDropdown();
-  renderLeaderboard();
-  renderLeaderboardMenu(document.getElementById('lbMenuHost'));
+function lbSkeleton() {
+  return Array.from({ length: 7 }, () => `
+    <div class="lb-skel"><i class="lb-skel-dot"></i><i class="lb-skel-av"></i>
+      <div class="lb-skel-lines"><i></i><i></i></div><i class="lb-skel-val"></i></div>`).join('');
 }
 
-function handleLbMenuItemClick(itemId, isSub, e) {
-  if (e) e.stopPropagation(); // ← new
-  if (isSub) {
-    LB_MENU_LEVEL = 'sub';
-    LB_MENU_CAT = itemId;
-    renderLbCategoryDropdownContent();
-  } else {
-    LEADERBOARD_MODE = itemId;
-    closeLbCategoryDropdown();
-    renderLeaderboard();
-    renderLeaderboardMenu(document.getElementById('lbMenuHost'));
-  }
+function lbFormat(metric, row) {
+  const v = row[metric.field];
+  if (metric.id === 'bestTime') return `${Number(v) < 1 ? Number(v).toFixed(3) : Number(v).toFixed(2)}`;
+  return Number(v || 0).toLocaleString();
 }
 
-function handleLbSubItemClick(modeId, e) {
-  if (e) e.stopPropagation(); // ← new
-  LEADERBOARD_MODE = modeId;
-  renderLeaderboard();
-  renderLbCategoryDropdownContent();
-  const toggleLabel = document.getElementById('lbCategoryLabel');
-  if (toggleLabel) toggleLabel.textContent = getLbCategoryLabel();
+function lbRowHtml(r, rank, metric, meId) {
+  const me = r.userId === meId;
+  const name = escapeHtml(r.displayName || r.username);
+  return `
+    <div class="lb-row ${me ? 'me' : ''}">
+      <div class="lb-rank">${rank}</div>
+      <img class="lb-av" src="${escapeHtml(r.avatarSrc || './imgs/assets/default_avatar.png')}" alt="" loading="lazy" decoding="async"/>
+      <div class="lb-who"><b>${name}${me ? ' <em>YOU</em>' : ''}</b><small>@${escapeHtml(r.username)}</small></div>
+      <div class="lb-val"><b>${lbFormat(metric, r)}</b><small>${metric.unit}</small></div>
+    </div>`;
 }
 
-function handleLbBackToTop(e) {
-  if (e) e.stopPropagation(); // ← new
-  LB_MENU_LEVEL = 'top';
-  LB_MENU_CAT = null;
-  renderLbCategoryDropdownContent();
+function lbPodiumHtml(top, metric, meId) {
+  const order = [1, 0, 2];
+  const medal = ['🥇', '🥈', '🥉'];
+  return `<div class="lb-podium">${order.map(i => {
+    const e = top[i];
+    if (!e) return '<div class="lb-pod empty"></div>';
+    const r = e.row;
+    return `<div class="lb-pod p${i + 1} ${r.userId === meId ? 'me' : ''}">
+      <span class="lb-pod-medal">${medal[e.rank - 1] || e.rank}</span>
+      <img src="${escapeHtml(r.avatarSrc || './imgs/assets/default_avatar.png')}" alt="" loading="lazy" decoding="async"/>
+      <b class="lb-pod-name">${escapeHtml(r.displayName || r.username)}</b>
+      <span class="lb-pod-val">${lbFormat(metric, r)} <small>${metric.unit}</small></span>
+    </div>`;
+  }).join('')}</div>`;
 }
 
 async function renderLeaderboard(forceRefresh = false) {
-  // Update menu
   const menuHost = document.getElementById('lbMenuHost');
   if (menuHost) renderLeaderboardMenu(menuHost);
-  // Update header label
-  const catLabel = LB_MENU_CAT ? (LB_TOP_ITEMS.find(x => x.id === LB_MENU_CAT)?.label || '') : '';
-  const modeLabel = LEADERBOARD_LABELS[LEADERBOARD_MODE] || LEADERBOARD_MODE;
-  const fullLabel = catLabel ? `${catLabel} · ${modeLabel}` : modeLabel;
-  document.querySelectorAll('#leaderboardModeLabel').forEach(el => el.textContent = fullLabel);
   const host = document.getElementById('leaderboardList');
   if (!host) return;
-  host.innerHTML = `<div class="text-sm text-gray-600 font-semibold p-2">Loading…</div>`;
-  let rows = db ? await fetchLeaderboardRowsFromDb() : fetchLeaderboardRowsFromLocal();
-  const mode = LEADERBOARD_MODE;
-  // Sort
-  if (mode === 'bestTime') {
-    rows = rows.filter(r => r.bestTimeSec != null && isFinite(r.bestTimeSec)).sort((a, b) => a.bestTimeSec - b.bestTimeSec);
-  } else if (mode === 'level') {
-    rows = rows.sort((a, b) => b.level - a.level);
-  } else if (mode === 'bestStreak') {
-    rows = rows.sort((a, b) => (b.bestStreak || 0) - (a.bestStreak || 0));
-  } else if (mode === 'spotlightLevel') {
-    rows = rows.sort((a, b) => (b.spotlightLevel || 0) - (a.spotlightLevel || 0));
-  } else if (mode === 'spotlightStreak') {
-    rows = rows.sort((a, b) => (b.spotlightBestStreak || 0) - (a.spotlightBestStreak || 0));
-  } else if (mode === 'spotlightCorrect') {
-    rows = rows.filter(r => (r.spotlightBestCorrect || 0) > 0).sort((a, b) => (b.spotlightBestCorrect || 0) - (a.spotlightBestCorrect || 0));
-  } else if (mode === 'snakeventeenLevel') {
-    rows = rows.sort((a, b) => (b.snakeventeenLevel || 0) - (a.snakeventeenLevel || 0));
-  } else if (mode === 'snakeventeenStreak') {
-    rows = rows.sort((a, b) => (b.snakeventeenBestStreak || 0) - (a.snakeventeenBestStreak || 0));
-  } else if (mode === 'snakeventeenLength') {
-    rows = rows.sort((a, b) => (b.snakeventeenLongestLength || 0) - (a.snakeventeenLongestLength || 0));
-  } else { // totalLoveLevel
-    rows = rows.sort((a, b) => (b.totalLoveLevel || 0) - (a.totalLoveLevel || 0));
+  const token = ++LB_LOAD_TOKEN;
+  const { metric } = lbFindMetric(LEADERBOARD_MODE);
+  const spin = document.getElementById('lbRefreshIcon');
+
+  let rows = LB_CACHE.rows;
+  const stale = !rows || forceRefresh || (Date.now() - LB_CACHE.at) > LB_CACHE_MS;
+  if (stale) {
+    host.innerHTML = `<div class="lb-skel-wrap">${lbSkeleton()}</div>`;
+    if (spin) spin.classList.add('fa-spin');
+    try {
+      rows = db ? await fetchLeaderboardRowsFromDb() : fetchLeaderboardRowsFromLocal();
+      LB_CACHE = { rows, at: Date.now() };
+    } catch (e) {
+      console.warn('[Leaderboard] load failed', e);
+      if (token === LB_LOAD_TOKEN) host.innerHTML = `<div class="lb-empty"><i class="fas fa-triangle-exclamation"></i><b>Couldn't load rankings</b><small>Check your connection and tap refresh.</small></div>`;
+      if (spin) spin.classList.remove('fa-spin');
+      return;
+    }
+    if (spin) spin.classList.remove('fa-spin');
   }
-  rows = rows.slice(0, 100);
-  if (!rows.length) {
-    host.innerHTML = `<div class="glass-card rounded-2xl p-4 text-sm text-gray-600">No data yet.</div>`;
+  if (token !== LB_LOAD_TOKEN) return;
+
+  const meId = currentUser?.id;
+  const valid = rows.filter(r => {
+    const v = r[metric.field];
+    return v != null && isFinite(v) && Number(v) > 0;
+  });
+  valid.sort((a, b) => metric.asc ? a[metric.field] - b[metric.field] : b[metric.field] - a[metric.field]);
+  const top = valid.slice(0, 100);
+  if (!top.length) {
+    host.innerHTML = `<div class="lb-empty"><i class="fas fa-trophy"></i><b>No scores yet</b><small>Be the first to land on this board!</small></div>`;
     return;
   }
-  host.innerHTML = '';
-  let rank = 1,
-    prevVal = null;
-  rows.forEach((r, idx) => {
-    let val;
-    if (mode === 'bestTime') val = r.bestTimeSec;
-    else if (mode === 'level') val = r.level;
-    else if (mode === 'bestStreak') val = r.bestStreak;
-    else if (mode === 'spotlightLevel') val = r.spotlightLevel;
-    else if (mode === 'spotlightStreak') val = r.spotlightBestStreak;
-    else if (mode === 'spotlightCorrect') val = r.spotlightBestCorrect;
-    else if (mode === 'snakeventeenLevel') val = r.snakeventeenLevel;
-    else if (mode === 'snakeventeenStreak') val = r.snakeventeenBestStreak;
-    else if (mode === 'snakeventeenLength') val = r.snakeventeenLongestLength;
-    else val = r.totalLoveLevel;
-    if (prevVal !== null && val !== prevVal) rank++;
-    prevVal = val;
-    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
-    const valDisplay = mode === 'bestTime' ? `${Number(val) < 1 ? Number(val).toFixed(3) : Number(val).toFixed(2)}s` : String(val ?? 0);
-    const row = document.createElement('div');
-    row.className = 'glass-card rounded-2xl p-3 flex items-center justify-between gap-3';
-    row.innerHTML = `
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-7 text-center font-black" style="color:#f59e0b;font-size:18px;">
-          ${medal || rank}
-        </div>
-        <img class="avatar-sm" src="${r.avatarSrc || './imgs/assets/default_avatar.png'}" alt="avatar"/>
-        <div class="min-w-0">
-          <div class="font-extrabold text-gray-900 truncate">${escapeHtml(r.displayName || r.username)}</div>
-          <div class="text-xs text-gray-500 font-bold truncate">@${escapeHtml(r.username)}</div>
-        </div>
-      </div>
-      <div class="text-right flex-shrink-0">
-        <div class="text-xs text-gray-500 font-bold">${modeLabel}</div>
-        <div class="font-black text-gray-900">${valDisplay}</div>
-      </div>
-    `;
-    host.appendChild(row);
+  let rank = 0, prev = null;
+  const ranked = top.map((r, i) => {
+    const v = r[metric.field];
+    if (v !== prev) { rank = i + 1; prev = v; }
+    return { row: r, rank };
   });
+  const podium = ranked.length >= 3 ? ranked.slice(0, 3) : [];
+  const rest = podium.length ? ranked.slice(3) : ranked;
+  const mine = ranked.find(x => x.row.userId === meId);
+  host.innerHTML = `
+    ${podium.length ? lbPodiumHtml(podium, metric, meId) : ''}
+    <div class="lb-list">${rest.map(x => lbRowHtml(x.row, x.rank, metric, meId)).join('')}</div>
+    ${mine ? `<div class="lb-me-bar"><span>Your rank</span><b>#${mine.rank}</b><span>${lbFormat(metric, mine.row)} ${metric.unit}</span></div>` : ''}`;
 }
 
 function renderHub() {
