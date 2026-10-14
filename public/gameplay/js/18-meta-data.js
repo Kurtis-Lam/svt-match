@@ -1,4 +1,4 @@
-/* META LOOP — idol mastery and configuration-driven 17-level Brawl Pass. */
+/* META LOOP — idol mastery and configuration-driven 17-level SVT Pass. */
 const seasonLevels = Array.isArray(GAME_CONFIG.season?.levels) ? GAME_CONFIG.season.levels : [];
 let seasonXpTotal = 0;
 const seasonTiers = seasonLevels.map((level, index) => {

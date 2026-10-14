@@ -1,4 +1,4 @@
-/* META LOOP — Brawl Pass interface and Idol Mastery. */
+/* META LOOP — SVT Pass interface and Idol Mastery. */
 (function () {
   const D = META;
   let TAB = 'track';
@@ -27,8 +27,8 @@
     const pct = next ? Math.max(0, Math.min(100, Math.round(((s.sp - lo) / Math.max(1, next.sp - lo)) * 100))) : 100;
     const ready = Meta.claimableCount();
     host.innerHTML = `
-      <button class="ss-hub-card" onclick="openSeason()" aria-label="Open Brawl Pass">
-        <div class="ss-hub-row"><span class="ss-hub-title">Brawl Pass · Season ${info.num}</span><span class="ss-hub-left">${Meta.fmtLeft(info.endMs - Date.now())} left</span></div>
+      <button class="ss-hub-card" onclick="openSeason()" aria-label="Open SVT Pass">
+        <div class="ss-hub-row"><span class="ss-hub-title">SVT Pass · Season ${info.num}</span><span class="ss-hub-left">${Meta.fmtLeft(info.endMs - Date.now())} left</span></div>
         <div class="ss-bar"><i style="width:${pct}%"></i></div>
         <div class="ss-hub-row ss-hub-sub"><span><b>${amount(s.sp)}</b> Season XP · ${esc(Meta.tierName(t))}</span><span>${next ? `Next: ${esc(next.name)} at ${amount(next.sp)} XP` : 'All 17 levels completed'}</span></div>
         ${ready ? `<span class="ss-ready">${ready} reward${ready > 1 ? 's' : ''} ready</span>` : ''}
@@ -102,14 +102,14 @@
     const info = Meta.seasonInfo(), s = Meta.state().season;
     const t = Meta.tierOf(s.sp), next = D.TIERS[t], lo = t > 0 ? D.TIERS[t - 1].sp : 0;
     const pct = next ? Math.max(0, Math.min(100, Math.round(((s.sp - lo) / Math.max(1, next.sp - lo)) * 100))) : 100;
-    const title = $('ssTitle'); if (title) title.textContent = `Brawl Pass · Season ${info.num}`;
+    const title = $('ssTitle'); if (title) title.textContent = `SVT Pass · Season ${info.num}`;
     const last = Meta.state().last;
     const tabs = [['track', 'Rewards'], ['goals', 'Missions'], ['idols', 'Idol Mastery']]
       .map(([k, label]) => `<button class="ss-tab ${TAB === k ? 'on' : ''}" onclick="setSeasonTab('${k}')">${label}${k === 'track' && Meta.claimableTiers().length ? '<em></em>' : ''}${k === 'goals' && Meta.claimableGoals().length ? '<em></em>' : ''}</button>`).join('');
     body.innerHTML = `
       <div class="ss-banner">
         <div class="ss-banner-top">
-          <div><div class="ss-eyebrow">BRAWL PASS · SEASON ${info.num}</div><div class="ss-big">${amount(s.sp)} <small>XP</small></div></div>
+          <div><div class="ss-eyebrow">SVT PASS · SEASON ${info.num}</div><div class="ss-big">${amount(s.sp)} <small>XP</small></div></div>
           <div class="ss-right"><div class="ss-tier">Level ${Math.max(1, Math.min(D.TIERS.length, t || 1))} / 17</div><div class="ss-left" id="ssLeft">${Meta.fmtLeft(info.endMs - Date.now())} left</div></div>
         </div>
         <div class="ss-bar ss-bar-lg"><i style="width:${pct}%"></i></div>
