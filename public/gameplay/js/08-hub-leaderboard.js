@@ -174,40 +174,34 @@ function lbRowHtml(r, rank, metric, meId) {
     </div>`;
 }
 
-function lbPodiumHtml(top, metric, meId) {
+function lbPodiumHtml(ranked, metric, meId) {
+  const order = [2, 1, 3];
   const medal = { 1: '🥇', 2: '🥈', 3: '🥉' };
-  const shownRanks = [2, 1, 3];
-  const groups = shownRanks.map(rank => {
-    const tied = top.filter(entry => entry.rank === rank);
-    if (!tied.length) return `<div class="lb-pod empty p${rank}" aria-hidden="true"></div>`;
-    const val = lbFormat(metric, tied[0].row);
-    const people = tied.map(entry => {
-      const r = entry.row;
-      return `<div class="lb-pod-user ${r.userId === meId ? 'me' : ''}">
-        <img src="${escapeHtml(r.avatarSrc || './imgs/assets/default_avatar.png')}" alt="" loading="lazy" decoding="async"/>
-        <b class="lb-pod-name">${escapeHtml(r.displayName || r.username)}${r.userId === meId ? ' <em>YOU</em>' : ''}</b>
-      </div>`;
-    }).join('');
-    return `<div class="lb-pod p${rank} ${tied.some(entry => entry.row.userId === meId) ? 'me' : ''}">
-      <span class="lb-pod-medal">${medal[rank]}</span>
-      <div class="lb-pod-users">${people}</div>
-      <span class="lb-pod-val">${val} <small>${metric.unit}</small></span>
+  return `<div class="lb-podium">${order.map(place => {
+    const group = ranked.filter(e => e.rank === place);
+    if (!group.length) return `<div class="lb-pod p${place} empty" aria-label="Rank ${place} vacant"><span class="lb-pod-vacant">${place}.</span></div>`;
+    return `<div class="lb-pod p${place} ${group.some(e => e.row.userId === meId) ? 'me' : ''}">
+      <span class="lb-pod-medal">${medal[place]}</span>
+      <div class="lb-pod-entries">${group.map(e => {
+        const r = e.row;
+        return `<div class="lb-pod-entry">
+          <img src="${escapeHtml(r.avatarSrc || './imgs/assets/default_avatar.png')}" alt="" loading="lazy" decoding="async"/>
+          <b class="lb-pod-name">${escapeHtml(r.displayName || r.username)}${r.userId === meId ? ' · YOU' : ''}</b>
+          <span class="lb-pod-val">${lbFormat(metric, r)} <small>${metric.unit}</small></span>
+        </div>`;
+      }).join('')}</div>
     </div>`;
-  });
-  return `<div class="lb-podium">${groups.join('')}</div>`;
+  }).join('')}</div>`;
 }
 
 async function renderLeaderboard(forceRefresh = false) {
   const menuHost = document.getElementById('lbMenuHost');
   if (menuHost) renderLeaderboardMenu(menuHost);
   const host = document.getElementById('leaderboardList');
-  const rankBar = document.getElementById('leaderboardMyRank');
   if (!host) return;
   const token = ++LB_LOAD_TOKEN;
   const { metric } = lbFindMetric(LEADERBOARD_MODE);
   const spin = document.getElementById('lbRefreshIcon');
-  if (rankBar) { rankBar.classList.add('hidden'); rankBar.innerHTML = ''; }
-
   let rows = LB_CACHE.rows;
   const stale = !rows || forceRefresh || (Date.now() - LB_CACHE.at) > LB_CACHE_MS;
   if (stale) {
@@ -225,69 +219,54 @@ async function renderLeaderboard(forceRefresh = false) {
     if (spin) spin.classList.remove('fa-spin');
   }
   if (token !== LB_LOAD_TOKEN) return;
-
   const meId = currentUser?.id;
   const valid = rows.filter(r => {
     const v = r[metric.field];
     return v != null && isFinite(v) && Number(v) > 0;
   });
   valid.sort((a, b) => {
-    const av = Number(a[metric.field]), bv = Number(b[metric.field]);
-    if (av === bv) return String(a.userId).localeCompare(String(b.userId));
-    return metric.asc ? av - bv : bv - av;
+    const delta = metric.asc ? Number(a[metric.field]) - Number(b[metric.field]) : Number(b[metric.field]) - Number(a[metric.field]);
+    return delta || String(a.username || '').localeCompare(String(b.username || ''));
   });
-  if (!valid.length) {
-    host.innerHTML = `<div class="lb-empty"><i class="fas fa-trophy"></i><b>No scores yet</b><small>Be the first to land on this board!</small></div>`;
-    if (rankBar) {
-      rankBar.innerHTML = '<span>Your rank</span><b>—</b><span>Play a run to appear on this board</span>';
-      rankBar.classList.remove('hidden');
-    }
-    return;
-  }
-
-  let rank = 0, prev = Symbol('unranked');
-  const allRanked = valid.map((row, i) => {
-    const value = Number(row[metric.field]);
-    if (i === 0 || value !== prev) rank = i + 1;
-    prev = value;
-    return { row, rank };
+  let rank = 0, previousValue;
+  const rankedAll = valid.map((r, i) => {
+    const value = Number(r[metric.field]);
+    if (i === 0 || value !== previousValue) rank = i + 1;
+    previousValue = value;
+    return { row: r, rank };
   });
-  const top50 = allRanked.slice(0, 50);
-  const podium = top50.filter(entry => entry.rank <= 3);
-  const podiumUsers = new Set(podium.map(entry => entry.row.userId));
-  const rest = top50.filter(entry => !podiumUsers.has(entry.row.userId));
-  const mine = allRanked.find(entry => entry.row.userId === meId);
-
-  host.classList.remove('lb-animate-in');
-  host.innerHTML = `
-    ${podium.length ? lbPodiumHtml(podium, metric, meId) : `<div class="lb-podium"><div class="lb-pod empty p2"></div><div class="lb-pod empty p1"></div><div class="lb-pod empty p3"></div></div>`}
-    <div class="lb-list">${rest.map(entry => lbRowHtml(entry.row, entry.rank, metric, meId)).join('')}</div>`;
-  requestAnimationFrame(() => {
-    if (token !== LB_LOAD_TOKEN) return;
-    host.classList.add('lb-animate-in');
-    setTimeout(() => host.classList.remove('lb-animate-in'), 420);
-  });
-  if (rankBar) {
-    if (mine) rankBar.innerHTML = `<span>Your rank</span><b>#${mine.rank.toLocaleString()}</b><span>${lbFormat(metric, mine.row)} ${metric.unit}${mine.rank > 50 ? ' · outside Top 50' : ''}</span>`;
-    else rankBar.innerHTML = '<span>Your rank</span><b>—</b><span>Play a run to appear on this board</span>';
-    rankBar.classList.remove('hidden');
-  }
+  const ranked = rankedAll.slice(0, 50);
+  const mine = rankedAll.find(x => x.row.userId === meId);
+  const meRow = rows.find(r => r.userId === meId);
+  const podium = lbPodiumHtml(ranked, metric, meId);
+  const rest = ranked.filter(x => x.rank > 3);
+  const list = rest.length
+    ? `<div class="lb-list">${rest.map(x => lbRowHtml(x.row, x.rank, metric, meId)).join('')}</div>`
+    : (valid.length ? `<div class="lb-empty lb-empty-small">${ranked.length <= 3 ? 'Play more to fill out the leaderboard.' : 'No more entries in the top 50.'}</div>` : `<div class="lb-empty"><i class="fas fa-trophy"></i><b>No scores yet</b><small>Be the first to land on this board!</small></div>`);
+  const myValue = meRow && Number(meRow[metric.field]) > 0 ? `${lbFormat(metric, meRow)} ${metric.unit}` : `0 ${metric.unit}`;
+  const myRank = mine ? `#${mine.rank}` : 'Unranked';
+  host.innerHTML = `${podium}${list}${currentUser ? `<div class="lb-me-bar"><span>Your rank</span><b>${myRank}</b><span>${myValue}</span></div>` : ''}`;
+  host.classList.remove('lb-view-enter');
+  void host.offsetWidth;
+  host.classList.add('lb-view-enter');
 }
-
 function renderHub() {
   ensureDailyResetIfNeeded();
   document.getElementById('hubUserName').textContent = currentUser?.displayName || "Carat";
   document.getElementById('hubLevel').textContent = GAME_STATE.level;
-  document.getElementById('hubCoins').textContent = formatNumber(GAME_STATE.coins);
-  document.getElementById('gameCoins').textContent = formatNumber(GAME_STATE.coins);
+  document.getElementById('hubCoins').textContent = Number(GAME_STATE.coins || 0).toLocaleString();
+  document.getElementById('gameCoins').textContent = Number(GAME_STATE.coins || 0).toLocaleString();
   const qc = document.getElementById('questsCoins');
-  if (qc) qc.textContent = formatNumber(GAME_STATE.coins);
+  if (qc) qc.textContent = Number(GAME_STATE.coins || 0).toLocaleString();
   const ic = document.getElementById('idolsCoins');
-  if (ic) ic.textContent = formatNumber(GAME_STATE.coins);
+  if (ic) ic.textContent = Number(GAME_STATE.coins || 0).toLocaleString();
   const shopCoins = document.getElementById('shopCoins');
-  if (shopCoins) shopCoins.textContent = formatNumber(GAME_STATE.coins);
-  ['hubGems', 'idolsGems', 'shopGems'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(GAME_STATE.gems); });
-  ['hubDiamonds', 'idolsDiamonds', 'shopDiamonds'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(GAME_STATE.diamonds); });
+  if (shopCoins) shopCoins.textContent = Number(GAME_STATE.coins || 0).toLocaleString();
+  ['avatarsCoins', 'profileShopCoins'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = Number(GAME_STATE.coins || 0).toLocaleString(); });
+  ['hubDiamonds', 'gameDiamonds', 'idolsDiamonds', 'shopDiamonds', 'questsDiamonds', 'avatarsDiamonds', 'profileShopDiamonds'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = Number(GAME_STATE.diamonds || 0).toLocaleString();
+  });
   const showtimeLvl = document.getElementById('showtimeLevelLabel');
   if (showtimeLvl) showtimeLvl.textContent = 'Lv. ' + (GAME_STATE.level || 0);
   const spotlightLvl = document.getElementById('spotlightLevelLabel');
