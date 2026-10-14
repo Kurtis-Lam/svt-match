@@ -409,11 +409,13 @@
     if (passed) s.level++;
     if (passed && typeof fireLevelSuccessBurst === 'function') fireLevelSuccessBurst();
 
+    let passMetaResult = { passXp: 0 };
     try {
-      Meta.onRunComplete('echo', { passed, elite, coins: total, keys: E.pads.slice(), value: rounds });
+      passMetaResult = Meta.onRunComplete('echo', { passed, elite, coins: total, keys: E.pads.slice(), value: rounds }) || passMetaResult;
     } catch (e) { console.warn('[Meta]', e); }
 
-    const show = () => openResult(rounds, base, streakBonus, passed, perfect, newBest);
+    const passXp = Number(passMetaResult.passXp) || 0;
+    const show = () => openResult(rounds, base, streakBonus, passed, perfect, newBest, passXp);
 
     if (passed) grantDailyBox(show); else show();
 
@@ -457,7 +459,7 @@
     }
   }
 
-  function openResult(rounds, base, streakBonus, passed, perfect, newBest) {
+  function openResult(rounds, base, streakBonus, passed, perfect, newBest, passXp = 0) {
     const s = st();
     const coin = '<img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" alt="">';
     openUndismissibleModal(passed ? '✅ Level Complete!' : '❌ Level Failed', `
@@ -469,11 +471,12 @@
         ${newBest ? '<p class="text-xs font-black text-pink-500 mt-1">NEW ENDLESS RECORD! 🏆</p>' : ''}
         <p class="text-[11px] text-gray-400 font-bold mt-1">${E.mode === 'endless' ? `Endless best: ${s.bestEndless}` : `Best: ${s.bestRounds}`} rounds</p>
       </div>
-      <div class="earn-row"><div class="label">Rounds × ${CFG.coinsPerRound}${perfect ? ' + perfect' : ''}</div><div class="val">+${base} ${coin}</div></div>
-      ${streakBonus > 0 ? `<div class="earn-row"><div class="label">Streak 🔥 ${s.streak}</div><div class="val">+${streakBonus} ${coin}</div></div>` : ''}
+      <div class="earn-row"><div class="label">Rounds × ${CFG.coinsPerRound}${perfect ? ' + perfect' : ''}</div><div class="val">+${formatNumber(base)} ${coin}</div></div>
+      ${streakBonus > 0 ? `<div class="earn-row"><div class="label">Streak 🔥 ${s.streak}</div><div class="val">+${formatNumber(streakBonus)} ${coin}</div></div>` : ''}
+      ${Number(passXp || 0) > 0 ? `<div class="earn-row"><div class="label">Season Pass XP</div><div class="val">+${formatNumber(passXp)} XP</div></div>` : ''}
       <div class="earn-row" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));border:none;">
         <div class="label font-black">Total</div>
-        <div class="val font-black">+${base + streakBonus} ${coin}</div>
+        <div class="val font-black">+${formatNumber(base + streakBonus)} ${coin}</div>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <button class="glass-card py-3 rounded-2xl font-extrabold text-gray-900" onclick="closeModal(); showScreen('hubScreen'); renderHub();">Back to Hub</button>
