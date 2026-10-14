@@ -54,7 +54,7 @@ async function startLevel() {
     GAME_STATE.runtime.mismatchAwaitingFlipBack = false;
     document.getElementById('matchesCount').textContent = "0";
     document.getElementById('gameLevel').textContent = GAME_STATE.level;
-    document.getElementById('gameCoins').textContent = formatNumber(GAME_STATE.coins);
+    document.getElementById('gameCoins').textContent = Number(GAME_STATE.coins || 0).toLocaleString();
     document.getElementById('levelCompletePanel').classList.add('hidden');
     GAME_STATE.runtime.flipSpeedMult = 2;
     applyFlipSpeedCss();
@@ -637,8 +637,8 @@ function showDailyBoxFullscreen() {
         resetDailyBoxStarForNextClaim();
       }
       document.getElementById('dailyResultCenter').classList.add('show');
-      document.getElementById('dailyResultCoinsGained').textContent = `+${formatNumber(gained)}`;
-      document.getElementById('dailyResultCoinsTotal').textContent = formatNumber(GAME_STATE.coins);
+      document.getElementById('dailyResultCoinsGained').textContent = `+${Number(gained || 0).toLocaleString()}`;
+      document.getElementById('dailyResultCoinsTotal').textContent = Number(GAME_STATE.coins || 0).toLocaleString();
       __dailyBoxPhase = "done";
       hint.textContent = "Tap to return";
       return;
@@ -882,10 +882,7 @@ function resetLevelCompleteOverlayHTML() {
     <div class="label">🎭 Idol Bonus</div>
     <div class="val">+<span id="lcIdolBonus">0</span><img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
-    <div class="earn-row muted hidden" id="lcXpRow">
-      <div class="label">Season Pass XP</div>
-      <div class="val">+<span id="lcXp">0</span> XP</div>
-    </div>
+    <div class="earn-row muted" id="lcXpRow"><div class="label">Season XP</div><div class="val">+<span id="lcSeasonXp">0</span> XP</div></div>
     <div class="grid grid-cols-2 gap-3 pt-2">
     <button class="btn-theme-inline black-text" id="lcBackBtn" onclick="advanceLevelAndGoHubFromPopup()">Back to Hub</button>
     <button class="btn-theme-inline black-text" id="lcNextBtn" onclick="nextLevelFromPopup()">Next Level</button>
@@ -944,7 +941,7 @@ function openLevelCompleteOverlay({
   streakLostText,
   kkumaBonus = 0,
   idolBonus = 0,
-  passXp = 0,
+  seasonXpGained = Number(GAME_STATE.meta?.lastRunXpGained) || 0,
   isBattleResult = false
 }) {
   resetLevelCompleteOverlayHTML();
@@ -966,11 +963,13 @@ function openLevelCompleteOverlay({
   const streakRow = document.getElementById('lcStreakRow');
   const abilityRow = document.getElementById('lcAbilityRow');
   const kkumaRow = document.getElementById('lcKkumaRow');
+  const xpRow = document.getElementById('lcXpRow');
+  const xpVal = document.getElementById('lcSeasonXp');
   const nextBtn = document.getElementById('lcNextBtn');
   const backBtn = document.getElementById('lcBackBtn');
   if (isBattleResult) {
     // Hide earn rows
-    ['lcBaseRow', 'lcStreakRow', 'lcKkumaRow', 'lcIdolBonusRow'].forEach(id => {
+    ['lcBaseRow', 'lcStreakRow', 'lcKkumaRow', 'lcIdolBonusRow', 'lcXpRow'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.add('hidden');
     });
@@ -997,10 +996,8 @@ function openLevelCompleteOverlay({
     return;
   }
   // --- Standard Level Complete Logic ---
-  const xpRow = document.getElementById('lcXpRow');
-  const xpValue = document.getElementById('lcXp');
-  if (xpRow) xpRow.classList.toggle('hidden', !(Number(passXp) > 0));
-  if (xpValue) xpValue.textContent = formatNumber(Number(passXp) || 0);
+  if (xpRow) xpRow.classList.remove('hidden');
+  if (xpVal) xpVal.textContent = Number(seasonXpGained || 0).toLocaleString();
   if (baseRow) baseRow.classList.remove('hidden');
   if (nextBtn) nextBtn.classList.remove('hidden');
   if (backBtn) {
@@ -1009,7 +1006,7 @@ function openLevelCompleteOverlay({
     backBtn.onclick = () => advanceLevelAndGoHubFromPopup();
   }
   const baseEl = document.getElementById('lcBase');
-  if (baseEl) baseEl.textContent = formatNumber(baseReward);
+  if (baseEl) baseEl.textContent = Number(baseReward || 0).toLocaleString();
   // Streak Logic
   if (streakRow) {
     streakRow.classList.remove('hidden');
@@ -1022,7 +1019,7 @@ function openLevelCompleteOverlay({
       // Show streak multiplier like Spotlight
       const currentStreak = GAME_STATE.streak || 1;
       if (streakLabel) streakLabel.innerHTML = `<img src="./imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Streak (${currentStreak}x)`;
-      if (streakVal) streakVal.innerHTML = `+<span id="lcBonus">${formatNumber(streakBonus)}</span> <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
+      if (streakVal) streakVal.innerHTML = `+<span id="lcBonus">${Number(streakBonus || 0).toLocaleString()}</span> <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
     }
   }
   // Kkuma Logic
@@ -1030,7 +1027,7 @@ function openLevelCompleteOverlay({
     if (kkumaBonus > 0) {
       kkumaRow.classList.remove('hidden');
       const valDiv = kkumaRow.querySelector('.val');
-      if (valDiv) valDiv.innerHTML = `+${formatNumber(kkumaBonus)} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
+      if (valDiv) valDiv.innerHTML = `+${Number(kkumaBonus).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
     } else {
       kkumaRow.classList.add('hidden');
     }
@@ -1041,7 +1038,7 @@ function openLevelCompleteOverlay({
   if (idolBonusRow && idolBonusVal) {
     if ((idolBonus || 0) > 0) {
       idolBonusRow.classList.remove('hidden');
-      idolBonusVal.textContent = formatNumber(idolBonus);
+      idolBonusVal.textContent = Number(idolBonus).toLocaleString();
     } else {
       idolBonusRow.classList.add('hidden');
     }
@@ -1063,7 +1060,7 @@ function openLevelCompleteOverlay({
   const total = baseReward + (streakBonus || 0) + (abilityBonus || 0) + (idolBonus || 0) + (kkumaBonus || 0);
   const totalEl = document.getElementById('lcTotal');
   if (totalEl) {
-    totalEl.textContent = formatNumber(total);
+    totalEl.textContent = Number(total).toLocaleString();
   }
   if (nextBtn) nextBtn.onclick = () => nextLevelFromPopup();
 }
@@ -1203,8 +1200,8 @@ async function levelComplete() {
   const totalReward = baseReward + streakBonus + idolBonus + kkumaBonus;
   const before = GAME_STATE.coins;
   addCoinsToGame(totalReward, 'level');
-  let passMetaResult = { passXp: 0 };
-  try { passMetaResult = Meta.onRunComplete('showtime', { passed: timeSec <= 30, elite: within20Strict, coins: totalReward, keys: Object.keys(GAME_STATE.currentLevelPairs || {}) }) || passMetaResult; } catch (e) { console.warn('[Meta]', e); }
+  let seasonXpGained = 0;
+  try { seasonXpGained = Number(Meta.onRunComplete('showtime', { passed: timeSec <= 30, elite: within20Strict, coins: totalReward, keys: Object.keys(GAME_STATE.currentLevelPairs || {}) })) || 0; } catch (e) { console.warn('[Meta]', e); }
   renderHub();
   await savePlayerState();
   animateNumber(document.getElementById('hubCoins'), before, GAME_STATE.coins);
@@ -1223,7 +1220,7 @@ async function levelComplete() {
     streakLostText,
     kkumaBonus,
     idolBonus,
-    passXp: passMetaResult.passXp || 0,
+    seasonXpGained,
     isBattleResult: false
   });
   GAME_STATE.levelAbilities = {
