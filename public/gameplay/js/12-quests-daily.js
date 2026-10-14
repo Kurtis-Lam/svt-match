@@ -1,3 +1,19 @@
+// ── Quest stats read live from the save (used by the per-game tiered quests) ──
+const QUEST_STAT_GETTERS = {
+  showtimeLevel: () => GAME_STATE.level || 0,
+  spotlightLevel: () => GAME_STATE.spotlightLevel || 0,
+  spotlightBestCorrect: () => GAME_STATE.stats?.spotlightBestCorrect || 0,
+  snakeLevel: () => GAME_STATE.snakeventeenLevel || 0,
+  snakeLongest: () => GAME_STATE.stats?.snakeventeenLongestLength || 0,
+  echoLevel: () => GAME_STATE.meta?.echo?.level || 0,
+  echoBestRounds: () => GAME_STATE.meta?.echo?.bestRounds || 0,
+};
+const QUEST_GAME_ICON = { showtime: '🎴', spotlight: '🔦', snakeventeen: '🐍', echo: '🎶', any: '⭐' };
+const QUEST_GAME_ORDER = { showtime: 0, spotlight: 1, snakeventeen: 2, echo: 3 };
+
+function questTieredDefs() { return GAME_CONFIG.quests.tiered || []; }
+function questTieredDef(id) { return questTieredDefs().find(d => d.id === id) || null; }
+
 function ensureAllQuests() {
   if (!Array.isArray(GAME_STATE.quests)) GAME_STATE.quests = [];
   const haveIdol = (idolKey) => GAME_STATE.quests.some(q => q.type === "match_idol_tier" && q.idolKey === idolKey);
@@ -12,6 +28,11 @@ function ensureAllQuests() {
   };
   ensureTimed("complete_level_under_30s", QUEST_UNDER_30_TIERS);
   ensureTimed("complete_level_under_20s", QUEST_UNDER_20_TIERS);
+  questTieredDefs().forEach(def => {
+    if (!GAME_STATE.quests.some(q => q.type === 'stat_tier' && q.defId === def.id)) {
+      GAME_STATE.quests.push(makeStatQuest(def, 0));
+    }
+  });
 }
 
 function makeIdolQuest(idolKey, target) {
@@ -41,6 +62,21 @@ function makeTimedQuest(type, target) {
   };
 }
 
+function makeStatQuest(def, tierIdx) {
+  const target = def.tiers[tierIdx];
+  const get = QUEST_STAT_GETTERS[def.stat];
+  return {
+    id: `q_${def.id}_${target}`,
+    type: 'stat_tier',
+    defId: def.id,
+    game: def.game,
+    target,
+    progress: Math.min(target, get ? get() : 0),
+    rewardCoins: def.rewards[tierIdx] ?? 0,
+    claimed: false
+  };
+}
+
 function hydrateQuestProgressFromStats() {
   for (const q of (GAME_STATE.quests || [])) {
     if (q.type === "match_idol_tier") {
@@ -54,6 +90,11 @@ function hydrateQuestProgressFromStats() {
     if (q.type === "complete_level_under_20s") {
       const total = GAME_STATE.stats.levelsUnder20 || 0;
       q.progress = Math.min(q.target, total);
+    }
+    if (q.type === "stat_tier") {
+      const def = questTieredDef(q.defId);
+      const get = def && QUEST_STAT_GETTERS[def.stat];
+      if (get && !q.claimed) q.progress = Math.min(q.target, get());
     }
   }
   const advanceTimedIfPast = (type, tiers, progress) => {
@@ -86,8 +127,62 @@ function questIsDone(q) {
   return (q.progress || 0) >= q.target;
 }
 
+// ── DAILY QUESTS (reset 00:00 UTC+8, stored in GAME_STATE.meta.dq) ───────────
+function dailyQuestDefs() { return GAME_CONFIG.quests.daily.list || []; }
+
+function ensureDailyQuests() {
+  if (!GAME_STATE.meta || typeof GAME_STATE.meta !== 'object') GAME_STATE.meta = {};
+  const today = hkDayKey();
+  let dq = GAME_STATE.meta.dq;
+  if (!dq || typeof dq !== 'object' || dq.day !== today) dq = GAME_STATE.meta.dq = { day: today, items: {} };
+  if (!dq.items || typeof dq.items !== 'object') dq.items = {};
+  dailyQuestDefs().forEach(d => {
+    const it = dq.items[d.id] || (dq.items[d.id] = { progress: 0, claimed: false });
+    it.progress = Math.max(0, Math.min(d.target, Number(it.progress) || 0));
+    it.claimed = !!it.claimed;
+  });
+  return dq;
+}
+
+function dailyQuestView() {
+  const dq = ensureDailyQuests();
+  return dailyQuestDefs().map(d => {
+    const it = dq.items[d.id];
+    return {
+      id: d.id, type: 'daily', game: d.game, title: d.title, target: d.target,
+      progress: it.progress, rewardCoins: d.coins, claimed: it.claimed,
+    };
+  });
+}
+
+// Called from Meta.onRunComplete — every finished solo run of every game
+function questsOnRunComplete(game, info = {}) {
+  const dq = ensureDailyQuests();
+  dailyQuestDefs().forEach(d => {
+    if (d.game !== 'any' && d.game !== game) return;
+    const it = dq.items[d.id];
+    if (it.claimed || it.progress >= d.target) return;
+    const hit = d.metric === 'passes' ? !!info.passed : d.metric === 'streaks' ? !!(info.passed && info.elite) : true;
+    if (hit) it.progress = Math.min(d.target, it.progress + 1);
+  });
+  hydrateQuestProgressFromStats();
+  updateQuestBadges();
+}
+
+function msUntilDailyReset(now = Date.now()) {
+  const HK = 8 * 3600e3, DAY = 86400e3;
+  return (Math.floor((now + HK) / DAY) + 1) * DAY - HK - now;
+}
+
+function fmtResetIn(ms) {
+  const m = Math.max(0, Math.floor(ms / 60000));
+  return `${Math.floor(m / 60)}h ${m % 60}m`;
+}
+
 function getClaimableCount() {
-  return (GAME_STATE.quests || []).filter(q => questIsDone(q) && !q.claimed).length;
+  const regular = (GAME_STATE.quests || []).filter(q => questIsDone(q) && !q.claimed).length;
+  const daily = dailyQuestView().filter(q => questIsDone(q) && !q.claimed).length;
+  return regular + daily;
 }
 
 function updateQuestBadges() {
@@ -96,21 +191,51 @@ function updateQuestBadges() {
   setBadgeVisibility(badge, count);
 }
 
+// collapse state for the two sections (remembered between visits)
+const QUEST_UI = (() => {
+  let s = { daily: true, quests: true };
+  try { s = { ...s, ...JSON.parse(localStorage.getItem('svt:questsUi') || '{}') }; } catch (e) {}
+  return s;
+})();
+let _questClock = null;
+
+function toggleQuestSection(key) {
+  QUEST_UI[key] = !QUEST_UI[key];
+  try { localStorage.setItem('svt:questsUi', JSON.stringify(QUEST_UI)); } catch (e) {}
+  const sec = document.querySelector(`.qsec[data-sec="${key}"]`);
+  if (sec) sec.classList.toggle('open', !!QUEST_UI[key]);
+}
+
 function openQuests() {
+  ensureDailyQuests();
   renderHub();
   renderQuests();
   updateQuestBadges();
   showScreen('questsScreen');
+  clearInterval(_questClock);
+  _questClock = setInterval(() => {
+    const scr = document.getElementById('questsScreen');
+    if (!scr || scr.classList.contains('hidden')) { clearInterval(_questClock); return; }
+    const dayNow = hkDayKey();
+    if (GAME_STATE.meta?.dq?.day !== dayNow) { renderQuests(); updateQuestBadges(); return; }
+    const el = document.getElementById('dqReset');
+    if (el) el.textContent = `Resets in ${fmtResetIn(msUntilDailyReset())}`;
+  }, 30000);
 }
 
 function questSortKey(q) {
-  if (q.type === "complete_level_under_20s") return [0, q.target || 0, "", 0];
-  if (q.type === "complete_level_under_30s") return [1, q.target || 0, "", 0];
+  if (q.type === "complete_level_under_20s") return [0, 0, "", q.target || 0];
+  if (q.type === "complete_level_under_30s") return [0, 1, "", q.target || 0];
+  if (q.type === "stat_tier") {
+    const defs = questTieredDefs();
+    const di = defs.findIndex(d => d.id === q.defId);
+    return [1 + (QUEST_GAME_ORDER[q.game] ?? 9), di, "", q.target || 0];
+  }
   if (q.type === "match_idol_tier") {
     const rar = IDOL_RARITY[q.idolKey] || "rare";
     const rarIdx = RARITY_ORDER.indexOf(rar);
     const name = (q.idolName || "").toLowerCase();
-    return [2 + (rarIdx < 0 ? 99 : rarIdx), 0, name, q.target || 0];
+    return [10 + (rarIdx < 0 ? 99 : rarIdx), 0, name, q.target || 0];
   }
   return [999, 0, "", 0];
 }
@@ -122,9 +247,14 @@ function questPercent(q) {
 }
 
 function questTitle(q) {
+  if (q.type === "daily") return q.title;
   if (q.type === "match_idol_tier") return `Get ${q.idolName} ${q.target} times`;
-  if (q.type === "complete_level_under_30s") return `Complete a level within 30s (${q.target}x)`;
-  if (q.type === "complete_level_under_20s") return `Complete a level within 20s (${q.target}x)`;
+  if (q.type === "complete_level_under_30s") return `Complete a level within ${GAME_CONFIG.quests.timed.fastSeconds}s (${q.target}x)`;
+  if (q.type === "complete_level_under_20s") return `Complete a level within ${GAME_CONFIG.quests.timed.blitzSeconds}s (${q.target}x)`;
+  if (q.type === "stat_tier") {
+    const def = questTieredDef(q.defId);
+    return def ? def.title.replace('{t}', q.target) : 'Quest';
+  }
   return "Quest";
 }
 
@@ -133,6 +263,8 @@ function questProgressText(q) {
 }
 
 function questBarColor(q) {
+  if (q.type === "daily") return "#f59e0b";
+  if (q.type === "stat_tier") return "#6366f1";
   if (q.type === "complete_level_under_20s" || q.type === "complete_level_under_30s") return "#0f172a";
   if (q.type === "match_idol_tier") {
     const rar = IDOL_RARITY[q.idolKey] || "rare";
@@ -150,17 +282,71 @@ function questBarColor(q) {
 
 function rewardHtml(coins) {
   return `
-    <span class="font-bold text-yellow-600 flex items-center justify-end gap-1">
-      +${coins}
-      <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">
-    </span>
+    <span class="qcard-coins">+${Number(coins).toLocaleString()}<img src="./imgs/assets/coins.png" alt=""></span>
   `;
+}
+
+function questIconHtml(q) {
+  if (q.type === "match_idol_tier") return `<img src="./imgs/${escapeHtml(q.idolKey)}/1.jpg" alt="" loading="lazy" decoding="async">`;
+  if (q.type === "complete_level_under_20s" || q.type === "complete_level_under_30s") return '<span>⏱️</span>';
+  return `<span>${QUEST_GAME_ICON[q.game] || '⭐'}</span>`;
+}
+
+function buildQuestCard(q, onClaim) {
+  const pct = questPercent(q);
+  const done = questIsDone(q);
+  const claimable = done && !q.claimed;
+  const card = document.createElement('button');
+  card.type = 'button';
+  card.className = `qcard ${claimable ? 'claimable' : ''} ${q.claimed ? 'claimed' : ''}`;
+  card.onclick = () => { if (claimable) onClaim(card); };
+  card.innerHTML = `
+    <div class="qcard-ico">${questIconHtml(q)}</div>
+    <div class="qcard-main">
+      <p class="qcard-title">${escapeHtml(questTitle(q))}</p>
+      <div class="qcard-barrow">
+        <div class="qcard-bar"><i style="width:${pct}%; background:${done ? '#22c55e' : questBarColor(q)}"></i></div>
+        <span class="qcard-count">${questProgressText(q)}</span>
+      </div>
+    </div>
+    <div class="qcard-side">
+      ${q.claimed ? '<span class="qcard-done"><i class="fas fa-check"></i></span>' : claimable ? '<span class="qcard-claim">Claim</span>' : ''}
+      ${rewardHtml(q.rewardCoins)}
+    </div>`;
+  return card;
+}
+
+function buildQuestSection(key, title, icon, metaHtml, cards, claimableN) {
+  const sec = document.createElement('section');
+  sec.className = `qsec ${QUEST_UI[key] ? 'open' : ''}`;
+  sec.dataset.sec = key;
+  sec.innerHTML = `
+    <button type="button" class="qsec-head" onclick="toggleQuestSection('${key}')" aria-expanded="${!!QUEST_UI[key]}">
+      <span class="qsec-ico"><i class="fas ${icon}"></i></span>
+      <span class="qsec-txt"><b>${title}</b><small>${metaHtml}</small></span>
+      ${claimableN ? `<span class="qsec-badge">${claimableN}</span>` : ''}
+      <i class="fas fa-chevron-down qsec-chev"></i>
+    </button>
+    <div class="qsec-collapse"><div class="qsec-inner"><div class="qsec-list"></div></div></div>`;
+  const list = sec.querySelector('.qsec-list');
+  cards.forEach(c => list.appendChild(c));
+  return sec;
 }
 
 function renderQuests() {
   const list = document.getElementById('questsList');
   if (!list) return;
   list.innerHTML = "";
+
+  // 1) Daily quests first
+  const daily = dailyQuestView();
+  const dClaimable = daily.filter(q => questIsDone(q) && !q.claimed).length;
+  const dDone = daily.filter(q => q.claimed || questIsDone(q)).length;
+  const dCards = daily.map(q => buildQuestCard(q, el => claimDailyQuest(q.id, el)));
+  list.appendChild(buildQuestSection('daily', 'Daily Quests', 'fa-sun',
+    `${dDone}/${daily.length} done · <span id="dqReset">Resets in ${fmtResetIn(msUntilDailyReset())}</span>`, dCards, dClaimable));
+
+  // 2) Long-term quests
   const quests = [...(GAME_STATE.quests || [])].sort((a, b) => {
     const aClaimable = questIsDone(a) && !a.claimed;
     const bClaimable = questIsDone(b) && !b.claimed;
@@ -173,41 +359,46 @@ function renderQuests() {
     }
     return 0;
   });
-  quests.forEach(q => {
-    const pct = questPercent(q);
-    const done = questIsDone(q);
-    const claimable = done && !q.claimed;
-    const color = questBarColor(q);
-    const outer = document.createElement('button');
-    outer.className = `quest-box w-full text-left ${claimable ? 'claimable' : ''}`;
-    outer.onclick = () => {
-      if (claimable) claimQuest(q.id, outer);
-    };
-    outer.innerHTML = `
-      <div class="quest-inner">
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex items-center gap-2">
-            <p class="font-bold text-gray-800">${questTitle(q)}</p>
-          </div>
-          <div class="text-right">
-            ${rewardHtml(q.rewardCoins)}
-          </div>
-        </div>
+  const qClaimable = quests.filter(q => questIsDone(q) && !q.claimed).length;
+  const qCards = quests.map(q => buildQuestCard(q, el => claimQuest(q.id, el)));
+  list.appendChild(buildQuestSection('quests', 'Quests', 'fa-scroll',
+    `${quests.length} quests · rewards are bigger`, qCards, qClaimable));
+}
 
-        <div class="mt-3">
-          <div class="flex items-center gap-3">
-            <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div class="h-2" style="width:${pct}%; background:${done ? '#22c55e' : color}"></div>
-            </div>
-            <div class="w-14 text-right text-xs font-semibold text-gray-600">${questProgressText(q)}</div>
-          </div>
+async function _finishQuestClaim(added, before, el) {
+  renderHub();
+  renderQuests();
+  updateQuestBadges();
+  await animateCoinsToBar(el || document.getElementById('questsList'), added);
+  animateNumber(document.getElementById('hubCoins'), before, GAME_STATE.coins);
+  animateNumber(document.getElementById('gameCoins'), before, GAME_STATE.coins);
+  animateNumber(document.getElementById('questsCoins'), before, GAME_STATE.coins);
+  animateNumber(document.getElementById('idolsCoins'), before, GAME_STATE.coins);
+  const shopCoins = document.getElementById('shopCoins');
+  if (shopCoins) animateNumber(shopCoins, before, GAME_STATE.coins);
+  await savePlayerState();
+}
 
-          ${claimable ? `` : ''}
-        </div>
-      </div>
-    `;
-    list.appendChild(outer);
-  });
+let _dailyClaiming = false;
+async function claimDailyQuest(id, el) {
+  if (_dailyClaiming) return;
+  const def = dailyQuestDefs().find(d => d.id === id);
+  const it = ensureDailyQuests().items[id];
+  if (!def || !it || it.claimed || it.progress < def.target) return;
+  _dailyClaiming = true;
+  const before = GAME_STATE.coins;
+  try {
+    it.claimed = true;
+    addCoinsToGame(def.coins, 'quest');
+    await _finishQuestClaim(def.coins, before, el);
+  } catch (err) {
+    it.claimed = false;
+    GAME_STATE.coins = before;
+    console.error('[claimDailyQuest] failed, reverted:', err);
+    showToast('Claim failed – please try again', 'error');
+  } finally {
+    _dailyClaiming = false;
+  }
 }
 
 async function claimQuest(questId, questElForAnim) {
@@ -220,49 +411,39 @@ async function claimQuest(questId, questElForAnim) {
   const before = GAME_STATE.coins;
   const added = q.rewardCoins;
   try {
-  q.claimed = true;
-  addCoinsToGame(added, 'quest');
-  if (q.type === "match_idol_tier") {
-    const currentTierIdx = QUEST_TIERS.indexOf(q.target);
-    const nextTier = QUEST_TIERS[currentTierIdx + 1];
-    if (nextTier) {
-      const total = GAME_STATE.stats.idolMatches[q.idolKey] || 0;
-      const nextQ = makeIdolQuest(q.idolKey, nextTier);
-      nextQ.progress = Math.min(nextQ.target, total);
-      GAME_STATE.quests[idx] = nextQ;
+    q.claimed = true;
+    addCoinsToGame(added, 'quest');
+    if (q.type === "match_idol_tier") {
+      const nextTier = QUEST_TIERS[QUEST_TIERS.indexOf(q.target) + 1];
+      if (nextTier) {
+        const total = GAME_STATE.stats.idolMatches[q.idolKey] || 0;
+        const nextQ = makeIdolQuest(q.idolKey, nextTier);
+        nextQ.progress = Math.min(nextQ.target, total);
+        GAME_STATE.quests[idx] = nextQ;
+      }
     }
-  }
-  if (q.type === "complete_level_under_30s") {
-    const currentTierIdx = QUEST_UNDER_30_TIERS.indexOf(q.target);
-    const nextTier = QUEST_UNDER_30_TIERS[currentTierIdx + 1];
-    if (nextTier) {
-      const total = GAME_STATE.stats.levelsUnder30 || 0;
-      const nextQ = makeTimedQuest("complete_level_under_30s", nextTier);
-      nextQ.progress = Math.min(nextQ.target, total);
-      GAME_STATE.quests[idx] = nextQ;
+    if (q.type === "complete_level_under_30s") {
+      const nextTier = QUEST_UNDER_30_TIERS[QUEST_UNDER_30_TIERS.indexOf(q.target) + 1];
+      if (nextTier) {
+        const nextQ = makeTimedQuest("complete_level_under_30s", nextTier);
+        nextQ.progress = Math.min(nextQ.target, GAME_STATE.stats.levelsUnder30 || 0);
+        GAME_STATE.quests[idx] = nextQ;
+      }
     }
-  }
-  if (q.type === "complete_level_under_20s") {
-    const currentTierIdx = QUEST_UNDER_20_TIERS.indexOf(q.target);
-    const nextTier = QUEST_UNDER_20_TIERS[currentTierIdx + 1];
-    if (nextTier) {
-      const total = GAME_STATE.stats.levelsUnder20 || 0;
-      const nextQ = makeTimedQuest("complete_level_under_20s", nextTier);
-      nextQ.progress = Math.min(nextQ.target, total);
-      GAME_STATE.quests[idx] = nextQ;
+    if (q.type === "complete_level_under_20s") {
+      const nextTier = QUEST_UNDER_20_TIERS[QUEST_UNDER_20_TIERS.indexOf(q.target) + 1];
+      if (nextTier) {
+        const nextQ = makeTimedQuest("complete_level_under_20s", nextTier);
+        nextQ.progress = Math.min(nextQ.target, GAME_STATE.stats.levelsUnder20 || 0);
+        GAME_STATE.quests[idx] = nextQ;
+      }
     }
-  }
-  renderHub();
-  renderQuests();
-  updateQuestBadges();
-  await animateCoinsToBar(questElForAnim || document.getElementById('questsList'), added);
-  animateNumber(document.getElementById('hubCoins'), before, GAME_STATE.coins);
-  animateNumber(document.getElementById('gameCoins'), before, GAME_STATE.coins);
-  animateNumber(document.getElementById('questsCoins'), before, GAME_STATE.coins);
-  animateNumber(document.getElementById('idolsCoins'), before, GAME_STATE.coins);
-  const shopCoins = document.getElementById('shopCoins');
-  if (shopCoins) animateNumber(shopCoins, before, GAME_STATE.coins);
-  await savePlayerState();
+    if (q.type === "stat_tier") {
+      const def = questTieredDef(q.defId);
+      const ti = def ? def.tiers.indexOf(q.target) : -1;
+      if (def && ti >= 0 && ti + 1 < def.tiers.length) GAME_STATE.quests[idx] = makeStatQuest(def, ti + 1);
+    }
+    await _finishQuestClaim(added, before, questElForAnim);
   } catch (_claimErr) {
     // Q-05 FIX: revert on failure
     q.claimed = false;
@@ -484,29 +665,8 @@ async function claimDailyPrize() {
   showToast(`Daily Draw: +${prize} coins`, 'success');
 }
 // Daily Box Logic
-const STAR_UPGRADE_PROB = {
-  1: 0.50,
-  2: 0.44,
-  3: 0.3182,
-  4: 0.2857,
-};
-const DAILY_BOX_REWARDS = {
-  1: {
-    coins: 100
-  },
-  2: {
-    coins: 200
-  },
-  3: {
-    coins: 500
-  },
-  4: {
-    coins: 1000
-  },
-  5: {
-    coins: 5000
-  },
-};
+const STAR_UPGRADE_PROB = GAME_CONFIG.dailyBox.starUpgradeChance;
+const DAILY_BOX_REWARDS = Object.fromEntries(Object.entries(GAME_CONFIG.dailyBox.rewardCoins).map(([k, v]) => [k, { coins: v }]));
 
 function openDailyBoxOverlay() {
   ensureDailyResetIfNeeded();
