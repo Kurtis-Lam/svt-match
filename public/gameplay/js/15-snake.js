@@ -505,9 +505,9 @@ function endSnakeGame() {
               finalStar: _snPreviewStar,
               beforeCoins: _snBeforeCoins,
               // PATCH2c: re-open the Snakeventeen result modal after fullscreen closes
-              onClose: (function(_c, _sb, _l, _ps) {
-                return function() { openSnakeResultModal(_c, _sb, _l, _ps); };
-              })(coins, streakBonus, length, passedSnake)
+              onClose: (function(_c, _sb, _l, _ps, _xp) {
+                return function() { openSnakeResultModal(_c, _sb, _l, _ps, _xp); };
+              })(coins, streakBonus, length, passedSnake, SNK.passXp || 0)
             };
             showDailyBoxFullscreen();
           }, 400);
@@ -520,14 +520,16 @@ function endSnakeGame() {
       GAME_STATE.stats.snakeventeenLongestLength = length;
     }
     if (passedSnake) fireLevelSuccessBurst();
-    try { Meta.onRunComplete('snakeventeen', { passed: passedSnake, elite: length >= SNK.streakLength, coins: coins + streakBonus, value: length }); } catch (e) { console.warn('[Meta]', e); }
-    openSnakeResultModal(coins, streakBonus, length, passedSnake);
+    let passMetaResult = { passXp: 0 };
+    try { passMetaResult = Meta.onRunComplete('snakeventeen', { passed: passedSnake, elite: length >= SNK.streakLength, coins: coins + streakBonus, value: length }) || passMetaResult; } catch (e) { console.warn('[Meta]', e); }
+    SNK.passXp = Number(passMetaResult.passXp) || 0;
+    openSnakeResultModal(coins, streakBonus, length, passedSnake, SNK.passXp);
   }
   savePlayerState();
   renderHub();
 }
 
-function openSnakeResultModal(coins, streakBonus, length, passedLevel = false) {
+function openSnakeResultModal(coins, streakBonus, length, passedLevel = false, passXp = 0) {
   const total = coins + streakBonus;
   const title = passedLevel ? '✅ Level Complete!' : '❌ Level Failed';
   openUndismissibleModal(title, `
@@ -537,12 +539,13 @@ function openSnakeResultModal(coins, streakBonus, length, passedLevel = false) {
         </div>
         <div class="earn-row">
           <div class="label">Length × ${SNK.coinsPerLength}</div>
-          <div class="val">+${coins} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+          <div class="val">+${formatNumber(coins)} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
         </div>
         ${streakBonus > 0 ? `` : ''}
+        ${Number(passXp || 0) > 0 ? `<div class="earn-row"><div class="label">Season Pass XP</div><div class="val">+${formatNumber(passXp)} XP</div></div>` : ''}
         <div class="earn-row" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));border:none;">
           <div class="label font-black">Total</div>
-          <div class="val font-black">+${total} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+          <div class="val font-black">+${formatNumber(total)} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <button class="glass-card py-3 rounded-2xl font-extrabold text-gray-900"
