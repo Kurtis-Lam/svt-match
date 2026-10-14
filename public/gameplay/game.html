@@ -28,9 +28,9 @@
       <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" />
       <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
     </noscript>
-    <link rel="stylesheet" href="/gameplay/css/game.css?v=4c6315b9" />
-    <link rel="stylesheet" href="/gameplay/css/season.css?v=c8f8fb53" />
-    <link rel="stylesheet" href="/gameplay/css/ui-plus.css?v=7a38c2b6" />
+    <link rel="stylesheet" href="/gameplay/css/game.css?v=c9b783ed" />
+    <link rel="stylesheet" href="/gameplay/css/season.css?v=71267fa9" />
+    <link rel="stylesheet" href="/gameplay/css/ui-plus.css?v=917ed375" />
   </head>
   <body>
     <div class="app-container" id="app">
@@ -455,6 +455,7 @@
             <div class="text-left min-w-0" style="position:relative;z-index:1;">
               <p class="font-bold text-gray-800">
                 Snakeventeen
+                <span class="hub-new-pill">NEW</span>
               </p>
               <p class="text-xs text-gray-500">
                 Eat idols, grow long
@@ -475,7 +476,7 @@
             </div>
           </button>
           <!-- choreo echo -->
-          <button class="hub-action-card rounded-2xl p-5 flex items-center gap-4 w-full mt-3" onclick="openEcho()" style="position:relative;overflow:hidden;">
+          <button class="hub-action-card rounded-2xl p-5 flex items-center gap-4 w-full mt-3" onclick="openEchoModes()" style="position:relative;overflow:hidden;">
             <img alt="" src="./imgs/assets/hub_button_frame.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;opacity:0.45;border-radius:22px;z-index:0;" />
             <div class="hub-action-icon-wrap" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));position:relative;z-index:1;font-size:26px;">
               <span aria-hidden="true">🎶</span>
@@ -813,9 +814,7 @@
           </div>
         </div>
         <div class="px-4" id="questsScrollArea">
-          <div class="glass-card rounded-2xl p-4">
-          </div>
-          <div class="mt-4 space-y-3" id="questsList">
+          <div class="space-y-3" id="questsList">
           </div>
         </div>
       </div>
@@ -848,7 +847,7 @@
             </span>
           </button>
         </div>
-        <div class="px-4 pb-24 space-y-3">
+        <div class="px-4 pb-6 space-y-3">
           <div>
             <button class="btn-theme black-text w-full" onclick="openAddFriendsModal()">
               Add Friends
@@ -892,144 +891,106 @@
       </div>
       <!-- 11) News Screen (battle requests only) -->
       <div class="screen hidden flex flex-col" id="newsScreen">
-        <div class="p-4 flex items-center justify-between" id="newsHeader">
-          <button class="w-10 h-10 rounded-full glass-card flex items-center justify-center" onclick="showScreen('hubScreen'); renderHub();">
-            <i class="fas fa-arrow-left text-gray-600">
-            </i>
-          </button>
-          <p class="font-bold text-gray-800">
-            News
-          </p>
-          <div class="w-10 h-10">
-          </div>
+        <div class="pg-head">
+          <button class="pg-back" onclick="showScreen('hubScreen'); renderHub();" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+          <p class="pg-title">News</p>
+          <div class="pg-right"><span class="pg-pill" id="newsCount"></span></div>
         </div>
-        <div class="px-4 pb-24 space-y-3">
-          <div class="space-y-2" id="newsIncomingBattles">
+        <div class="pg-scroll">
+          <div class="space-y-3" id="newsIncomingBattles">
           </div>
         </div>
       </div>
       <!-- 11b) Battle Logs Screen -->
       <div class="screen hidden flex flex-col" id="battleLogsScreen">
-        <div class="p-4 flex items-center justify-between" id="battleLogsHeader">
-          <button class="w-10 h-10 rounded-full glass-card flex items-center justify-center" onclick="showScreen('hubScreen'); renderHub();">
-            <i class="fas fa-arrow-left text-gray-600">
-            </i>
-          </button>
-          <p class="font-bold text-gray-800">
-            Battle Logs
-          </p>
-          <div class="w-10 h-10">
-          </div>
+        <div class="pg-head">
+          <button class="pg-back" onclick="showScreen('hubScreen'); renderHub();" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+          <p class="pg-title">Battle Logs</p>
+          <div class="pg-right"></div>
         </div>
-        <div class="px-4 pb-24 space-y-3">
-          <div class="space-y-2" id="battleLogList">
+        <div class="pg-scroll">
+          <div class="bl-summary" id="battleLogSummary"></div>
+          <div class="space-y-3" id="battleLogList">
           </div>
         </div>
       </div>
       <!-- LEADERBOARD SCREEN -->
       <div class="screen hidden flex flex-col" id="leaderboardScreen">
-        <div style="background:linear-gradient(135deg,var(--theme1),var(--theme2));padding:16px 16px 14px;position:relative;">
-          <div class="flex items-center justify-between">
-            <button onclick="showScreen('hubScreen'); renderHub();" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;">
-              <i class="fas fa-arrow-left" style="color:#0f172a;">
-              </i>
+        <div class="lb-head">
+          <div class="lb-head-top">
+            <button class="lb-icon-btn" onclick="showScreen('hubScreen'); renderHub();" aria-label="Back">
+              <i class="fas fa-arrow-left"></i>
             </button>
-            <p style="font-weight:900;font-size:17px;color:#0f172a;">
-              🏆 Rankings
-            </p>
-            <button onclick="renderLeaderboard(true)" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;">
-              <i class="fas fa-rotate-right" style="color:#0f172a;font-size:13px;">
-              </i>
+            <p class="lb-title">🏆 Rankings</p>
+            <button class="lb-icon-btn" onclick="renderLeaderboard(true)" aria-label="Refresh">
+              <i class="fas fa-rotate-right" id="lbRefreshIcon"></i>
             </button>
           </div>
-          <div id="lbMenuHost" style="margin-top:12px;">
+          <div id="lbMenuHost">
           </div>
         </div>
-        <!-- Scrollable list -->
-        <div style="flex:1;overflow-y:auto;padding:12px;padding-bottom:80px;">
-          <div class="space-y-2" id="leaderboardList">
+        <div class="lb-body">
+          <div id="leaderboardList">
           </div>
         </div>
       </div>
       <!-- 12) Settings Screen -->
       <div class="screen hidden flex flex-col" id="settingsScreen">
-        <div class="p-4 flex items-center justify-between" id="settingsHeader">
-          <button class="w-10 h-10 rounded-full glass-card flex items-center justify-center" onclick="showScreen('hubScreen'); renderHub();">
-            <i class="fas fa-arrow-left text-gray-600">
-            </i>
-          </button>
-          <p class="font-bold text-gray-800">
-            Settings
-          </p>
-          <div class="w-10 h-10">
-          </div>
+        <div class="pg-head">
+          <button class="pg-back" onclick="showScreen('hubScreen'); renderHub();" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+          <p class="pg-title">Settings</p>
+          <div class="pg-right"></div>
         </div>
-        <div class="px-4 pb-24 space-y-4">
-          <div class="settings-themed-box p-4">
-            <div class="inner flex items-center gap-3">
-              <img alt="Avatar" class="avatar-sm" id="settingsAvatar" src="" />
-              <div>
-                <p class="text-xs label">
-                  Logged in as
-                </p>
-                <p class="font-bold value" id="settingsUsername">
-                  @username
-                </p>
-              </div>
+        <div class="pg-scroll">
+          <div class="set-hero">
+            <img alt="Avatar" class="set-hero-av" id="settingsAvatar" src="" />
+            <div class="min-w-0">
+              <p class="set-hero-label">Logged in as</p>
+              <p class="set-hero-name" id="settingsUsername">@username</p>
             </div>
           </div>
-          <div class="settings-themed-box p-4">
-            <div class="inner">
-              <p class="font-bold value mb-3">
-                Profile
-              </p>
-              <div class="space-y-3">
-                <!-- In Settings screen, inside the .inner div, BEFORE the grid with Change Display Name: -->
-                <div class="grid grid-cols-1 gap-3 pt-2">
-                  <button class="w-full btn-soft-sm flex items-center justify-center gap-2" onclick="openShopAvatars(true)">
-                    <i class="fas fa-image text-gray-700">
-                    </i>
-                    Change Avatar
-                  </button>
-                </div>
-                <div class="grid grid-cols-1 gap-3 pt-2">
-                  <button class="w-full btn-soft-sm flex items-center justify-center gap-2" onclick="openChangeDisplayNameModal()">
-                    <i class="fas fa-user text-gray-700">
-                    </i>
-                    Change Display Name
-                  </button>
-                </div>
-                <div class="grid grid-cols-2 gap-3 pt-2">
-                  <button class="w-full btn-soft-sm flex items-center justify-center gap-2" onclick="openChangeUsernameModal()">
-                    <i class="fas fa-at text-gray-700">
-                    </i>
-                    Change Username
-                  </button>
-                  <button class="w-full btn-soft-sm flex items-center justify-center gap-2" onclick="openChangePasswordModal()">
-                    <i class="fas fa-key text-gray-700">
-                    </i>
-                    Change Password
-                  </button>
-                </div>
-                <div class="grid grid-cols-1 gap-3 pt-2">
-                  <button class="w-full btn-soft-sm flex items-center justify-center gap-2" onclick="openChangeThemeModal()">
-                    <i class="fas fa-palette text-gray-700">
-                    </i>
-                    Change Theme
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="glass-card rounded-2xl p-4">
-            <p class="font-bold text-gray-800 mb-2">
-              Account
-            </p>
-            <button class="w-full bg-gray-900 text-white py-3 rounded-2xl font-semibold" onclick="handleLogout()">
-              Logout
+          <p class="set-sec">Profile</p>
+          <div class="set-card">
+            <button class="set-row " onclick="openShopAvatars(true)">
+              <span class="set-ico"><i class="fas fa-image"></i></span>
+              <span class="set-txt"><b>Change Avatar</b><small>Pick from your owned avatars</small></span>
+              <i class="fas fa-chevron-right set-chev"></i>
             </button>
-            <button class="w-full bg-red-600 text-white py-3 rounded-2xl font-semibold mt-3" onclick="confirmDeleteAccount()">
-              Delete Account
+            <button class="set-row " onclick="openChangeDisplayNameModal()">
+              <span class="set-ico"><i class="fas fa-user"></i></span>
+              <span class="set-txt"><b>Change Display Name</b><small>The name friends see</small></span>
+              <i class="fas fa-chevron-right set-chev"></i>
+            </button>
+            <button class="set-row " onclick="openChangeUsernameModal()">
+              <span class="set-ico"><i class="fas fa-at"></i></span>
+              <span class="set-txt"><b>Change Username</b><small>Your @handle</small></span>
+              <i class="fas fa-chevron-right set-chev"></i>
+            </button>
+            <button class="set-row " onclick="openChangeThemeModal()">
+              <span class="set-ico"><i class="fas fa-palette"></i></span>
+              <span class="set-txt"><b>Change Theme</b><small>Colors follow a married idol</small></span>
+              <i class="fas fa-chevron-right set-chev"></i>
+            </button>
+          </div>
+          <p class="set-sec">Security</p>
+          <div class="set-card">
+            <button class="set-row " onclick="openChangePasswordModal()">
+              <span class="set-ico"><i class="fas fa-key"></i></span>
+              <span class="set-txt"><b>Change Password</b></span>
+              <i class="fas fa-chevron-right set-chev"></i>
+            </button>
+          </div>
+          <p class="set-sec">Account</p>
+          <div class="set-card">
+            <button class="set-row " onclick="handleLogout()">
+              <span class="set-ico"><i class="fas fa-right-from-bracket"></i></span>
+              <span class="set-txt"><b>Log out</b></span>
+              <i class="fas fa-chevron-right set-chev"></i>
+            </button>
+            <button class="set-row danger" onclick="confirmDeleteAccount()">
+              <span class="set-ico"><i class="fas fa-trash"></i></span>
+              <span class="set-txt"><b>Delete Account</b><small>This cannot be undone</small></span>
+              <i class="fas fa-chevron-right set-chev"></i>
             </button>
           </div>
         </div>
@@ -1054,83 +1015,6 @@
             </button>
           </div>
           <div class="p-4 space-y-3" id="modalBody">
-          </div>
-        </div>
-      </div>
-      <div aria-modal="true" class="modal-overlay" id="leaderboardOverlay" role="dialog">
-        <div class="modal-card">
-          <div class="p-4 flex items-center justify-between border-b border-gray-200 bg-yellow-100" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
-            <div class="flex items-center gap-2">
-              <i class="fas fa-trophy text-yellow-500">
-              </i>
-              <p class="font-extrabold text-gray-900">
-                Leaderboard
-              </p>
-            </div>
-            <button class="w-9 h-9 rounded-full glass-card flex items-center justify-center" onclick="closeLeaderboardModal()">
-              <i class="fas fa-xmark text-gray-600">
-              </i>
-            </button>
-          </div>
-          <div class="p-4 space-y-3" id="leaderboardBody">
-            <div class="flex items-center gap-2 w-full">
-              <div class="dropdown-shell flex-1">
-                <button class="dropdown-toggle w-full justify-between" id="leaderboardModeToggle" onclick="toggleLeaderboardModeDropdown(event)" style="border-radius:14px; width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                  <div class="flex items-center gap-2">
-                    <i class="fas fa-bars-staggered">
-                    </i>
-                    <span id="leaderboardModeLabel">
-                      Best Time
-                    </span>
-                  </div>
-                  <i class="fas fa-chevron-down">
-                  </i>
-                </button>
-                <div class="absolute z-50 dropdown-panel w-full" id="leaderboardModeDropdown" style="left:0; right:0; min-width:unset;">
-                  <div class="dropdown-item" onclick="setLeaderboardMode('totalLoveLevel')">
-                    <i class="fas fa-heart">
-                    </i>
-                    Total Love Level
-                  </div>
-                  <div class="dropdown-item" onclick="setLeaderboardMode('level')">
-                    <i class="fas fa-layer-group">
-                    </i>
-                    Showtime Level
-                  </div>
-                  <div class="dropdown-item" onclick="setLeaderboardMode('bestStreak')">
-                    <i class="fas fa-fire">
-                    </i>
-                    Showtime Best Streak
-                  </div>
-                  <div class="dropdown-item" onclick="setLeaderboardMode('bestTime')">
-                    <i class="fas fa-stopwatch">
-                    </i>
-                    Best Time
-                  </div>
-                  <div class="dropdown-item" onclick="setLeaderboardMode('spotlightLevel')">
-                    <i class="fas fa-search">
-                    </i>
-                    Spotlight Level
-                  </div>
-                  <div class="dropdown-item" onclick="setLeaderboardMode('spotlightStreak')">
-                    <i class="fas fa-fire">
-                    </i>
-                    Spotlight Best Streak
-                  </div>
-                  <div class="dropdown-item" onclick="setLeaderboardMode('spotlightCorrect')">
-                    <i class="fas fa-bullseye">
-                    </i>
-                    Most Correct Hits
-                  </div>
-                </div>
-              </div>
-              <button class="glass-card rounded-2xl px-3 py-2 text-sm font-extrabold text-gray-900 flex items-center gap-1 flex-shrink-0" onclick="renderLeaderboard(true)">
-                <i class="fas fa-rotate-right text-gray-500">
-                </i>
-              </button>
-            </div>
-            <div class="mt-2 space-y-2" id="leaderboardList">
-            </div>
           </div>
         </div>
       </div>
@@ -1718,7 +1602,7 @@
         </div>
         <!-- 10×10 grid -->
         <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:0 12px;">
-          <div id="snakeGrid" style="display:grid; grid-template-columns:repeat(10,1fr); gap:2px; width:100%; max-width:400px; aspect-ratio:1; position:relative;">
+          <div id="snakeGrid" style="display:grid; grid-template-columns:repeat(10,1fr); gap:0; width:100%; max-width:400px; aspect-ratio:1; position:relative;">
           </div>
         </div>
         <div style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:10px 0;">
@@ -1755,7 +1639,7 @@
             <i class="fas fa-arrow-left"></i>
           </button>
           <p class="echo-title">Choreo Echo</p>
-          <div class="echo-chip"><span>ROUND</span><b id="echoRound">1/10</b></div>
+          <div class="echo-chip"><span id="echoRoundLabel">ROUND</span><b id="echoRound">1/9</b></div>
         </div>
         <div class="echo-info">
           <p id="echoStatus" class="echo-status">Get ready…</p>
@@ -1768,28 +1652,29 @@
         <p class="echo-hint">Tap the idols in the same order they lit up</p>
       </div>
     </div>
+    <script src="/gameplay/config.js?v=de909088"></script>
     <script src="/gameplay/js/01-firebase.js?v=d5da480b"></script>
     <script src="/gameplay/js/01b-secure-db.js?v=8b0c3c67"></script>
-    <script src="/gameplay/js/02-data.js?v=0d72e529"></script>
-    <script src="/gameplay/js/03-core-ui.js?v=0a879010"></script>
-    <script src="/gameplay/js/04-persistence.js?v=07cde93f"></script>
-    <script src="/gameplay/js/05-modals.js?v=0e24f0ac"></script>
+    <script src="/gameplay/js/02-data.js?v=22acae56"></script>
+    <script src="/gameplay/js/03-core-ui.js?v=07f598ea"></script>
+    <script src="/gameplay/js/04-persistence.js?v=42c4f4ca"></script>
+    <script src="/gameplay/js/05-modals.js?v=93e8c9c5"></script>
     <script src="/gameplay/js/06-friends.js?v=c84609d7"></script>
-    <script src="/gameplay/js/07-battles.js?v=933c15b9"></script>
-    <script src="/gameplay/js/08-hub-leaderboard.js?v=2a9338c6"></script>
-    <script src="/gameplay/js/09-shop-idols.js?v=641c1c9d"></script>
+    <script src="/gameplay/js/07-battles.js?v=00c234f7"></script>
+    <script src="/gameplay/js/08-hub-leaderboard.js?v=92c83cd7"></script>
+    <script src="/gameplay/js/09-shop-idols.js?v=a4744fd9"></script>
     <script src="/gameplay/js/10-showtime-abilities.js?v=c2ae12b7"></script>
-    <script src="/gameplay/js/11-showtime-game.js?v=4f7c3c4c"></script>
-    <script src="/gameplay/js/12-quests-daily.js?v=db78f314"></script>
-    <script src="/gameplay/js/13-account-gifts.js?v=2d07e898"></script>
-    <script src="/gameplay/js/14-spotlight.js?v=52afe03f"></script>
-    <script src="/gameplay/js/15-snake.js?v=78d41b06"></script>
-    <script src="/gameplay/js/16-extras.js?v=7afb1ba1"></script>
+    <script src="/gameplay/js/11-showtime-game.js?v=d7be8e9b"></script>
+    <script src="/gameplay/js/12-quests-daily.js?v=7134f2a3"></script>
+    <script src="/gameplay/js/13-account-gifts.js?v=2ce442e5"></script>
+    <script src="/gameplay/js/14-spotlight.js?v=80c03034"></script>
+    <script src="/gameplay/js/15-snake.js?v=2ed72c2f"></script>
+    <script src="/gameplay/js/16-extras.js?v=9b801512"></script>
     <script src="/gameplay/js/17-polish.js?v=f4713b68"></script>
-    <script src="/gameplay/js/18-meta-data.js?v=3abeae12"></script>
-    <script src="/gameplay/js/19-meta-core.js?v=56935cc9"></script>
-    <script src="/gameplay/js/20-meta-ui.js?v=cc42de6c"></script>
-    <script src="/gameplay/js/21-choreo-echo.js?v=d71585b6"></script>
+    <script src="/gameplay/js/18-meta-data.js?v=ee79e49b"></script>
+    <script src="/gameplay/js/19-meta-core.js?v=05e2e733"></script>
+    <script src="/gameplay/js/20-meta-ui.js?v=de3dfbf5"></script>
+    <script src="/gameplay/js/21-choreo-echo.js?v=c67fec80"></script>
 
   </body>
 </html>
