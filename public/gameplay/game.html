@@ -28,9 +28,9 @@
       <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" />
       <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
     </noscript>
-    <link rel="stylesheet" href="/gameplay/css/game.css?v=c9b783ed" />
-    <link rel="stylesheet" href="/gameplay/css/season.css?v=71267fa9" />
-    <link rel="stylesheet" href="/gameplay/css/ui-plus.css?v=917ed375" />
+    <link rel="stylesheet" href="/gameplay/css/game.css?v=4c6315b9" />
+    <link rel="stylesheet" href="/gameplay/css/season.css?v=c8f8fb53" />
+    <link rel="stylesheet" href="/gameplay/css/ui-plus.css?v=d365565b" />
   </head>
   <body>
     <div class="app-container" id="app">
@@ -344,9 +344,9 @@
             <div class="flex items-center gap-2">
               <div class="glass-card px-3 py-2 rounded-2xl flex items-center gap-2 cursor-pointer" id="coinsBarHub" onclick="openCoinsInfoModal()">
                 <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" />
-                <span class="font-bold text-gray-800" id="hubCoins">
-                  0
-                </span>
+                <span class="font-bold text-gray-800" id="hubCoins">0</span>
+                <span class="currency-mini" aria-label="Gems">💠 <b id="hubGems">0</b></span>
+                <span class="currency-mini" aria-label="Diamonds">💎 <b id="hubDiamonds">0</b></span>
               </div>
               <button aria-label="Menu" class="hamburger-btn" onclick="openSlidePanel()">
                 <div class="hamburger-line">
@@ -676,43 +676,14 @@
           <div class="flex items-center gap-2">
             <div class="glass-card px-3 py-2 rounded-2xl flex items-center gap-2 cursor-pointer" id="coinsBarIdols" onclick="openCoinsInfoModal()">
               <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" />
-              <span class="font-bold text-gray-800" id="idolsCoins">
-                0
-              </span>
+              <span class="font-bold text-gray-800" id="idolsCoins">0</span>
+              <span class="currency-mini" aria-label="Gems">💠 <b id="idolsGems">0</b></span>
+              <span class="currency-mini" aria-label="Diamonds">💎 <b id="idolsDiamonds">0</b></span>
             </div>
           </div>
         </div>
         <div class="px-4" id="idolsScrollArea">
-          <div class="mt-3 relative">
-            <button class="w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-150" onclick="toggleIdolSortDropdown()" onmousedown="this.style.background='rgba(180,195,210,0.95)'" onmouseenter="this.style.background='rgba(200,210,220,0.85)'" onmouseleave="this.style.background='rgba(255,255,255,0.75)'" onmouseup="this.style.background='rgba(200,210,220,0.85)'" ontouchend="this.style.background='rgba(255,255,255,0.75)'" ontouchstart="this.style.background='rgba(180,195,210,0.95)'" style="background:rgba(255,255,255,0.75); border:1px solid rgba(148,163,184,0.35);">
-              <div class="flex items-center gap-2">
-                <i class="fas fa-sort text-gray-500" style="font-size:11px;">
-                </i>
-                <span id="idolSortLabel" style="font-size:11px; font-weight:800; color:#374151;">
-                  Arrange Idols
-                </span>
-              </div>
-              <i class="fas fa-chevron-down text-gray-400" id="idolSortChevron" style="font-size:10px;">
-              </i>
-            </button>
-            <div class="hidden absolute left-0 right-0 z-50 mt-1 rounded-xl overflow-hidden shadow-xl" id="idolSortDropdown" style="background:rgba(255,255,255,0.97); border:1px solid rgba(148,163,184,0.4);">
-              <button class="w-full text-left px-3 py-2 flex items-center gap-2 transition-all duration-100" onclick="setIdolSortMode('rarity')" onmousedown="this.style.background='rgba(180,195,210,0.95)'" onmouseenter="this.style.background='rgba(200,210,220,0.7)'" onmouseleave="this.style.background=''" ontouchend="this.style.background=''" ontouchstart="this.style.background='rgba(180,195,210,0.95)'" style="font-size:11px; font-weight:800; color:#111827;">
-                Rarity Descending
-              </button>
-              <button class="w-full text-left px-3 py-2 flex items-center gap-2 transition-all duration-100" onclick="setIdolSortMode('power')" onmousedown="this.style.background='rgba(180,195,210,0.95)'" onmouseenter="this.style.background='rgba(200,210,220,0.7)'" onmouseleave="this.style.background=''" ontouchend="this.style.background=''" ontouchstart="this.style.background='rgba(180,195,210,0.95)'" style="font-size:11px; font-weight:800; color:#111827; border-top:1px solid rgba(148,163,184,0.2);">
-                Power Level Descending
-              </button>
-              <button class="w-full text-left px-3 py-2 flex items-center gap-2 transition-all duration-100" onclick="setIdolSortMode('name')" onmousedown="this.style.background='rgba(180,195,210,0.95)'" onmouseenter="this.style.background='rgba(200,210,220,0.7)'" onmouseleave="this.style.background=''" ontouchend="this.style.background=''" ontouchstart="this.style.background='rgba(180,195,210,0.95)'" style="font-size:11px; font-weight:800; color:#111827; border-top:1px solid rgba(148,163,184,0.2);">
-                Name Ascending
-              </button>
-              <button class="w-full text-left px-3 py-2 flex items-center gap-2 transition-all duration-100" onclick="setIdolSortMode('matches')" onmousedown="this.style.background='rgba(180,195,210,0.95)'" onmouseenter="this.style.background='rgba(200,210,220,0.7)'" onmouseleave="this.style.background=''" ontouchend="this.style.background=''" ontouchstart="this.style.background='rgba(180,195,210,0.95)'" style="font-size:11px; font-weight:800; color:#111827; border-top:1px solid rgba(148,163,184,0.2);">
-                Most Matches Descending
-              </button>
-              <button class="w-full text-left px-3 py-2 flex items-center gap-2 transition-all duration-100" onclick="setIdolSortMode('love')  // I-03 FIX: safe sort handled in sort comparator" onmousedown="this.style.background='rgba(180,195,210,0.95)'" onmouseenter="this.style.background='rgba(200,210,220,0.7)'" onmouseleave="this.style.background=''" ontouchend="this.style.background=''" ontouchstart="this.style.background='rgba(180,195,210,0.95)'" style="font-size:11px; font-weight:800; color:#111827; border-top:1px solid rgba(148,163,184,0.2);">
-                Love Level Descending
-              </button>
-            </div>
-          </div>
+          <div class="mt-3" id="idolSortHost"></div>
           <div class="mt-4">
             <div class="flex items-center justify-between">
               <h3 class="font-bold text-gray-800 text-lg">
@@ -746,9 +717,9 @@
           </p>
           <div class="glass-card px-3 py-2 rounded-2xl flex items-center gap-2 cursor-pointer" onclick="openCoinsInfoModal()">
             <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" />
-            <span class="font-bold text-gray-800" id="shopCoins">
-              0
-            </span>
+            <span class="font-bold text-gray-800" id="shopCoins">0</span>
+            <span class="currency-mini" aria-label="Gems">💠 <b id="shopGems">0</b></span>
+            <span class="currency-mini" aria-label="Diamonds">💎 <b id="shopDiamonds">0</b></span>
           </div>
         </div>
         <div class="px-4" id="shopScrollArea">
@@ -930,9 +901,9 @@
           </div>
         </div>
         <div class="lb-body">
-          <div id="leaderboardList">
-          </div>
+          <div id="leaderboardList"></div>
         </div>
+        <div class="lb-me-bar hidden" id="leaderboardMyRank" aria-live="polite"></div>
       </div>
       <!-- 12) Settings Screen -->
       <div class="screen hidden flex flex-col" id="settingsScreen">
@@ -1655,26 +1626,26 @@
     <script src="/gameplay/config.js?v=de909088"></script>
     <script src="/gameplay/js/01-firebase.js?v=d5da480b"></script>
     <script src="/gameplay/js/01b-secure-db.js?v=8b0c3c67"></script>
-    <script src="/gameplay/js/02-data.js?v=22acae56"></script>
-    <script src="/gameplay/js/03-core-ui.js?v=07f598ea"></script>
-    <script src="/gameplay/js/04-persistence.js?v=42c4f4ca"></script>
-    <script src="/gameplay/js/05-modals.js?v=93e8c9c5"></script>
+    <script src="/gameplay/js/02-data.js?v=4e41b959"></script>
+    <script src="/gameplay/js/03-core-ui.js?v=ed5f06fb"></script>
+    <script src="/gameplay/js/04-persistence.js?v=7b63c2b8"></script>
+    <script src="/gameplay/js/05-modals.js?v=0e24f0ac"></script>
     <script src="/gameplay/js/06-friends.js?v=c84609d7"></script>
-    <script src="/gameplay/js/07-battles.js?v=00c234f7"></script>
-    <script src="/gameplay/js/08-hub-leaderboard.js?v=92c83cd7"></script>
-    <script src="/gameplay/js/09-shop-idols.js?v=a4744fd9"></script>
+    <script src="/gameplay/js/07-battles.js?v=933c15b9"></script>
+    <script src="/gameplay/js/08-hub-leaderboard.js?v=42a1e0c9"></script>
+    <script src="/gameplay/js/09-shop-idols.js?v=3a05baf2"></script>
     <script src="/gameplay/js/10-showtime-abilities.js?v=c2ae12b7"></script>
-    <script src="/gameplay/js/11-showtime-game.js?v=d7be8e9b"></script>
-    <script src="/gameplay/js/12-quests-daily.js?v=7134f2a3"></script>
-    <script src="/gameplay/js/13-account-gifts.js?v=2ce442e5"></script>
-    <script src="/gameplay/js/14-spotlight.js?v=80c03034"></script>
-    <script src="/gameplay/js/15-snake.js?v=2ed72c2f"></script>
-    <script src="/gameplay/js/16-extras.js?v=9b801512"></script>
+    <script src="/gameplay/js/11-showtime-game.js?v=369898a9"></script>
+    <script src="/gameplay/js/12-quests-daily.js?v=6a5636ef"></script>
+    <script src="/gameplay/js/13-account-gifts.js?v=40ef094b"></script>
+    <script src="/gameplay/js/14-spotlight.js?v=86bfe29c"></script>
+    <script src="/gameplay/js/15-snake.js?v=65b6a62c"></script>
+    <script src="/gameplay/js/16-extras.js?v=9608e2bf"></script>
     <script src="/gameplay/js/17-polish.js?v=f4713b68"></script>
-    <script src="/gameplay/js/18-meta-data.js?v=ee79e49b"></script>
-    <script src="/gameplay/js/19-meta-core.js?v=05e2e733"></script>
-    <script src="/gameplay/js/20-meta-ui.js?v=de3dfbf5"></script>
-    <script src="/gameplay/js/21-choreo-echo.js?v=c67fec80"></script>
+    <script src="/gameplay/js/18-meta-data.js?v=a1b63fdb"></script>
+    <script src="/gameplay/js/19-meta-core.js?v=a3816f94"></script>
+    <script src="/gameplay/js/20-meta-ui.js?v=08420bec"></script>
+    <script src="/gameplay/js/21-choreo-echo.js?v=fb4328f9"></script>
 
   </body>
 </html>
