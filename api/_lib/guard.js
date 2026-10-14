@@ -15,6 +15,8 @@ const LIMITS = {
   SP_SINGLE: 150,
   SP_HOURLY: 800,
   SP_MAX: 20000,
+  DIAMONDS_SINGLE_EARN: 10,
+  DIAMONDS_HOURLY_EARN: 20,
   SECS_SINGLE: 120,
   SECS_HOURLY: 3700,
   FRIEND_REQ_HOURLY: 30,
@@ -23,7 +25,7 @@ const LIMITS = {
   MAX_ITEM_BYTES: 60000
 };
 
-const ITEM_MAPS = ['ownedIdols', 'ownedAvatars', 'ownedProfileBackgrounds', 'ownedProfileTitles', 'marriedIdols'];
+const ITEM_MAPS = ['ownedIdols', 'ownedAvatars', 'ownedProfileBackgrounds', 'ownedProfileTitles', 'marriedIdols', 'ownedFrames'];
 const LEVEL_FIELDS = [
   ['level', 'lvl'],
   ['spotlightLevel', 'sl'],
@@ -119,6 +121,23 @@ function sanitizeOwnState(oldState, nextState, guard, now, uid) {
     nC = maxC;
   }
   next.coins = nC;
+
+  const oD = Math.max(0, Math.floor(num(old.diamonds)));
+  let nD = Math.max(0, Math.floor(num(next.diamonds, oD)));
+  const diamondPrice = 1000;
+  const boughtDiamonds = Math.floor(Math.max(0, oC - nC) / diamondPrice);
+  const diamondEarnRoom = Math.max(0, LIMITS.DIAMONDS_HOURLY_EARN - num(w.dg));
+  const diamondEarnAllowed = Math.min(LIMITS.DIAMONDS_SINGLE_EARN, diamondEarnRoom);
+  const maxD = oD + boughtDiamonds + diamondEarnAllowed;
+  if (nD > maxD) {
+    flag('diamond_jump', `diamonds ${oD} -> ${nD}, allowed up to ${maxD}`);
+    nD = maxD;
+  }
+  const unpurchasedGain = Math.max(0, nD - oD - boughtDiamonds);
+  if (unpurchasedGain > 0) w.dg = num(w.dg) + unpurchasedGain;
+  next.diamonds = nD;
+
+  next.idolFrameAssignments = next.idolFrameAssignments && typeof next.idolFrameAssignments === 'object' && !Array.isArray(next.idolFrameAssignments) ? next.idolFrameAssignments : {};
 
   for (const [field, key] of LEVEL_FIELDS) {
     const oL = Math.max(0, Math.floor(num(old[field])));
