@@ -206,7 +206,7 @@ const _COIN_CAPS = {
   snakeventeen: 5_000,   // ~60 segments * 75 + streaks
   offlinelove:  250_000, // P-07 FIX: raised for high-love-level long-offline players
   quest:        120_000, // top quest reward
-  season:         3_000, // season tier reward (max single tier)
+  season:        25_000, // Season Pass coin rewards are configured in config.js
   mastery:        2_000, // idol level-up reward + fandom run bonus
 };
 
