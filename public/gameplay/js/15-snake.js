@@ -1,4 +1,5 @@
 // ── snakeventeen ──────────────────────────────────────────────
+const SNK = GAME_CONFIG.games.snakeventeen;
 const SNAKE_STATE = {
   gridSize: 10,
   snake: [],
@@ -11,12 +12,16 @@ const SNAKE_STATE = {
   },
   headIdolKey: '',
   gameTimer: null,
-  timeLeft: 30,
+  timeLeft: SNK.timeLimitSec,
   score: 0,
   gameOver: false,
   lastMoveTime: 0,
-  moveInterval: 300,
+  moveInterval: SNK.moveIntervalMs,
   touchStart: null,
+  dirQueue: [],
+  headDir: 'right',
+  turn: 0,
+  swipeBound: false,
   clockTimer: null,
   lastMoveDir: 'right',
   cells: null,
@@ -53,7 +58,7 @@ function confirmExitsnakeventeen() {
 function resumesnakeventeenAfterCancel() {
   closeModal();
   SNAKE_STATE.gameOver = false;
-  SNAKE_STATE.timeLeft = SNAKE_STATE._timerPausedAt ?? 30;
+  SNAKE_STATE.timeLeft = SNAKE_STATE._timerPausedAt ?? SNK.timeLimitSec;
   document.getElementById('snakeTimer').textContent = String(SNAKE_STATE.timeLeft);
   clearInterval(SNAKE_STATE.gameTimer);
   SNAKE_STATE.gameTimer = setInterval(moveSnake, SNAKE_STATE.moveInterval);
@@ -111,15 +116,18 @@ function initsnakeventeen(battleSpec = null) {
   SNAKE_STATE.snake = [];
   SNAKE_STATE.direction = 'right';
   SNAKE_STATE.lastMoveDir = 'right';
+  SNAKE_STATE.headDir = 'right';
+  SNAKE_STATE.dirQueue = [];
+  SNAKE_STATE.turn = 0;
   SNAKE_STATE.gameOver = false;
   SNAKE_STATE.score = 0;
   stopSnakeClock();
   clearInterval(SNAKE_STATE.gameTimer);
-  SNAKE_STATE.timeLeft = 30;
+  SNAKE_STATE.timeLeft = SNK.timeLimitSec;
   SNAKE_STATE.foodSchedule = (battleSpec && battleSpec.foodSchedule) ? battleSpec.foodSchedule : null;
   SNAKE_STATE.nextFoodIdx = 0;
-  document.getElementById('snakeLengthDisplay').textContent = '3';
-  document.getElementById('snakeTimer').textContent = '30';
+  document.getElementById('snakeLengthDisplay').textContent = String(SNK.startLength);
+  document.getElementById('snakeTimer').textContent = String(SNK.timeLimitSec);
   // Determine head idol: use battle spec if provided, otherwise pick randomly
   let headIdol;
   if (battleSpec && battleSpec.headIdolKey) {
@@ -136,29 +144,14 @@ function initsnakeventeen(battleSpec = null) {
   }
   const startX = Math.floor(SNAKE_STATE.gridSize / 2);
   const startY = startX;
-  SNAKE_STATE.snake = [{
-    x: startX,
-    y: startY
-  }, {
-    x: startX - 1,
-    y: startY
-  }, {
-    x: startX - 2,
-    y: startY
-  }];
+  SNAKE_STATE.snake = Array.from({ length: SNK.startLength }, (_, i) => ({ x: startX - i, y: startY }));
   placeSnakeFood();
   renderSnakeGrid();
   document.getElementById('snakeUpBtn').onclick = () => changeSnakeDirection('up');
   document.getElementById('snakeDownBtn').onclick = () => changeSnakeDirection('down');
   document.getElementById('snakeLeftBtn').onclick = () => changeSnakeDirection('left');
   document.getElementById('snakeRightBtn').onclick = () => changeSnakeDirection('right');
-  const grid = document.getElementById('snakeGrid');
-  if (!SNAKE_STATE.cellsBound) {
-    grid.addEventListener('touchstart', handleSnakeTouchStart, { passive: true });
-    grid.addEventListener('touchmove', handleSnakeTouchMove, { passive: false });
-    grid.addEventListener('touchend', handleSnakeTouchEnd, { passive: true });
-    SNAKE_STATE.cellsBound = true;
-  }
+  bindSnakeSwipe();
 }
 
 function startSnakeCountdown() {
@@ -204,7 +197,7 @@ function startSnakeClock() {
     document.getElementById('snakeTimer').textContent = SNAKE_STATE.timeLeft;
     // —— Battle schedule: spawn food at prescribed times ——
     if (SNAKE_STATE.foodSchedule && SNAKE_STATE.nextFoodIdx < SNAKE_STATE.foodSchedule.length) {
-      const elapsed = 30 - SNAKE_STATE.timeLeft;
+      const elapsed = SNK.timeLimitSec - SNAKE_STATE.timeLeft;
       const nextScheduled = SNAKE_STATE.foodSchedule[SNAKE_STATE.nextFoodIdx];
       if (elapsed >= nextScheduled.appearAtSec) {
         SNAKE_STATE.food = {
@@ -227,6 +220,8 @@ function startSnakeClock() {
 function moveSnake() {
   if (SNAKE_STATE.gameOver) return;
   const head = SNAKE_STATE.snake[0];
+  if (SNAKE_STATE.dirQueue.length) SNAKE_STATE.direction = SNAKE_STATE.dirQueue.shift();
+  SNAKE_STATE.turn = snakeTurnSign(SNAKE_STATE.lastMoveDir, SNAKE_STATE.direction);
   SNAKE_STATE.lastMoveDir = SNAKE_STATE.direction;
   let newHead = {
     x: head.x,
@@ -301,11 +296,14 @@ function ensureSnakeCells() {
   for (let i = 0; i < n; i++) {
     const cell = document.createElement('div');
     cell.className = 'sn-cell';
+    const tile = document.createElement('div');
+    tile.className = 'sn-tile';
     const img = document.createElement('img');
     img.alt = '';
     img.draggable = false;
     img.decoding = 'async';
-    cell.appendChild(img);
+    tile.appendChild(img);
+    cell.appendChild(tile);
     frag.appendChild(cell);
     cells.push(cell);
   }
@@ -315,70 +313,114 @@ function ensureSnakeCells() {
   SNAKE_STATE.cellSrc = new Array(n).fill('');
 }
 
-// Diff-based: only cells whose content changed are touched (no innerHTML rebuild per tick)
+const SNAKE_VEC = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+
+// +1 = clockwise turn, -1 = counter-clockwise, 0 = straight
+function snakeTurnSign(from, to) {
+  if (!from || !to || from === to) return 0;
+  const a = SNAKE_VEC[from], b = SNAKE_VEC[to];
+  const cross = a[0] * b[1] - a[1] * b[0];
+  return cross > 0 ? 1 : cross < 0 ? -1 : 0;
+}
+
+function snakeSide(from, to) {
+  const dx = to.x - from.x, dy = to.y - from.y;
+  return dx > 0 ? 'R' : dx < 0 ? 'L' : dy > 0 ? 'B' : 'T';
+}
+
+// Diff-based: each tile's look is a "signature" (kind + which sides join the next segment + head facing + turn).
+// Only cells whose signature changed are touched (no innerHTML rebuild per tick).
 function renderSnakeGrid() {
   ensureSnakeCells();
   const size = SNAKE_STATE.gridSize;
-  const want = new Array(size * size).fill('');
-  const src = new Array(size * size).fill('');
+  const total = size * size;
+  const want = new Array(total).fill('');
+  const cls = new Array(total).fill('sn-cell');
+  const src = new Array(total).fill('');
   const f = SNAKE_STATE.food;
   if (f && f.imgSrc) {
     const fi = f.y * size + f.x;
     want[fi] = 'food';
+    cls[fi] = 'sn-cell sn-food';
     src[fi] = f.imgSrc;
   }
   const bodySrc = `./imgs/${SNAKE_STATE.headIdolKey}/1.jpg`;
   const snake = SNAKE_STATE.snake;
   for (let k = 0; k < snake.length; k++) {
     const idx = snake[k].y * size + snake[k].x;
-    if (idx < 0 || idx >= want.length) continue;
-    want[idx] = k === 0 ? 'head' : 'body';
+    if (idx < 0 || idx >= total) continue;
+    const joins = [];
+    if (k > 0) joins.push(snakeSide(snake[k], snake[k - 1]));
+    if (k < snake.length - 1) joins.push(snakeSide(snake[k], snake[k + 1]));
+    let c = 'sn-cell sn-body ' + joins.map(j => 'j' + j).join(' ');
+    if (k === 0) {
+      const facing = snake.length > 1 ? (() => {
+        const s = snakeSide(snake[1], snake[0]);
+        return s === 'R' ? 'right' : s === 'L' ? 'left' : s === 'B' ? 'down' : 'up';
+      })() : SNAKE_STATE.direction;
+      SNAKE_STATE.headDir = facing;
+      c += ' sn-head hd-' + facing;
+      if (SNAKE_STATE.turn) c += SNAKE_STATE.turn > 0 ? ' tn-cw' : ' tn-ccw';
+    } else if (k === snake.length - 1) {
+      c += ' sn-tail';
+    }
+    want[idx] = c;
+    cls[idx] = c;
     src[idx] = bodySrc;
   }
+  SNAKE_STATE.turn = 0;
   const cells = SNAKE_STATE.cells, kinds = SNAKE_STATE.cellKinds, srcs = SNAKE_STATE.cellSrc;
-  for (let i = 0; i < want.length; i++) {
+  for (let i = 0; i < total; i++) {
     if (kinds[i] !== want[i]) {
-      const cls = want[i] === 'head' ? 'sn-cell sn-body sn-head' : want[i] === 'body' ? 'sn-cell sn-body' : want[i] === 'food' ? 'sn-cell sn-food' : 'sn-cell';
-      cells[i].className = cls;
+      cells[i].className = cls[i];
       kinds[i] = want[i];
     }
     if (want[i] && srcs[i] !== src[i]) {
-      cells[i].firstChild.src = src[i];
+      cells[i].firstChild.firstChild.src = src[i];
       srcs[i] = src[i];
     }
   }
 }
 
 function changeSnakeDirection(dir) {
-  const opposites = {
-    up: 'down',
-    down: 'up',
-    left: 'right',
-    right: 'left'
+  const opposites = { up: 'down', down: 'up', left: 'right', right: 'left' };
+  if (SNAKE_STATE.gameOver) return;
+  const q = SNAKE_STATE.dirQueue;
+  const ref = q.length ? q[q.length - 1] : SNAKE_STATE.lastMoveDir;
+  if (dir === ref || opposites[dir] === ref) return;
+  if (q.length >= 2) return;
+  q.push(dir); // applied on the next tick, so two quick swipes both register
+}
+
+// Swipe anywhere on the screen. Direction fires as soon as the finger travels far enough,
+// then the origin resets so chained swipes work without lifting the finger.
+function bindSnakeSwipe() {
+  if (SNAKE_STATE.swipeBound) return;
+  const scr = document.getElementById('snakeScreen');
+  if (!scr) return;
+  SNAKE_STATE.swipeBound = true;
+  const THRESH = 22;
+  let ox = 0, oy = 0, active = false;
+  const live = () => !scr.classList.contains('hidden') && !SNAKE_STATE.gameOver;
+  const start = (x, y) => { ox = x; oy = y; active = true; };
+  const move = (x, y) => {
+    if (!active || !live()) return;
+    const dx = x - ox, dy = y - oy;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < THRESH) return;
+    changeSnakeDirection(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+    ox = x; oy = y;
   };
-  if (opposites[dir] === SNAKE_STATE.lastMoveDir) return;
-  SNAKE_STATE.direction = dir;
-}
-
-function handleSnakeTouchStart(e) {
-  SNAKE_STATE.touchStart = e.touches[0];
-}
-
-function handleSnakeTouchMove(e) {
-  e.preventDefault();
-}
-
-function handleSnakeTouchEnd(e) {
-  if (!SNAKE_STATE.touchStart) return;
-  const touch = e.changedTouches[0];
-  const dx = touch.clientX - SNAKE_STATE.touchStart.clientX;
-  const dy = touch.clientY - SNAKE_STATE.touchStart.clientY;
-  if (Math.abs(dx) > Math.abs(dy)) {
-    changeSnakeDirection(dx > 0 ? 'right' : 'left');
-  } else {
-    changeSnakeDirection(dy > 0 ? 'down' : 'up');
-  }
-  SNAKE_STATE.touchStart = null;
+  scr.addEventListener('touchstart', e => { if (e.touches[0]) start(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  scr.addEventListener('touchmove', e => {
+    if (!live()) return;
+    if (e.cancelable) e.preventDefault();
+    if (e.touches[0]) move(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+  scr.addEventListener('touchend', () => { active = false; }, { passive: true });
+  scr.addEventListener('touchcancel', () => { active = false; }, { passive: true });
+  scr.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+  window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+  window.addEventListener('mouseup', () => { active = false; });
 }
 
 function showSnakePlus50() {
@@ -408,7 +450,7 @@ function endSnakeGame() {
   stopSnakeClock();
   SNAKE_STATE.gameOver = true;
   const length = SNAKE_STATE.snake.length;
-  const passedSnake = SNAKE_STATE.score >= 4;
+  const passedSnake = SNAKE_STATE.score >= SNK.passIdolsEaten;
   if (battleCtx) {
     // Battle mode – no coins, no streak
     openBattleSnakeResultModal(length);
@@ -416,9 +458,9 @@ function endSnakeGame() {
     GAME_STATE.battles.active = null;
   } else {
     // Normal game
-    const coins = length * 75;
+    const coins = length * SNK.coinsPerLength;
     // PATCH BUG3: credit coins BEFORE daily-box/modal so balance is correct
-    if (length >= 9) {
+    if (length >= SNK.streakLength) {
       GAME_STATE.snakeventeenStreak = (GAME_STATE.snakeventeenStreak || 0) + 1;
       if ((GAME_STATE.stats.snakeventeenBestStreak || 0) < GAME_STATE.snakeventeenStreak) {
         GAME_STATE.stats.snakeventeenBestStreak = GAME_STATE.snakeventeenStreak;
@@ -426,9 +468,9 @@ function endSnakeGame() {
     } else {
       GAME_STATE.snakeventeenStreak = 0;
     }
-    const streakBonus = (GAME_STATE.snakeventeenStreak || 0) * 10;
+    const streakBonus = (GAME_STATE.snakeventeenStreak || 0) * SNK.streakBonusPerPoint;
     addCoinsToGame(coins + streakBonus, 'snakeventeen'); // PATCH BUG3: credited first
-    if (SNAKE_STATE.score >= 4) {
+    if (passedSnake) {
       GAME_STATE.snakeventeenLevel = (GAME_STATE.snakeventeenLevel || 0) + 1;
       // L99: grant a daily box for completing a Snakeventeen level
       ensureDailyResetIfNeeded();
@@ -478,7 +520,7 @@ function endSnakeGame() {
       GAME_STATE.stats.snakeventeenLongestLength = length;
     }
     if (passedSnake) fireLevelSuccessBurst();
-    try { Meta.onRunComplete('snakeventeen', { passed: passedSnake, elite: length >= 9, coins: coins + streakBonus }); } catch (e) { console.warn('[Meta]', e); }
+    try { Meta.onRunComplete('snakeventeen', { passed: passedSnake, elite: length >= SNK.streakLength, coins: coins + streakBonus, value: length }); } catch (e) { console.warn('[Meta]', e); }
     openSnakeResultModal(coins, streakBonus, length, passedSnake);
   }
   savePlayerState();
@@ -494,7 +536,7 @@ function openSnakeResultModal(coins, streakBonus, length, passedLevel = false) {
           <p class="text-3xl font-black text-gray-900">${length}</p>
         </div>
         <div class="earn-row">
-          <div class="label">Length × 50</div>
+          <div class="label">Length × ${SNK.coinsPerLength}</div>
           <div class="val">+${coins} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
         </div>
         ${streakBonus > 0 ? `` : ''}
