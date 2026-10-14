@@ -20,6 +20,8 @@ window.__svtOnServerClamp = function (v) {
   if (typeof v.spotlightLevel === 'number') GAME_STATE.spotlightLevel = v.spotlightLevel;
   if (typeof v.snakeventeenLevel === 'number') GAME_STATE.snakeventeenLevel = v.snakeventeenLevel;
   if (typeof v.rings === 'number') GAME_STATE.rings = v.rings;
+  if (typeof v.gems === 'number') GAME_STATE.gems = v.gems;
+  if (typeof v.diamonds === 'number') GAME_STATE.diamonds = v.diamonds;
   if (typeof v.totalCoinsEarned === 'number' && GAME_STATE.stats) GAME_STATE.stats.totalCoinsEarned = v.totalCoinsEarned;
   _snapshotState();
   try { savePlayerStateLocal(); } catch (e) {}
@@ -60,6 +62,10 @@ function buildPlayerStatePayload() {
   return safeStructuredClone({
     level: GAME_STATE.level,
     coins: GAME_STATE.coins,
+    gems: GAME_STATE.gems || 0,
+    diamonds: GAME_STATE.diamonds || 0,
+    ownedIdolFrames: GAME_STATE.ownedIdolFrames || {},
+    equippedIdolFrames: GAME_STATE.equippedIdolFrames || {},
     stats: GAME_STATE.stats,
     quests: GAME_STATE.quests,
     pendingNextLevel: !!GAME_STATE.pendingNextLevel,
@@ -184,6 +190,10 @@ function applyLoadedPlayerState(payload) {
   if (!payload) return;
   GAME_STATE.level = payload.level ?? 0;
   GAME_STATE.coins = payload.coins ?? 0;
+  GAME_STATE.gems = Math.max(0, Number(payload.gems) || 0);
+  GAME_STATE.diamonds = Math.max(0, Number(payload.diamonds) || 0);
+  GAME_STATE.ownedIdolFrames = (payload.ownedIdolFrames && typeof payload.ownedIdolFrames === 'object') ? payload.ownedIdolFrames : {};
+  GAME_STATE.equippedIdolFrames = (payload.equippedIdolFrames && typeof payload.equippedIdolFrames === 'object') ? payload.equippedIdolFrames : {};
   GAME_STATE.pendingNextLevel = !!payload.pendingNextLevel;
   GAME_STATE.equippedAvatarKey = payload.equippedAvatarKey || null;
   GAME_STATE.ownedAvatars = payload.ownedAvatars || {};
