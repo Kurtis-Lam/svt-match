@@ -177,14 +177,8 @@ const TIMED_QUEST_REWARD_COINS = {
     1000: 120000
   }
 };
-const IDOL_SHOP_COST = Object.fromEntries(Object.entries(GAME_CONFIG.idols.shopCost || {}).map(([rarity, gemValue]) => [
-  rarity,
-  Math.max(1, Math.ceil(Number(gemValue || 0) / Math.max(1, Number(GAME_CONFIG.idols.gemValuePerDiamondForIdols) || 500)))
-]));
-function formatNumber(value) {
-  const n = Number(value);
-  return (Number.isFinite(n) ? Math.floor(n) : 0).toLocaleString('en-US');
-}
+const IDOL_DIAMOND_CONVERSION = Math.max(1, Number(GAME_CONFIG.shop?.diamondConversionCoinsPerDiamond) || 500);
+const IDOL_SHOP_COST = { kkuma: 5, ...Object.fromEntries(Object.entries(GAME_CONFIG.idols.shopCostCoins || { legendary: 49999, mythic: 29999, epic: 19999, superrare: 12999, rare: 7999 }).map(([rarity, coinCost]) => [rarity, Math.max(1, Math.ceil(Number(coinCost) / IDOL_DIAMOND_CONVERSION))])) };
 const BATTLE_GAMES = {
   showtime: {
     name: 'Showtime',
@@ -420,10 +414,9 @@ function escapeHtml(str) {
 const GAME_STATE = {
   level: 0,
   coins: 0,
-  gems: 0,
   diamonds: 0,
-  ownedIdolFrames: {},
-  equippedIdolFrames: {},
+  ownedFrames: {},
+  idolFrameAssignments: {},
   inLevel: false,
   levelJustFinished: false,
   matchedPairs: 0,
