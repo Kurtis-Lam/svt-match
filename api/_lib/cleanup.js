@@ -3,7 +3,10 @@ const { toArr } = require('./guard');
 
 async function removeUserEverywhere(uid) {
   const db = getAdmin().database();
-  const snap = await db.ref('users').once('value');
+  const [snap, seasonsSnap] = await Promise.all([
+    db.ref('users').once('value'),
+    db.ref('seasons').once('value')
+  ]);
   const updates = {};
   let touched = 0;
   snap.forEach((child) => {
@@ -38,6 +41,10 @@ async function removeUserEverywhere(uid) {
         }
       });
     });
+  });
+  // Also remove this user's entries from every season leaderboard.
+  seasonsSnap.forEach((season) => {
+    updates[`seasons/${season.key}/${uid}`] = null;
   });
   updates[`users/${uid}`] = null;
   updates[`guard/${uid}`] = null;

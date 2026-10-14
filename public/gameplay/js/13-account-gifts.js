@@ -1455,75 +1455,60 @@ async function deleteAccountEverywhere() {
   if (!currentUser) return;
   const passInput = document.getElementById('deleteConfirmPassword');
   const pass = passInput ? passInput.value : '';
+  const user = auth.currentUser;
+  if (!user) {
+    setModalError('Please sign in again, then retry.');
+    return;
+  }
 
-  // ── Re-auth via Firebase Auth ────────────────────────────────────
+  // Re-authenticate before requesting this sensitive operation.
   try {
     const fakeEmail = usernameToEmail(currentUser.username);
     const cred = firebase.auth.EmailAuthProvider.credential(fakeEmail, pass);
-    await auth.currentUser.reauthenticateWithCredential(cred);
+    await user.reauthenticateWithCredential(cred);
+    // Ensure the API receives the freshly authenticated ID token.
+    await user.getIdToken(true);
   } catch (e) {
     setModalError('Incorrect password.');
     return;
   }
+
   stopTimer();
   stopSecondsOnlineTicker();
   stopDailyResetWatcher();
   stopFriendsMetaRefresh();
-  if (!db) {
-    wipeLocalUserData(currentUser);
-    localStorage.removeItem('currentUser');
-    currentUser = null;
-    closeModal();
-    showToast("Account deleted", "success");
-    showScreen('welcomeScreen');
-    return;
-  }
-  const myId = currentUser.id;
-  try {
-    // -- 1. Ensure any legacy password hash is gone from DB
-    await db.ref(`users/${myId}/password`).remove().catch(() => {});
+  if (typeof stopRealtimeSync === 'function') stopRealtimeSync();
 
-    // -- 2. Compute all cross-user cleanup (read phase) ------------------
-    const snap = await db.ref('users').once('value');
-    const val = snap.val() || {};
-    const updates = {};
-    Object.keys(val).forEach(uid => {
-      const u = val[uid];
-      const ps = u?.playerState || {};
-      const friends = ps.friends || {};
-      const battles = ps.battles || {};
-      if (friends.list || friends.incoming || friends.outgoing) {
-        const list = Array.isArray(friends.list) ? friends.list : [];
-        const incoming = Array.isArray(friends.incoming) ? friends.incoming : [];
-        const outgoing = Array.isArray(friends.outgoing) ? friends.outgoing : [];
-        const newList = list.filter(f => f.userId !== myId);
-        const newIncoming = incoming.filter(r => r.fromUserId !== myId && r.toUserId !== myId);
-        const newOutgoing = outgoing.filter(r => r.toUserId !== myId && r.fromUserId !== myId);
-        if (newList.length !== list.length) updates[`users/${uid}/playerState/friends/list`] = newList;
-        if (newIncoming.length !== incoming.length) updates[`users/${uid}/playerState/friends/incoming`] = newIncoming;
-        if (newOutgoing.length !== outgoing.length) updates[`users/${uid}/playerState/friends/outgoing`] = newOutgoing;
-      }
-      if (battles.pendingIncoming || battles.pendingOutgoing) {
-        const pi = Array.isArray(battles.pendingIncoming) ? battles.pendingIncoming : [];
-        const po = Array.isArray(battles.pendingOutgoing) ? battles.pendingOutgoing : [];
-        const newPi = pi.filter(b => b.fromUserId !== myId && b.toUserId !== myId);
-        const newPo = po.filter(b => b.fromUserId !== myId && b.toUserId !== myId);
-        if (newPi.length !== pi.length) updates[`users/${uid}/playerState/battles/pendingIncoming`] = newPi;
-        if (newPo.length !== po.length) updates[`users/${uid}/playerState/battles/pendingOutgoing`] = newPo;
-      }
-    });
-    if (Object.keys(updates).length) await db.ref().update(updates);
-    // -- 3. Delete own DB record --
-    await db.ref(`users/${myId}`).remove().catch(() => {});
-    // -- 4. Delete Firebase Auth account last (point of no return) --
-    await auth.currentUser?.delete();
+  try {
+    if (!db) {
+      // Legacy/offline fallback: there is no database profile to clean up.
+      await user.delete();
+      wipeLocalUserData(currentUser);
+      localStorage.removeItem('currentUser');
+      currentUser = null;
+      closeModal();
+      showToast('Account deleted', 'success');
+      showScreen('welcomeScreen');
+      return;
+    }
+
+    if (typeof window.svtApi !== 'function') {
+      throw new Error('Secure account-deletion service is unavailable. Refresh the page and try again.');
+    }
+
+    // The server performs the entire cross-user cleanup using Firebase Admin,
+    // avoiding stale client snapshots and the normal write gateway restrictions.
+    await window.svtApi('/api/game/delete-account', { body: { confirm: true } });
+
     wipeLocalUserData(currentUser);
     localStorage.removeItem('currentUser');
+    try { await auth.signOut(); } catch (e) {}
     closeModal();
     currentUser = null;
-    showToast("Account deleted", "success");
+    GAME_STATE.equippedIdolKey = null;
+    showToast('Account deleted', 'success');
     showScreen('welcomeScreen');
   } catch (e) {
-    setModalError("Delete failed: " + e.message);
+    setModalError('Delete failed: ' + e.message + ' If needed, refresh the page and try again.');
   }
 }
