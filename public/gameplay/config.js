@@ -11,9 +11,9 @@
      3  dailyBox        daily box star-upgrade chances + rewards, daily wheel
      4  idols           shop prices, rarity odds, power upgrade costs
      5  love            love XP curve, gift XP, offline love income
-     6  shop            rings, gifts, avatars, profile backgrounds/titles, currencies & frames
-     7  seasonPass      17-level XP progression and configurable rewards
-     8  quests          idol / timed / per-game tiered quests + DAILY quests
+     6  shop            rings, gifts, avatars, profile backgrounds & titles
+     7  quests          idol / timed / per-game tiered quests + DAILY quests
+     8  season          season names, SXP rules, sub-levels (tiers), weekly goals
      9  mastery         idol mastery XP + level-up rewards + fandom bonus
 
    NOTE: the server (api/_lib/guard.js) has its own anti-cheat ceilings
@@ -32,7 +32,7 @@ const GAME_CONFIG = {
     echo: 5000,
     offlinelove: 250000,
     quest: 120000,
-    season: 25000,
+    season: 3000,
     mastery: 2000,
     unknown: 200000,
   },
@@ -92,10 +92,7 @@ const GAME_CONFIG = {
 
   /* ── 4. IDOLS ──────────────────────────────────────────────────────────── */
   idols: {
-    // These legacy gem-value numbers are divided by gemValuePerDiamondForIdols
-    // to determine the final Diamond price. Idols are purchased with Diamonds only.
-    shopCost: { legendary: 49999, mythic: 29999, epic: 19999, superrare: 12999, rare: 7999 },
-    gemValuePerDiamondForIdols: 500,
+    shopCostCoins: { legendary: 49999, mythic: 29999, epic: 19999, superrare: 12999, rare: 7999 },
     // relative odds of each rarity showing up in a level / spotlight / snake / echo pick
     rarityOdds: { kkuma: 1, legendary: 2, mythic: 4, epic: 13, superrare: 24, rare: 56 },
     maxPower: 17,
@@ -121,18 +118,10 @@ const GAME_CONFIG = {
 
   /* ── 6. SHOP ───────────────────────────────────────────────────────────── */
   shop: {
+    diamondPriceCoins: 1000,
+    diamondConversionCoinsPerDiamond: 500,
+    frames: [],
     ringPrice: 100000,
-    currency: {
-      gemPackSize: 1000,
-      gemPackCoinPrice: 2500000,
-      gemsPerDiamond: 1000,
-    },
-    // Add frame PNGs under public/gameplay/imgs/assets/frames/ and update each image path here.
-    frames: [
-      { key: 'gold_glow', name: 'Gold Glow', priceDiamonds: 2, image: './imgs/assets/frames/gold_glow.png', border: 'linear-gradient(135deg,#fde68a,#b45309,#fef3c7)' },
-      { key: 'rose_prism', name: 'Rose Prism', priceDiamonds: 3, image: './imgs/assets/frames/rose_prism.png', border: 'linear-gradient(135deg,#f9a8d4,#be185d,#fce7f3)' },
-      { key: 'galaxy', name: 'Galaxy', priceDiamonds: 5, image: './imgs/assets/frames/galaxy.png', border: 'linear-gradient(135deg,#a78bfa,#312e81,#c4b5fd)' },
-    ],
     gifts: [
       { key: 'svt_card_set', name: 'SVT Card Set', price: 500, xp: 10 },     // xp = love XP given
       { key: 'gose_magazine', name: 'GoSe Magazine', price: 2400, xp: 50 },
@@ -154,39 +143,7 @@ const GAME_CONFIG = {
     },
   },
 
-  /* ── 7. BRAWL-PASS STYLE SEASON PROGRESSION ────────────────────────────── */
-  seasonPass: {
-    maxLevel: 17,
-    xpPerRun: {
-      showtime: { pass: 120, fail: 45 },
-      spotlight: { pass: 110, fail: 40 },
-      snakeventeen: { pass: 115, fail: 42 },
-      echo: { pass: 120, fail: 45 },
-    },
-    // xpRequired is incremental XP needed to move from the previous pass level.
-    // Rewards are claimable once their level is reached. `box` uses dailyBox's star odds and coin rewards.
-    levels: [
-      { xpRequired: 100, reward: { type: 'coins', amount: 1000 } },
-      { xpRequired: 140, reward: { type: 'box' } },
-      { xpRequired: 180, reward: { type: 'diamonds', amount: 1 } },
-      { xpRequired: 220, reward: { type: 'coins', amount: 2500 } },
-      { xpRequired: 260, reward: { type: 'box' } },
-      { xpRequired: 300, reward: { type: 'diamonds', amount: 1 } },
-      { xpRequired: 350, reward: { type: 'coins', amount: 5000 } },
-      { xpRequired: 400, reward: { type: 'box' } },
-      { xpRequired: 460, reward: { type: 'diamonds', amount: 2 } },
-      { xpRequired: 520, reward: { type: 'coins', amount: 8000 } },
-      { xpRequired: 590, reward: { type: 'box' } },
-      { xpRequired: 660, reward: { type: 'diamonds', amount: 3 } },
-      { xpRequired: 740, reward: { type: 'coins', amount: 15000 } },
-      { xpRequired: 820, reward: { type: 'box' } },
-      { xpRequired: 910, reward: { type: 'diamonds', amount: 5 } },
-      { xpRequired: 1000, reward: { type: 'box' } },
-      { xpRequired: 1100, reward: { type: 'diamonds', amount: 10 } },
-    ],
-  },
-
-  /* ── 8. QUESTS ─────────────────────────────────────────────────────────── */
+  /* ── 7. QUESTS ─────────────────────────────────────────────────────────── */
   quests: {
     // "Get <idol> N times" — one quest per idol, tiers advance after each claim
     idolMatch: {
@@ -234,7 +191,50 @@ const GAME_CONFIG = {
     },
   },
 
-  /* ── 8. IDOL MASTERY ───────────────────────────────────────────────────── */
+  /* ── 8. SEASON / BRAWL PASS ────────────────────────────────────────────── */
+  season: {
+    startsOn: [2026, 10, 12],
+    durationDays: 28,
+    sxp: {
+      levelPassed: 10,
+      levelFailed: 3,
+      streakMaintained: 5,
+      leadBonusEveryMasteryLevels: 4,
+      fullValueRunsPerDay: 12,
+      overflowPerRun: 1,
+      battleWin: 40,
+      battleTie: 20,
+      battleLoss: 15,
+    },
+    // xpRequired is the additional Season XP needed to reach this level.
+    // Level 1 is immediately claimable; 2–17 each require progressively more XP.
+    levels: [
+      { xpRequired: 0  , reward: { coins: 100 } },
+      { xpRequired: 25 , reward: { boxes: 1 } },
+      { xpRequired: 35 , reward: { coins: 300 } },
+      { xpRequired: 45 , reward: { diamonds: 1 } },
+      { xpRequired: 55 , reward: { boxes: 1 } },
+      { xpRequired: 65 , reward: { coins: 500 } },
+      { xpRequired: 75 , reward: { diamonds: 1 } },
+      { xpRequired: 85 , reward: { boxes: 1 } },
+      { xpRequired: 95 , reward: { coins: 750 } },
+      { xpRequired: 105, reward: { diamonds: 2 } },
+      { xpRequired: 115, reward: { boxes: 1 } },
+      { xpRequired: 125, reward: { coins: 1000 } },
+      { xpRequired: 135, reward: { diamonds: 2 } },
+      { xpRequired: 145, reward: { boxes: 1 } },
+      { xpRequired: 155, reward: { coins: 1500 } },
+      { xpRequired: 165, reward: { diamonds: 3 } },
+      { xpRequired: 175, reward: { boxes: 2, diamonds: 4, coins: 2500 } },
+    ],
+    goals: [
+      { id: 'runs', label: 'Complete 25 runs', target: 25, sxp: 150 },
+      { id: 'wins', label: 'Win 3 friend battles', target: 3, sxp: 150 },
+      { id: 'triple', label: 'Pass all 4 game modes', target: 4, sxp: 150 },
+    ],
+  },
+
+  /* ── 9. IDOL MASTERY ───────────────────────────────────────────────────── */
   mastery: {
     // cumulative idol XP needed to REACH level 1..10
     levelXp: [0, 60, 150, 280, 450, 680, 960, 1300, 1700, 2200],
