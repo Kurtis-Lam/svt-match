@@ -22,6 +22,8 @@ function lbRowFromPlayerState(uid, username, displayName, ps, avatarSrc) {
     snakeventeenLevel: Number(ps?.snakeventeenLevel || 0),
     snakeventeenBestStreak: Number(ps?.stats?.snakeventeenBestStreak || 0),
     snakeventeenLongestLength: Number(ps?.stats?.snakeventeenLongestLength || 0),
+    echoLevel: Number(ps?.meta?.echo?.level || 0),
+    echoBestStreak: Number(ps?.meta?.echo?.bestStreak || 0),
     echoBestEndless: Number(ps?.meta?.echo?.bestEndless || 0),
   };
 }
@@ -76,6 +78,8 @@ const LB_CATS = [
     { id: 'snakeventeenStreak', label: 'Best Streak', unit: '🔥', field: 'snakeventeenBestStreak' },
     { id: 'snakeventeenLength', label: 'Longest Length', unit: 'len', field: 'snakeventeenLongestLength' }] },
   { id: 'echo', label: 'Choreo Echo', icon: 'fa-music', metrics: [
+    { id: 'echoLevel', label: 'Highest Level', unit: 'lv', field: 'echoLevel' },
+    { id: 'echoStreak', label: 'Best Streak', unit: '🔥', field: 'echoBestStreak' },
     { id: 'echoEndless', label: 'Endless Encore · Best Round', unit: 'rounds', field: 'echoBestEndless' }] },
 ];
 
@@ -171,29 +175,38 @@ function lbRowHtml(r, rank, metric, meId) {
 }
 
 function lbPodiumHtml(top, metric, meId) {
-  const order = [1, 0, 2];
-  const medal = ['🥇', '🥈', '🥉'];
-  return `<div class="lb-podium">${order.map(i => {
-    const e = top[i];
-    if (!e) return '<div class="lb-pod empty"></div>';
-    const r = e.row;
-    return `<div class="lb-pod p${i + 1} ${r.userId === meId ? 'me' : ''}">
-      <span class="lb-pod-medal">${medal[e.rank - 1] || e.rank}</span>
-      <img src="${escapeHtml(r.avatarSrc || './imgs/assets/default_avatar.png')}" alt="" loading="lazy" decoding="async"/>
-      <b class="lb-pod-name">${escapeHtml(r.displayName || r.username)}</b>
-      <span class="lb-pod-val">${lbFormat(metric, r)} <small>${metric.unit}</small></span>
+  const medal = { 1: '🥇', 2: '🥈', 3: '🥉' };
+  const shownRanks = [2, 1, 3];
+  const groups = shownRanks.map(rank => {
+    const tied = top.filter(entry => entry.rank === rank);
+    if (!tied.length) return `<div class="lb-pod empty p${rank}" aria-hidden="true"></div>`;
+    const val = lbFormat(metric, tied[0].row);
+    const people = tied.map(entry => {
+      const r = entry.row;
+      return `<div class="lb-pod-user ${r.userId === meId ? 'me' : ''}">
+        <img src="${escapeHtml(r.avatarSrc || './imgs/assets/default_avatar.png')}" alt="" loading="lazy" decoding="async"/>
+        <b class="lb-pod-name">${escapeHtml(r.displayName || r.username)}${r.userId === meId ? ' <em>YOU</em>' : ''}</b>
+      </div>`;
+    }).join('');
+    return `<div class="lb-pod p${rank} ${tied.some(entry => entry.row.userId === meId) ? 'me' : ''}">
+      <span class="lb-pod-medal">${medal[rank]}</span>
+      <div class="lb-pod-users">${people}</div>
+      <span class="lb-pod-val">${val} <small>${metric.unit}</small></span>
     </div>`;
-  }).join('')}</div>`;
+  });
+  return `<div class="lb-podium">${groups.join('')}</div>`;
 }
 
 async function renderLeaderboard(forceRefresh = false) {
   const menuHost = document.getElementById('lbMenuHost');
   if (menuHost) renderLeaderboardMenu(menuHost);
   const host = document.getElementById('leaderboardList');
+  const rankBar = document.getElementById('leaderboardMyRank');
   if (!host) return;
   const token = ++LB_LOAD_TOKEN;
   const { metric } = lbFindMetric(LEADERBOARD_MODE);
   const spin = document.getElementById('lbRefreshIcon');
+  if (rankBar) { rankBar.classList.add('hidden'); rankBar.innerHTML = ''; }
 
   let rows = LB_CACHE.rows;
   const stale = !rows || forceRefresh || (Date.now() - LB_CACHE.at) > LB_CACHE_MS;
@@ -218,39 +231,63 @@ async function renderLeaderboard(forceRefresh = false) {
     const v = r[metric.field];
     return v != null && isFinite(v) && Number(v) > 0;
   });
-  valid.sort((a, b) => metric.asc ? a[metric.field] - b[metric.field] : b[metric.field] - a[metric.field]);
-  const top = valid.slice(0, 100);
-  if (!top.length) {
+  valid.sort((a, b) => {
+    const av = Number(a[metric.field]), bv = Number(b[metric.field]);
+    if (av === bv) return String(a.userId).localeCompare(String(b.userId));
+    return metric.asc ? av - bv : bv - av;
+  });
+  if (!valid.length) {
     host.innerHTML = `<div class="lb-empty"><i class="fas fa-trophy"></i><b>No scores yet</b><small>Be the first to land on this board!</small></div>`;
+    if (rankBar) {
+      rankBar.innerHTML = '<span>Your rank</span><b>—</b><span>Play a run to appear on this board</span>';
+      rankBar.classList.remove('hidden');
+    }
     return;
   }
-  let rank = 0, prev = null;
-  const ranked = top.map((r, i) => {
-    const v = r[metric.field];
-    if (v !== prev) { rank = i + 1; prev = v; }
-    return { row: r, rank };
+
+  let rank = 0, prev = Symbol('unranked');
+  const allRanked = valid.map((row, i) => {
+    const value = Number(row[metric.field]);
+    if (i === 0 || value !== prev) rank = i + 1;
+    prev = value;
+    return { row, rank };
   });
-  const podium = ranked.length >= 3 ? ranked.slice(0, 3) : [];
-  const rest = podium.length ? ranked.slice(3) : ranked;
-  const mine = ranked.find(x => x.row.userId === meId);
+  const top50 = allRanked.slice(0, 50);
+  const podium = top50.filter(entry => entry.rank <= 3);
+  const podiumUsers = new Set(podium.map(entry => entry.row.userId));
+  const rest = top50.filter(entry => !podiumUsers.has(entry.row.userId));
+  const mine = allRanked.find(entry => entry.row.userId === meId);
+
+  host.classList.remove('lb-animate-in');
   host.innerHTML = `
-    ${podium.length ? lbPodiumHtml(podium, metric, meId) : ''}
-    <div class="lb-list">${rest.map(x => lbRowHtml(x.row, x.rank, metric, meId)).join('')}</div>
-    ${mine ? `<div class="lb-me-bar"><span>Your rank</span><b>#${mine.rank}</b><span>${lbFormat(metric, mine.row)} ${metric.unit}</span></div>` : ''}`;
+    ${podium.length ? lbPodiumHtml(podium, metric, meId) : `<div class="lb-podium"><div class="lb-pod empty p2"></div><div class="lb-pod empty p1"></div><div class="lb-pod empty p3"></div></div>`}
+    <div class="lb-list">${rest.map(entry => lbRowHtml(entry.row, entry.rank, metric, meId)).join('')}</div>`;
+  requestAnimationFrame(() => {
+    if (token !== LB_LOAD_TOKEN) return;
+    host.classList.add('lb-animate-in');
+    setTimeout(() => host.classList.remove('lb-animate-in'), 420);
+  });
+  if (rankBar) {
+    if (mine) rankBar.innerHTML = `<span>Your rank</span><b>#${mine.rank.toLocaleString()}</b><span>${lbFormat(metric, mine.row)} ${metric.unit}${mine.rank > 50 ? ' · outside Top 50' : ''}</span>`;
+    else rankBar.innerHTML = '<span>Your rank</span><b>—</b><span>Play a run to appear on this board</span>';
+    rankBar.classList.remove('hidden');
+  }
 }
 
 function renderHub() {
   ensureDailyResetIfNeeded();
   document.getElementById('hubUserName').textContent = currentUser?.displayName || "Carat";
   document.getElementById('hubLevel').textContent = GAME_STATE.level;
-  document.getElementById('hubCoins').textContent = GAME_STATE.coins;
-  document.getElementById('gameCoins').textContent = GAME_STATE.coins;
+  document.getElementById('hubCoins').textContent = formatNumber(GAME_STATE.coins);
+  document.getElementById('gameCoins').textContent = formatNumber(GAME_STATE.coins);
   const qc = document.getElementById('questsCoins');
-  if (qc) qc.textContent = GAME_STATE.coins;
+  if (qc) qc.textContent = formatNumber(GAME_STATE.coins);
   const ic = document.getElementById('idolsCoins');
-  if (ic) ic.textContent = GAME_STATE.coins;
+  if (ic) ic.textContent = formatNumber(GAME_STATE.coins);
   const shopCoins = document.getElementById('shopCoins');
-  if (shopCoins) shopCoins.textContent = GAME_STATE.coins;
+  if (shopCoins) shopCoins.textContent = formatNumber(GAME_STATE.coins);
+  ['hubGems', 'idolsGems', 'shopGems'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(GAME_STATE.gems); });
+  ['hubDiamonds', 'idolsDiamonds', 'shopDiamonds'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(GAME_STATE.diamonds); });
   const showtimeLvl = document.getElementById('showtimeLevelLabel');
   if (showtimeLvl) showtimeLvl.textContent = 'Lv. ' + (GAME_STATE.level || 0);
   const spotlightLvl = document.getElementById('spotlightLevelLabel');
