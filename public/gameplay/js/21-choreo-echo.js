@@ -1,34 +1,29 @@
 /* ──────────────────────────────────────────────────────────────────────────
    CHOREO ECHO — 4th game mode (Simon-style idol sequence memory)
-   Watch the idols light up, then repeat the choreography. Each cleared round
-   adds one more step. Two lives per run.
+   Watch the idols light up, then repeat the choreography. Round N shows N steps.
+   The first 9 steps are a shuffle of all 9 pads, so every idol is always used.
 
-   Rules
-     Pass (level up) ..... clear 5 rounds
-     Elite (streak) ...... clear 8 rounds
-     Coins ............... 70 / round  (+150 perfect run)  (+10 × streak)
+   Modes (names, rounds, rewards … all live in config.js → games.echo)
+     Setlist ........ 9 rounds: 1 idol, then 2, … then all 9, then it ends
+     Endless Encore . never ends; chase your best round (the leaderboard)
 
-   Save data lives in GAME_STATE.meta.echo = { level, streak, bestStreak, bestRounds }
-   (additive: old saves load unchanged, no server rule changes needed).
+   Save data lives in GAME_STATE.meta.echo = { level, streak, bestStreak, bestRounds, bestEndless }
    Every run ends in Meta.onRunComplete('echo', …) like the other modes.
    ────────────────────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
 
+  const G = GAME_CONFIG.games.echo;
   const CFG = {
-    pads: 9,
-    lives: 2,
-    startLen: 2,
-    maxRounds: 10,
-    passRounds: 5,
-    eliteRounds: 8,
-    coinsPerRound: 70,
-    perfectBonus: 150,
-    streakBonus: 10,
-    coinCap: 5000,
+    pads: G.pads,
+    lives: G.lives,
+    passRounds: G.passRounds,
+    eliteRounds: G.streakRounds,
+    coinsPerRound: G.coinsPerRound,
+    perfectBonus: G.perfectBonus,
+    streakBonus: G.streakBonusPerPoint,
+    setRounds: G.modes.set.rounds,
   };
-
-  if (typeof _COIN_CAPS === 'object' && _COIN_CAPS) _COIN_CAPS.echo = CFG.coinCap;
 
   const E = {
     pads: [],
@@ -39,6 +34,7 @@
     lives: CFG.lives,
     phase: 'idle',
     token: 0,
+    mode: 'set',
     timers: new Set(),
     padEls: [],
     built: false,
@@ -57,6 +53,7 @@
     e.streak = Math.max(0, Math.floor(Number(e.streak) || 0));
     e.bestStreak = Math.max(0, Math.floor(Number(e.bestStreak) || 0));
     e.bestRounds = Math.max(0, Math.floor(Number(e.bestRounds) || 0));
+    e.bestEndless = Math.max(0, Math.floor(Number(e.bestEndless) || 0));
     return e;
   }
 
@@ -108,14 +105,14 @@
   window.openEchoLevelInfo = function () {
     openModal('Choreo Echo Level', `
       <div class="glass-card rounded-2xl p-4 text-sm text-gray-700 font-semibold text-center">
-        Advance to next level: <b>clear ${CFG.passRounds} rounds in one run.</b>
+        Advance to next level: <b>clear ${CFG.passRounds} rounds in one run</b> (either mode).
       </div>`);
   };
 
   window.openEchoStreakInfo = function () {
     openModal('ℹ️ Choreo Echo Streak', `
       <div class="glass-card rounded-2xl p-4 text-sm text-gray-700 font-semibold">
-        Clear ${CFG.eliteRounds} rounds to keep your streak alive. Every streak point adds
+        Clear ${CFG.eliteRounds} rounds in a run to keep your streak alive. Every streak point adds
         +${CFG.streakBonus} coins to your run reward.
       </div>`);
   };
@@ -181,7 +178,9 @@
 
   function paintHud() {
     const r = $('echoRound');
-    if (r) r.textContent = Math.min(E.round, CFG.maxRounds) + '/' + CFG.maxRounds;
+    if (r) r.textContent = E.mode === 'set' ? Math.min(E.round, CFG.setRounds) + '/' + CFG.setRounds : String(E.round);
+    const lab = $('echoRoundLabel');
+    if (lab) lab.textContent = E.mode === 'set' ? 'ROUND' : '∞ ROUND';
     const l = $('echoLives');
     if (l) l.textContent = '❤'.repeat(Math.max(0, E.lives)) + '♡'.repeat(Math.max(0, CFG.lives - E.lives));
     const bar = $('echoProgress');
@@ -192,12 +191,36 @@
   }
 
   // ── flow ──────────────────────────────────────────────────────────────────
-  window.openEcho = function () {
+  // Mode picker shown before every run (called from the hub card)
+  window.openEchoModes = function () {
+    if (!currentUser) { showToast('Not logged in', 'error'); return; }
+    if (GAME_STATE.battles && GAME_STATE.battles.active) { showToast('Finish your battle first', 'error'); return; }
+    const s = st();
+    const M = G.modes;
+    openModal('Choreo Echo', `
+      <p class="text-xs text-gray-500 font-bold text-center">Pick a mode</p>
+      <button class="echo-mode-card" onclick="closeModal(); openEcho('set')">
+        <span class="echo-mode-ico">🎤</span>
+        <span class="echo-mode-txt"><b>${M.set.name}</b><small>${M.set.blurb}</small></span>
+        <span class="echo-mode-tag">${CFG.setRounds} rounds</span>
+      </button>
+      <button class="echo-mode-card" onclick="closeModal(); openEcho('endless')">
+        <span class="echo-mode-ico">♾️</span>
+        <span class="echo-mode-txt"><b>${M.endless.name}</b><small>${M.endless.blurb}</small></span>
+        <span class="echo-mode-tag">Best ${s.bestEndless}</span>
+      </button>`);
+  };
+
+  window.openEcho = function (mode) {
+    if (mode !== 'set' && mode !== 'endless') { openEchoModes(); return; }
     if (!currentUser) { showToast('Not logged in', 'error'); return; }
     if (GAME_STATE.battles && GAME_STATE.battles.active) { showToast('Finish your battle first', 'error'); return; }
     E.token++;
     clearTimers();
+    E.mode = mode;
     E.pads = pickIdolsForLevel(CFG.pads).map(i => i.key);
+    // The first 9 steps are a shuffle of ALL pads, so every idol is used; endless continues randomly after that.
+    E.order = shuffled(Array.from({ length: CFG.pads }, (_, i) => i));
     E.seq = [];
     E.round = 0;
     E.cleared = 0;
@@ -240,19 +263,22 @@
 
   function nextRound() {
     E.round++;
-    const want = CFG.startLen + E.round - 1;
-    while (E.seq.length < want) {
-      let n = Math.floor(Math.random() * CFG.pads);
-      // avoid 3 identical steps in a row — keeps sequences readable
+    while (E.seq.length < E.round) {
       const L = E.seq.length;
-      if (L >= 2 && E.seq[L - 1] === n && E.seq[L - 2] === n) n = (n + 1 + Math.floor(Math.random() * (CFG.pads - 1))) % CFG.pads;
+      let n;
+      if (L < CFG.pads) n = E.order[L];
+      else {
+        n = Math.floor(Math.random() * CFG.pads);
+        // avoid 3 identical steps in a row — keeps sequences readable
+        if (L >= 2 && E.seq[L - 1] === n && E.seq[L - 2] === n) n = (n + 1 + Math.floor(Math.random() * (CFG.pads - 1))) % CFG.pads;
+      }
       E.seq.push(n);
     }
     playSequence();
   }
 
   function stepMs() {
-    return Math.max(240, 540 - (E.round - 1) * 32);
+    return Math.max(G.stepMinMs, G.stepStartMs - (E.round - 1) * G.stepSpeedupMs);
   }
 
   function playSequence() {
@@ -299,8 +325,9 @@
     E.phase = 'between';
     E.cleared++;
     setPadsEnabled(false);
-    paintStatus(E.cleared >= CFG.maxRounds ? 'Flawless encore! 🎉' : 'Nice! Next round…', 'ok');
-    if (E.cleared >= CFG.maxRounds) {
+    const setDone = E.mode === 'set' && E.cleared >= CFG.setRounds;
+    paintStatus(setDone ? 'Full setlist! 🎉' : 'Nice! Next round…', 'ok');
+    if (setDone) {
       later(finish, 700);
     } else {
       later(nextRound, 800);
@@ -363,7 +390,7 @@
     const rounds = E.cleared;
     const passed = rounds >= CFG.passRounds;
     const elite = rounds >= CFG.eliteRounds;
-    const perfect = E.lives === CFG.lives && rounds >= CFG.maxRounds;
+    const perfect = E.mode === 'set' && E.lives === CFG.lives && rounds >= CFG.setRounds;
 
     if (elite) {
       s.streak++;
@@ -372,6 +399,8 @@
       s.streak = 0;
     }
     if (rounds > s.bestRounds) s.bestRounds = rounds;
+    const newBest = E.mode === 'endless' && rounds > s.bestEndless;
+    if (newBest) s.bestEndless = rounds;
 
     const base = rounds * CFG.coinsPerRound + (perfect ? CFG.perfectBonus : 0);
     const streakBonus = s.streak * CFG.streakBonus;
@@ -381,10 +410,10 @@
     if (passed && typeof fireLevelSuccessBurst === 'function') fireLevelSuccessBurst();
 
     try {
-      Meta.onRunComplete('echo', { passed, elite, coins: total, keys: E.pads.slice() });
+      Meta.onRunComplete('echo', { passed, elite, coins: total, keys: E.pads.slice(), value: rounds });
     } catch (e) { console.warn('[Meta]', e); }
 
-    const show = () => openResult(rounds, base, streakBonus, passed, perfect);
+    const show = () => openResult(rounds, base, streakBonus, passed, perfect, newBest);
 
     if (passed) grantDailyBox(show); else show();
 
@@ -428,15 +457,17 @@
     }
   }
 
-  function openResult(rounds, base, streakBonus, passed, perfect) {
+  function openResult(rounds, base, streakBonus, passed, perfect, newBest) {
     const s = st();
     const coin = '<img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" alt="">';
     openUndismissibleModal(passed ? '✅ Level Complete!' : '❌ Level Failed', `
       <div class="glass-card rounded-2xl p-4 text-center">
         <p class="text-sm text-gray-500 font-bold">Rounds cleared</p>
-        <p class="text-3xl font-black text-gray-900">${rounds}<span class="text-base text-gray-400">/${CFG.maxRounds}</span></p>
+        <p class="text-3xl font-black text-gray-900">${rounds}${E.mode === 'set' ? `<span class="text-base text-gray-400">/${CFG.setRounds}</span>` : ''}</p>
+        <p class="text-[11px] text-gray-500 font-extrabold mt-1">${G.modes[E.mode].name}</p>
         ${perfect ? '<p class="text-xs font-black text-amber-500 mt-1">PERFECT RUN · no lives lost</p>' : ''}
-        <p class="text-[11px] text-gray-400 font-bold mt-1">Best: ${s.bestRounds} rounds</p>
+        ${newBest ? '<p class="text-xs font-black text-pink-500 mt-1">NEW ENDLESS RECORD! 🏆</p>' : ''}
+        <p class="text-[11px] text-gray-400 font-bold mt-1">${E.mode === 'endless' ? `Endless best: ${s.bestEndless}` : `Best: ${s.bestRounds}`} rounds</p>
       </div>
       <div class="earn-row"><div class="label">Rounds × ${CFG.coinsPerRound}${perfect ? ' + perfect' : ''}</div><div class="val">+${base} ${coin}</div></div>
       ${streakBonus > 0 ? `<div class="earn-row"><div class="label">Streak 🔥 ${s.streak}</div><div class="val">+${streakBonus} ${coin}</div></div>` : ''}
@@ -446,7 +477,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <button class="glass-card py-3 rounded-2xl font-extrabold text-gray-900" onclick="closeModal(); showScreen('hubScreen'); renderHub();">Back to Hub</button>
-        <button class="btn-theme black-text" onclick="closeModal(); openEcho();">${passed ? 'Next Level' : 'Retry'}</button>
+        <button class="btn-theme black-text" onclick="closeModal(); openEcho('${E.mode}');">${passed ? 'Next Level' : 'Retry'}</button>
       </div>`);
   }
 
