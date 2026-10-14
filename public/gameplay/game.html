@@ -30,7 +30,7 @@
     </noscript>
     <link rel="stylesheet" href="/gameplay/css/game.css?v=4c6315b9" />
     <link rel="stylesheet" href="/gameplay/css/season.css?v=c8f8fb53" />
-    <link rel="stylesheet" href="/gameplay/css/ui-plus.css?v=d365565b" />
+    <link rel="stylesheet" href="/gameplay/css/ui-plus.css?v=ebe8b0e1" />
   </head>
   <body>
     <div class="app-container" id="app">
@@ -345,8 +345,7 @@
               <div class="glass-card px-3 py-2 rounded-2xl flex items-center gap-2 cursor-pointer" id="coinsBarHub" onclick="openCoinsInfoModal()">
                 <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" />
                 <span class="font-bold text-gray-800" id="hubCoins">0</span>
-                <span class="currency-mini" aria-label="Gems">💠 <b id="hubGems">0</b></span>
-                <span class="currency-mini" aria-label="Diamonds">💎 <b id="hubDiamonds">0</b></span>
+                <span class="balance-diamond">💎<span id="hubDiamonds">0</span></span>
               </div>
               <button aria-label="Menu" class="hamburger-btn" onclick="openSlidePanel()">
                 <div class="hamburger-line">
@@ -617,9 +616,8 @@
             </div>
             <div class="glass-card rounded-2xl px-3 py-2 flex items-center gap-2 cursor-pointer" id="coinsBarGame" onclick="openCoinsInfoModal()">
               <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" />
-              <span class="font-bold text-gray-800" id="gameCoins">
-                0
-              </span>
+              <span class="font-bold text-gray-800" id="gameCoins">0</span>
+              <span class="balance-diamond">💎<span id="gameDiamonds">0</span></span>
             </div>
           </div>
           <div class="mt-3 glass-card rounded-2xl p-3 flex items-center justify-between">
@@ -677,13 +675,29 @@
             <div class="glass-card px-3 py-2 rounded-2xl flex items-center gap-2 cursor-pointer" id="coinsBarIdols" onclick="openCoinsInfoModal()">
               <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" />
               <span class="font-bold text-gray-800" id="idolsCoins">0</span>
-              <span class="currency-mini" aria-label="Gems">💠 <b id="idolsGems">0</b></span>
-              <span class="currency-mini" aria-label="Diamonds">💎 <b id="idolsDiamonds">0</b></span>
+              <span class="balance-diamond">💎<span id="idolsDiamonds">0</span></span>
             </div>
           </div>
         </div>
         <div class="px-4" id="idolsScrollArea">
-          <div class="mt-3" id="idolSortHost"></div>
+          <div class="mt-3">
+            <div class="lb-dd idol-sort-dd">
+              <button type="button" id="idolSortToggle" class="lb-toggle" aria-haspopup="listbox" aria-expanded="false" onclick="toggleIdolSortDropdown(event)">
+                <span class="lb-toggle-ico"><i class="fas fa-sort"></i></span>
+                <span class="lb-toggle-txt"><small>Arrange Idols</small><b id="idolSortLabel">Rarity Descending</b></span>
+                <i class="fas fa-chevron-down lb-toggle-chev"></i>
+              </button>
+              <div class="lb-panel" id="idolSortDropdown" role="listbox">
+                <div class="lb-group"><div class="lb-group-title"><i class="fas fa-arrow-down-wide-short"></i>Arrange idols</div>
+                  <button type="button" data-sort="rarity" class="lb-opt on" onclick="setIdolSortMode('rarity', event)"><span>Rarity Descending</span><i class="fas fa-check"></i></button>
+                  <button type="button" data-sort="power" class="lb-opt" onclick="setIdolSortMode('power', event)"><span>Power Level Descending</span></button>
+                  <button type="button" data-sort="name" class="lb-opt" onclick="setIdolSortMode('name', event)"><span>Name Ascending</span></button>
+                  <button type="button" data-sort="matches" class="lb-opt" onclick="setIdolSortMode('matches', event)"><span>Most Matches Descending</span></button>
+                  <button type="button" data-sort="love" class="lb-opt" onclick="setIdolSortMode('love', event)"><span>Love Level Descending</span></button>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="mt-4">
             <div class="flex items-center justify-between">
               <h3 class="font-bold text-gray-800 text-lg">
@@ -718,8 +732,7 @@
           <div class="glass-card px-3 py-2 rounded-2xl flex items-center gap-2 cursor-pointer" onclick="openCoinsInfoModal()">
             <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" />
             <span class="font-bold text-gray-800" id="shopCoins">0</span>
-            <span class="currency-mini" aria-label="Gems">💠 <b id="shopGems">0</b></span>
-            <span class="currency-mini" aria-label="Diamonds">💎 <b id="shopDiamonds">0</b></span>
+            <span class="balance-diamond">💎<span id="shopDiamonds">0</span></span>
           </div>
         </div>
         <div class="px-4" id="shopScrollArea">
@@ -757,9 +770,8 @@
             </p>
             <div class="glass-card px-3 py-2 rounded-2xl flex items-center gap-2">
               <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" />
-              <span class="font-bold text-gray-800" id="avatarsCoins">
-                0
-              </span>
+              <span class="font-bold text-gray-800" id="avatarsCoins">0</span>
+              <span class="balance-diamond">💎<span id="avatarsDiamonds">0</span></span>
             </div>
           </div>
         </div>
@@ -779,9 +791,8 @@
           </p>
           <div class="glass-card px-3 py-2 rounded-2xl flex items-center gap-2 cursor-pointer" id="coinsBarQuests" onclick="openCoinsInfoModal()">
             <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" />
-            <span class="font-bold text-gray-800" id="questsCoins">
-              0
-            </span>
+            <span class="font-bold text-gray-800" id="questsCoins">0</span>
+            <span class="balance-diamond">💎<span id="questsDiamonds">0</span></span>
           </div>
         </div>
         <div class="px-4" id="questsScrollArea">
@@ -795,7 +806,7 @@
           <button class="ss-back" onclick="closeSeason()" aria-label="Back">
             <i class="fas fa-arrow-left"></i>
           </button>
-          <p class="ss-title" id="ssTitle">Season</p>
+          <p class="ss-title" id="ssTitle">Brawl Pass</p>
           <div style="width:40px"></div>
         </div>
         <div class="ss-scroll" id="ssBody"></div>
@@ -901,9 +912,9 @@
           </div>
         </div>
         <div class="lb-body">
-          <div id="leaderboardList"></div>
+          <div id="leaderboardList">
+          </div>
         </div>
-        <div class="lb-me-bar hidden" id="leaderboardMyRank" aria-live="polite"></div>
       </div>
       <!-- 12) Settings Screen -->
       <div class="screen hidden flex flex-col" id="settingsScreen">
@@ -1147,6 +1158,10 @@
                   </span>
                   <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" />
                 </div>
+              </div>
+              <div class="earn-row muted" id="lcXpRow">
+                <div class="label">Season XP</div>
+                <div class="val">+<span id="lcSeasonXp">0</span> XP</div>
               </div>
               <div class="grid grid-cols-2 gap-3 pt-2">
                 <button class="btn-theme-inline black-text" id="lcBackBtn" onclick="advanceLevelAndGoHubFromPopup()">
@@ -1623,29 +1638,29 @@
         <p class="echo-hint">Tap the idols in the same order they lit up</p>
       </div>
     </div>
-    <script src="/gameplay/config.js?v=de909088"></script>
+    <script src="/gameplay/config.js?v=d374625e"></script>
     <script src="/gameplay/js/01-firebase.js?v=d5da480b"></script>
     <script src="/gameplay/js/01b-secure-db.js?v=8b0c3c67"></script>
-    <script src="/gameplay/js/02-data.js?v=4e41b959"></script>
-    <script src="/gameplay/js/03-core-ui.js?v=ed5f06fb"></script>
-    <script src="/gameplay/js/04-persistence.js?v=7b63c2b8"></script>
+    <script src="/gameplay/js/02-data.js?v=d4123988"></script>
+    <script src="/gameplay/js/03-core-ui.js?v=eebed289"></script>
+    <script src="/gameplay/js/04-persistence.js?v=1a6c9091"></script>
     <script src="/gameplay/js/05-modals.js?v=0e24f0ac"></script>
     <script src="/gameplay/js/06-friends.js?v=c84609d7"></script>
     <script src="/gameplay/js/07-battles.js?v=933c15b9"></script>
-    <script src="/gameplay/js/08-hub-leaderboard.js?v=42a1e0c9"></script>
-    <script src="/gameplay/js/09-shop-idols.js?v=3a05baf2"></script>
+    <script src="/gameplay/js/08-hub-leaderboard.js?v=1cd04ceb"></script>
+    <script src="/gameplay/js/09-shop-idols.js?v=99f036c4"></script>
     <script src="/gameplay/js/10-showtime-abilities.js?v=c2ae12b7"></script>
-    <script src="/gameplay/js/11-showtime-game.js?v=369898a9"></script>
+    <script src="/gameplay/js/11-showtime-game.js?v=9a167085"></script>
     <script src="/gameplay/js/12-quests-daily.js?v=6a5636ef"></script>
-    <script src="/gameplay/js/13-account-gifts.js?v=40ef094b"></script>
-    <script src="/gameplay/js/14-spotlight.js?v=86bfe29c"></script>
-    <script src="/gameplay/js/15-snake.js?v=65b6a62c"></script>
-    <script src="/gameplay/js/16-extras.js?v=9608e2bf"></script>
+    <script src="/gameplay/js/13-account-gifts.js?v=c32ff992"></script>
+    <script src="/gameplay/js/14-spotlight.js?v=967bf70a"></script>
+    <script src="/gameplay/js/15-snake.js?v=bef59a2f"></script>
+    <script src="/gameplay/js/16-extras.js?v=7afb1ba1"></script>
     <script src="/gameplay/js/17-polish.js?v=f4713b68"></script>
-    <script src="/gameplay/js/18-meta-data.js?v=a1b63fdb"></script>
-    <script src="/gameplay/js/19-meta-core.js?v=a3816f94"></script>
-    <script src="/gameplay/js/20-meta-ui.js?v=08420bec"></script>
-    <script src="/gameplay/js/21-choreo-echo.js?v=fb4328f9"></script>
+    <script src="/gameplay/js/18-meta-data.js?v=ea421171"></script>
+    <script src="/gameplay/js/19-meta-core.js?v=7a4bc8d6"></script>
+    <script src="/gameplay/js/20-meta-ui.js?v=a57530eb"></script>
+    <script src="/gameplay/js/21-choreo-echo.js?v=b1e6bd40"></script>
 
   </body>
 </html>
