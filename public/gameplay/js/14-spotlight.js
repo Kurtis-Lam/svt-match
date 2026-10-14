@@ -733,9 +733,7 @@ function _endSlGame() {
       }
     }
   }
-  let passMetaResult = { passXp: 0 };
-  try { passMetaResult = Meta.onRunComplete('spotlight', { passed: passedSpotlight, elite: correctHits >= 7, coins: totalReward, targetKey: SPOTLIGHT_STATE.isKkuma ? null : SPOTLIGHT_STATE.targetKey }) || passMetaResult; } catch (e) { console.warn('[Meta]', e); }
-  SPOTLIGHT_STATE.passXp = Number(passMetaResult.passXp) || 0;
+  try { SPOTLIGHT_STATE.seasonXpGained = Number(Meta.onRunComplete('spotlight', { passed: passedSpotlight, elite: correctHits >= 7, coins: totalReward, targetKey: SPOTLIGHT_STATE.isKkuma ? null : SPOTLIGHT_STATE.targetKey })) || 0; } catch (e) { console.warn('[Meta]', e); }
   savePlayerState();
   renderHub();
   // BUG-G09b: passedSpotlight already declared above
@@ -772,22 +770,22 @@ function _openSlResultModal(kkumaBonus, streakBonusCoins, passedLevel = false) {
     </div>
     <div class="earn-row">
         <div class="label">Earned (correct)</div>
-        <div class="val">+${formatNumber(earned)} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val">+${Number(earned).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row" style="color:#dc2626;">
         <div class="label">Penalty (wrong)</div>
-        <div class="val">-${formatNumber(lost)} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val">-${Number(lost).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row">
         <div class="label"><img src="./imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Streak Bonus (${streakCount}×)</div>
-        <div class="val">${streakBonusCoins > 0 ? '+' + formatNumber(streakBonusCoins) : '0'} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val">${streakBonusCoins > 0 ? '+' + Number(streakBonusCoins).toLocaleString() : '0'} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     ${kRow}
-    ${Number(SPOTLIGHT_STATE.passXp || 0) > 0 ? `<div class="earn-row"><div class="label">Season Pass XP</div><div class="val">+${formatNumber(SPOTLIGHT_STATE.passXp)} XP</div></div>` : ''}
     <div class="earn-row" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));border:none;">
         <div class="label font-black">Total earned</div>
-        <div class="val font-black">${total >= 0 ? '+' : ''}${formatNumber(total)} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val font-black">${total >= 0 ? '+' : ''}${Number(total).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
+    <div class="earn-row"><div class="label">Season XP</div><div class="val">+${Number(SPOTLIGHT_STATE.seasonXpGained ?? GAME_STATE.meta?.lastRunXpGained ?? 0).toLocaleString()} XP</div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
         <button class="glass-card" style="padding:12px 0;font-size:14px;font-weight:700;color:#374151;border-radius:16px;"
             onclick="closeModal(); showScreen('hubScreen'); renderHub();">Back to Hub</button>
