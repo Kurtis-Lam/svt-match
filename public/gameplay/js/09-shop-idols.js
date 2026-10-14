@@ -1,6 +1,6 @@
 function openShopAvatars(fromSettings = false) {
   if (!fromSettings) _shopPreviousPage = 'landing';
-  document.getElementById('avatarsCoins').textContent = String(GAME_STATE.coins);
+  document.getElementById('avatarsCoins').textContent = formatNumber(GAME_STATE.coins);
   const backBtn = document.getElementById('avatarsBackBtn');
   backBtn.style.display = '';
   backBtn.onclick = () => {
@@ -149,7 +149,7 @@ async function purchaseAvatar(fullKey, rarityKey, price) {
   GAME_STATE.equippedAvatarKey = fullKey;
   renderAvatars();
   renderHub();
-  document.getElementById('avatarsCoins').textContent = String(GAME_STATE.coins);
+  document.getElementById('avatarsCoins').textContent = formatNumber(GAME_STATE.coins);
   await savePlayerState();
   __avatarPurchaseInProgress = false;
   showToast('Avatar purchased & equipped!', 'success');
@@ -208,6 +208,30 @@ function renderShopLanding() {
     </button>
 
     <button class="hub-action-card rounded-2xl p-5 flex items-center gap-4 w-full"
+        onclick="openShopCurrencies()">
+        <div class="hub-action-icon-wrap" style="background:linear-gradient(135deg,#bfdbfe,#a78bfa);overflow:hidden;">
+          <span style="font-size:24px;">💎</span>
+        </div>
+        <div class="text-left min-w-0">
+          <p class="font-bold text-gray-800">Gems &amp; Diamonds</p>
+          <p class="text-xs text-gray-500">Buy Gems, then exchange for Diamonds</p>
+        </div>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+    </button>
+
+    <button class="hub-action-card rounded-2xl p-5 flex items-center gap-4 w-full"
+        onclick="openShopFrames()">
+        <div class="hub-action-icon-wrap" style="background:linear-gradient(135deg,#fde68a,#f9a8d4);overflow:hidden;">
+          <i class="fas fa-border-all" style="color:#fff;font-size:20px;"></i>
+        </div>
+        <div class="text-left min-w-0">
+          <p class="font-bold text-gray-800">Frames</p>
+          <p class="text-xs text-gray-500">Decorate your idol cards with Diamond frames</p>
+        </div>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+    </button>
+
+    <button class="hub-action-card rounded-2xl p-5 flex items-center gap-4 w-full"
         onclick="openShopProfileCards()">
         <div class="hub-action-icon-wrap" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));overflow:hidden;">
         <i class="fas fa-id-badge" style="color:#fff;font-size:20px;"></i>
@@ -220,6 +244,194 @@ function renderShopLanding() {
     </button>
     </div>
   `;
+}
+
+let SHOP_PURCHASE_QTY_PRICE = 0;
+let SHOP_PURCHASE_QTY_CURRENCY = 'coins';
+function readShopPurchaseQuantity() {
+  const input = document.getElementById('shopPurchaseQuantity');
+  const qty = Math.floor(Number(input?.value) || 1);
+  return Math.max(1, Math.min(999, qty));
+}
+function setShopPurchaseQuantity(value) {
+  const input = document.getElementById('shopPurchaseQuantity');
+  if (input) input.value = String(Math.max(1, Math.min(999, Math.floor(Number(value) || 1))));
+  updateShopPurchaseQuantityTotal();
+}
+function adjustShopPurchaseQuantity(delta) { setShopPurchaseQuantity(readShopPurchaseQuantity() + delta); }
+function updateShopPurchaseQuantityTotal() {
+  const el = document.getElementById('shopPurchaseQuantityTotal');
+  if (el) el.textContent = (SHOP_PURCHASE_QTY_PRICE * readShopPurchaseQuantity()).toLocaleString('en-US');
+}
+function shopQuantityHtml(unitPrice, currency = 'coins') {
+  SHOP_PURCHASE_QTY_PRICE = Math.max(0, Number(unitPrice) || 0);
+  SHOP_PURCHASE_QTY_CURRENCY = currency;
+  const icon = currency === 'diamonds' ? '💎' : currency === 'gems' ? '💠' : '<img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">';
+  return `<div class="shop-quantity-control">
+    <span class="font-extrabold text-gray-800">Quantity</span>
+    <div class="shop-quantity-buttons"><button type="button" onclick="adjustShopPurchaseQuantity(-1)" aria-label="Decrease quantity">−</button>
+      <input id="shopPurchaseQuantity" type="number" min="1" max="999" step="1" value="1" inputmode="numeric" onchange="setShopPurchaseQuantity(this.value)" oninput="updateShopPurchaseQuantityTotal()" aria-label="Purchase quantity" />
+      <button type="button" onclick="adjustShopPurchaseQuantity(1)" aria-label="Increase quantity">+</button></div>
+  </div><div class="shop-quantity-total"><span>Total</span><b><span id="shopPurchaseQuantityTotal">${Number(unitPrice).toLocaleString('en-US')}</span> ${icon}</b></div>`;
+}
+
+function shopBalanceMarkup(prefix) {
+  return `<div class="shop-wallet" id="${prefix}Wallet">
+    <span><img src="./imgs/assets/coins.png" alt="Coins"> <b id="${prefix}Coins">${formatNumber(GAME_STATE.coins)}</b></span>
+    <span>💠 <b id="${prefix}Gems">${formatNumber(GAME_STATE.gems)}</b></span>
+    <span>💎 <b id="${prefix}Diamonds">${formatNumber(GAME_STATE.diamonds)}</b></span>
+  </div>`;
+}
+
+function refreshShopBalances(prefixes = ['shop']) {
+  prefixes.forEach(prefix => {
+    const c = document.getElementById(`${prefix}Coins`), g = document.getElementById(`${prefix}Gems`), d = document.getElementById(`${prefix}Diamonds`);
+    if (c) c.textContent = formatNumber(GAME_STATE.coins);
+    if (g) g.textContent = formatNumber(GAME_STATE.gems);
+    if (d) d.textContent = formatNumber(GAME_STATE.diamonds);
+  });
+  ['hubGems','idolsGems','shopGems'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(GAME_STATE.gems); });
+  ['hubDiamonds','idolsDiamonds','shopDiamonds'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(GAME_STATE.diamonds); });
+  ['hubCoins','gameCoins','questsCoins','idolsCoins','shopCoins','avatarsCoins'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(GAME_STATE.coins); });
+}
+
+function openShopCurrencies() {
+  _shopPreviousPage = 'landing';
+  const area = document.getElementById('shopScrollArea');
+  const currency = GAME_CONFIG.shop.currency;
+  area.innerHTML = `<div class="glass-card rounded-2xl p-4">
+    <div class="text-sm font-extrabold text-gray-900">Gems &amp; Diamonds</div>
+    ${shopBalanceMarkup('currencyShop')}
+    <div class="shop-item-btn" style="margin-top:12px;">
+      <div class="shop-item-left"><div class="hub-action-icon-wrap" style="background:linear-gradient(135deg,#bfdbfe,#a78bfa);"><span style="font-size:24px;">💠</span></div><div><div class="shop-item-title">Gem Pack</div><div class="shop-item-sub">${Number(currency.gemPackSize).toLocaleString()} Gems per pack</div></div></div>
+      <div class="shop-item-right shop-item-cost-col"><div class="shop-item-cost-label">Price / pack</div><div class="shop-item-cost-val">${Number(currency.gemPackCoinPrice).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div></div>
+    </div>
+    <button class="btn-theme black-text w-full mt-2" onclick="openCurrencyPurchaseModal('gems')">Buy Gems</button>
+    <div class="shop-item-btn" style="margin-top:16px;">
+      <div class="shop-item-left"><div class="hub-action-icon-wrap" style="background:linear-gradient(135deg,#dbeafe,#a78bfa);"><span style="font-size:24px;">💎</span></div><div><div class="shop-item-title">Diamond Exchange</div><div class="shop-item-sub">${Number(currency.gemsPerDiamond).toLocaleString()} Gems = 1 Diamond</div></div></div>
+      <div class="shop-item-right shop-item-cost-col"><div class="shop-item-cost-label">Cost / Diamond</div><div class="shop-item-cost-val">${Number(currency.gemsPerDiamond).toLocaleString()} 💠</div></div>
+    </div>
+    <button class="btn-theme black-text w-full mt-2" onclick="openCurrencyPurchaseModal('diamonds')">Exchange Gems for Diamonds</button>
+    <p class="ss-note">Gem Packs are intentionally expensive. Idols and frames can only be purchased with Diamonds.</p>
+  </div>`;
+}
+
+function openCurrencyPurchaseModal(kind) {
+  const c = GAME_CONFIG.shop.currency;
+  const isGems = kind === 'gems';
+  const unitPrice = isGems ? c.gemPackCoinPrice : c.gemsPerDiamond;
+  const currencyName = isGems ? 'Gem Pack' : 'Diamond';
+  const unitDesc = isGems ? `${Number(c.gemPackSize).toLocaleString()} Gems per pack` : `${Number(c.gemsPerDiamond).toLocaleString()} Gems per Diamond`;
+  const walletCurrency = isGems ? 'coins' : 'gems';
+  openModal(isGems ? 'Buy Gems' : 'Exchange for Diamonds', `
+    <div class="glass-card rounded-2xl p-4"><div class="font-black text-gray-900">${currencyName}</div><p class="text-xs text-gray-600 font-bold mt-1">${unitDesc}</p>
+      <p class="text-xs text-gray-600 font-bold mt-2">Balance: ${formatNumber(isGems ? GAME_STATE.coins : GAME_STATE.gems)} ${isGems ? 'Coins' : 'Gems'}</p>
+      ${shopQuantityHtml(unitPrice, walletCurrency)}
+    </div>
+    <div class="grid grid-cols-2 gap-3 pt-2"><button class="btn-confirm-no" onclick="closeModal()">Cancel</button><button class="btn-confirm-yes" onclick="${isGems ? 'purchaseGemPacks()' : 'exchangeGemsForDiamonds()'}">Confirm</button></div>`);
+  setShopPurchaseQuantity(1);
+}
+
+async function purchaseGemPacks(quantity = readShopPurchaseQuantity()) {
+  const c = GAME_CONFIG.shop.currency;
+  const qty = Math.max(1, Math.min(999, Math.floor(Number(quantity) || readShopPurchaseQuantity())));
+  const cost = qty * Number(c.gemPackCoinPrice);
+  if (GAME_STATE.coins < cost) { showToast(`Not enough Coins. Need ${formatNumber(cost)}.`, 'error'); return; }
+  GAME_STATE.coins -= cost;
+  GAME_STATE.gems = Math.max(0, Number(GAME_STATE.gems) || 0) + qty * Number(c.gemPackSize);
+  await savePlayerState();
+  refreshShopBalances(['currencyShop']); renderHub();
+  closeModal(); showToast(`Purchased ${formatNumber(qty * c.gemPackSize)} Gems.`, 'success');
+}
+
+async function exchangeGemsForDiamonds(quantity = readShopPurchaseQuantity()) {
+  const c = GAME_CONFIG.shop.currency;
+  const qty = Math.max(1, Math.min(999, Math.floor(Number(quantity) || readShopPurchaseQuantity())));
+  const cost = qty * Number(c.gemsPerDiamond);
+  if (GAME_STATE.gems < cost) { showToast(`Not enough Gems. Need ${formatNumber(cost)}.`, 'error'); return; }
+  GAME_STATE.gems -= cost;
+  GAME_STATE.diamonds = Math.max(0, Number(GAME_STATE.diamonds) || 0) + qty;
+  await savePlayerState();
+  refreshShopBalances(['currencyShop']); renderHub();
+  closeModal(); showToast(`Exchanged for ${formatNumber(qty)} Diamonds.`, 'success');
+}
+
+function framePreviewHtml(frame) {
+  return `<div class="frame-shop-preview" style="border:5px solid transparent;border-image:${frame.border || 'linear-gradient(135deg,#cbd5e1,#64748b)'} 1;">
+    <img src="${escapeHtml(frame.image || '')}" alt="" onerror="this.style.display='none'" />
+  </div>`;
+}
+
+function openShopFrames() {
+  _shopPreviousPage = 'landing';
+  const area = document.getElementById('shopScrollArea');
+  area.innerHTML = `<div class="glass-card rounded-2xl p-4"><div class="text-sm font-extrabold text-gray-900">Frames</div>
+    ${shopBalanceMarkup('framesShop')}
+    <p class="ss-note">Buy a frame with Diamonds, then tap an owned frame to choose which idol card it surrounds. Add your PNG files at the asset path configured for each frame.</p>
+    <div id="shopFramesGrid" class="shop-frames-grid mt-3"></div></div>`;
+  renderShopFrames();
+}
+
+function renderShopFrames() {
+  const grid = document.getElementById('shopFramesGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  (GAME_CONFIG.shop.frames || []).forEach(frame => {
+    const owned = !!GAME_STATE.ownedIdolFrames?.[frame.key];
+    const countEquipped = Object.values(GAME_STATE.equippedIdolFrames || {}).filter(k => k === frame.key).length;
+    const card = document.createElement('div');
+    card.className = 'shop-frame-card';
+    card.innerHTML = `${framePreviewHtml(frame)}<b>${escapeHtml(frame.name)}</b><small>${owned ? `Owned · applied to ${countEquipped} idol${countEquipped === 1 ? '' : 's'}` : `${Number(frame.priceDiamonds).toLocaleString()} 💎`}</small>
+      <button class="btn-theme black-text w-full">${owned ? 'Apply to idol' : 'Buy frame'}</button>`;
+    card.querySelector('button').onclick = () => owned ? openApplyIdolFrameModal(frame.key) : confirmIdolFramePurchase(frame.key);
+    grid.appendChild(card);
+  });
+  refreshShopBalances(['framesShop']);
+}
+
+function confirmIdolFramePurchase(frameKey) {
+  const frame = (GAME_CONFIG.shop.frames || []).find(item => item.key === frameKey);
+  if (!frame) return;
+  openModal('Buy Frame?', `<div class="glass-card rounded-2xl p-4 text-center">${framePreviewHtml(frame)}<p class="font-black text-gray-900 mt-2">${escapeHtml(frame.name)}</p><p class="text-sm text-gray-600 font-bold mt-1">${Number(frame.priceDiamonds).toLocaleString()} 💎</p></div>
+    <div class="grid grid-cols-2 gap-3 pt-2"><button class="btn-confirm-no" onclick="closeModal()">Cancel</button><button class="btn-confirm-yes" onclick="purchaseIdolFrame('${frame.key}')">Confirm</button></div>`);
+}
+
+async function purchaseIdolFrame(frameKey) {
+  const frame = (GAME_CONFIG.shop.frames || []).find(item => item.key === frameKey);
+  if (!frame) return;
+  if (GAME_STATE.ownedIdolFrames?.[frameKey]) { closeModal(); showToast('Frame already owned', 'info'); return; }
+  const price = Math.max(0, Number(frame.priceDiamonds) || 0);
+  if (Number(GAME_STATE.diamonds || 0) < price) { showToast(`Not enough Diamonds. Need ${formatNumber(price)}.`, 'error'); return; }
+  GAME_STATE.diamonds -= price;
+  GAME_STATE.ownedIdolFrames = GAME_STATE.ownedIdolFrames || {};
+  GAME_STATE.ownedIdolFrames[frameKey] = true;
+  await savePlayerState();
+  closeModal(); renderShopFrames(); renderHub();
+  showToast(`${frame.name} frame purchased.`, 'success');
+  openApplyIdolFrameModal(frameKey);
+}
+
+function openApplyIdolFrameModal(frameKey) {
+  const frame = (GAME_CONFIG.shop.frames || []).find(item => item.key === frameKey);
+  if (!frame || !GAME_STATE.ownedIdolFrames?.[frameKey]) return;
+  const owned = IDOLS.filter(idol => isIdolOwned(idol.key));
+  if (!owned.length) { showToast('Unlock an idol first.', 'info'); return; }
+  const options = owned.map(idol => `<option value="${idol.key}">${escapeHtml(idol.display)}${GAME_STATE.equippedIdolFrames?.[idol.key] === frameKey ? ' · currently applied' : ''}</option>`).join('');
+  openModal('Apply Frame', `<div class="glass-card rounded-2xl p-4">${framePreviewHtml(frame)}<p class="font-black text-gray-900 mt-2">${escapeHtml(frame.name)}</p><label for="idolFrameTarget" class="block text-xs font-extrabold text-gray-600 mt-3 mb-1">Apply to idol card</label><select id="idolFrameTarget" class="w-full p-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-bold">${options}</select></div>
+    <div class="grid grid-cols-2 gap-3 pt-2"><button class="btn-confirm-no" onclick="closeModal()">Cancel</button><button class="btn-confirm-yes" onclick="applyIdolFrame('${frameKey}',document.getElementById('idolFrameTarget').value)">Apply</button></div>
+    <button class="glass-card w-full py-3 rounded-xl font-extrabold text-gray-700" onclick="applyIdolFrame('none',document.getElementById('idolFrameTarget').value)">Remove frame from selected idol</button>`);
+}
+
+async function applyIdolFrame(frameKey, idolKey) {
+  if (!isIdolOwned(idolKey)) { showToast('You must own that idol.', 'error'); return; }
+  if (frameKey !== 'none' && !GAME_STATE.ownedIdolFrames?.[frameKey]) { showToast('You do not own that frame.', 'error'); return; }
+  GAME_STATE.equippedIdolFrames = GAME_STATE.equippedIdolFrames || {};
+  if (frameKey === 'none') delete GAME_STATE.equippedIdolFrames[idolKey];
+  else GAME_STATE.equippedIdolFrames[idolKey] = frameKey;
+  await savePlayerState();
+  closeModal();
+  renderIdols(); renderShopFrames();
+  showToast(frameKey === 'none' ? 'Frame removed.' : 'Frame applied to idol!', 'success');
 }
 
 let _profileShopTab = 'backgrounds';
@@ -236,7 +448,7 @@ function openShopProfileCards(tab) {
         <button id="profileShopTabTitle" class="btn-soft-sm" style="flex:1;" onclick="openShopProfileCards('titles')">🏷️ Titles</button>
       </div>
       <div style="display:flex;align-items:center;gap:5px;margin-top:10px;font-size:12px;font-weight:800;color:#0f172a;">
-        Balance: <span id="profileShopCoins">${GAME_STATE.coins.toLocaleString()}</span>
+        Balance: <span id="profileShopCoins">${formatNumber(GAME_STATE.coins)}</span>
         <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">
       </div>
       <div class="mt-3" id="profileShopGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;"></div>
@@ -372,7 +584,7 @@ async function purchaseProfileCosmetic(kind, key, price) {
   }
   renderHub();
   const coinsEl = document.getElementById('profileShopCoins');
-  if (coinsEl) coinsEl.textContent = GAME_STATE.coins.toLocaleString();
+  if (coinsEl) coinsEl.textContent = formatNumber(GAME_STATE.coins);
   await savePlayerState();
   __profileCosmeticPurchaseInProgress = false;
   showToast((kind === 'background' ? 'Background' : 'Title') + ' purchased & equipped!', 'success');
@@ -467,27 +679,63 @@ function abilityDynamicLine(abilityId, power) {
   return (map[abilityId] ? map[abilityId]() : "");
 }
 
-function toggleIdolSortDropdown() {
-  const dd = document.getElementById('idolSortDropdown');
-  const che = document.getElementById('idolSortChevron');
-  if (!dd || !che) return;
-  const open = dd.classList.contains('hidden') === false;
-  if (open) {
-    dd.classList.add('hidden');
-    che.classList.remove('fa-chevron-up');
-    che.classList.add('fa-chevron-down');
-  } else {
-    dd.classList.remove('hidden');
-    che.classList.remove('fa-chevron-down');
-    che.classList.add('fa-chevron-up');
-  }
+function renderIdolSortMenu(hostEl) {
+  if (!hostEl) return;
+  const options = [
+    ['rarity', 'Rarity Descending'],
+    ['power', 'Power Level Descending'],
+    ['name', 'Name Ascending'],
+    ['matches', 'Most Matches Descending'],
+    ['love', 'Love Level Descending'],
+  ];
+  const selected = options.find(([key]) => key === IDOL_SORT_MODE) || options[0];
+  hostEl.innerHTML = `
+    <div class="lb-dd idol-sort-dd">
+      <button type="button" id="idolSortToggle" class="lb-toggle" aria-haspopup="listbox" aria-expanded="false" onclick="toggleIdolSortDropdown(event)">
+        <span class="lb-toggle-ico"><i class="fas fa-sort"></i></span>
+        <span class="lb-toggle-txt"><small>Arrange idols</small><b id="idolSortLabel">${selected[1]}</b></span>
+        <i class="fas fa-chevron-down lb-toggle-chev"></i>
+      </button>
+      <div id="idolSortDropdown" class="lb-panel" role="listbox">
+        <div class="lb-group"><div class="lb-group-title"><i class="fas fa-arrow-down-wide-short"></i>Sort idols</div>
+          ${options.map(([key, label]) => `<button type="button" class="lb-opt ${key === IDOL_SORT_MODE ? 'on' : ''}" onclick="setIdolSortMode('${key}', event)"><span>${label}</span>${key === IDOL_SORT_MODE ? '<i class="fas fa-check"></i>' : ''}</button>`).join('')}
+        </div>
+      </div>
+    </div>`;
 }
 
-function setIdolSortMode(mode) {
+function toggleIdolSortDropdown(event) {
+  if (event) event.stopPropagation();
+  const dd = document.getElementById('idolSortDropdown');
+  const button = document.getElementById('idolSortToggle');
+  if (!dd || !button) return;
+  const open = !dd.classList.contains('show');
+  dd.classList.toggle('show', open);
+  button.classList.toggle('open', open);
+  button.setAttribute('aria-expanded', String(open));
+}
+
+document.addEventListener('click', event => {
+  const host = document.getElementById('idolSortHost');
+  const dd = document.getElementById('idolSortDropdown');
+  const button = document.getElementById('idolSortToggle');
+  if (dd && dd.classList.contains('show') && host && !host.contains(event.target)) {
+    dd.classList.remove('show');
+    button?.classList.remove('open');
+    button?.setAttribute('aria-expanded', 'false');
+  }
+});
+
+function setIdolSortMode(mode, event) {
+  if (event) event.stopPropagation();
   IDOL_SORT_MODE = mode;
-  toggleIdolSortDropdown();
+  const dd = document.getElementById('idolSortDropdown');
+  const button = document.getElementById('idolSortToggle');
+  dd?.classList.remove('show');
+  button?.classList.remove('open');
+  button?.setAttribute('aria-expanded', 'false');
   renderIdolsAnimated();
-  showToast(`Arranged by ${mode}`, "info");
+  showToast(`Arranged by ${mode}`, 'info');
 }
 
 function makeIdolCard(idol, owned) {
@@ -542,6 +790,19 @@ function makeIdolCard(idol, owned) {
       </div>
     </div>
   `;
+  const frameKey = GAME_STATE.equippedIdolFrames?.[idol.key];
+  const frame = (GAME_CONFIG.shop.frames || []).find(item => item.key === frameKey);
+  if (frame) {
+    const overlay = document.createElement('img');
+    overlay.className = 'idol-frame-overlay';
+    overlay.alt = '';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.src = frame.image;
+    overlay.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;z-index:5;';
+    overlay.onerror = () => { overlay.style.display = 'none'; };
+    wrap.style.position = 'relative';
+    wrap.appendChild(overlay);
+  }
   wrap.addEventListener('click', () => openIdolDetailsModal(idol.key));
   return wrap;
 }
@@ -604,6 +865,7 @@ async function renderIdolsAnimated() {
 }
 
 function renderIdols() {
+  renderIdolSortMenu(document.getElementById('idolSortHost'));
   const ownedGrid = document.getElementById('ownedIdolsGrid');
   const lockedGrid = document.getElementById('lockedIdolsGrid');
   const ownedCountLabel = document.getElementById('ownedCountLabel');
@@ -624,7 +886,9 @@ function renderIdols() {
     locked.forEach(idol => lockedGrid.appendChild(makeIdolCard(idol, false)));
   }
   const ic = document.getElementById('idolsCoins');
-  if (ic) ic.textContent = GAME_STATE.coins;
+  if (ic) ic.textContent = formatNumber(GAME_STATE.coins);
+  ['idolsGems'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(GAME_STATE.gems); });
+  ['idolsDiamonds'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(GAME_STATE.diamonds); });
 }
 // Married days helper
 
@@ -694,13 +958,16 @@ function openIdolDetailsModal(idolKey) {
   ` : '';
   // Marry button if not married yet and owned
   const marryBtn = (!married && owned) ? `<button class="btn-theme black-text w-full" onclick="confirmMarryIdol('${idolKey}')">Marry 💍</button>` : '';
-  // Ability details button – ▶ always blue text
-  const abilityButton = `
+  // Married idols show a compact View Ability control next to the rarity.
+  const abilityButton = married && ability ? `
+    <button class="idol-view-ability" onclick="event.stopPropagation(); openAbilityDetailsModal('${idolKey}')">View ability</button>
+  ` : '';
+  const abilityCard = (!married && ability) ? `
     <button class="mt-2 text-left glass-card w-full rounded-2xl p-3" onclick="openAbilityDetailsModal('${idolKey}')">
       <p class="text-sm font-extrabold text-gray-900 truncate">${abilityName}</p>
       <p class="text-[11px] text-blue-600 font-extrabold mt-2">Tap for details</p>
     </button>
-  `;
+  ` : '';
   // ▼▼▼ THEME GRADIENT BACKGROUND around the top section ▼▼▼
   const pair = IDOL_THEME[idolKey] || ["#f5c6d0", "#9ec5d9"];
   const [t1, t2] = pair;
@@ -711,7 +978,7 @@ function openIdolDetailsModal(idolKey) {
       <button class="btn-theme black-text w-full" onclick="attemptBuyIdol('${idolKey}', this)">
         <div class="flex items-center justify-between">
           <span>Buy</span>
-          <span class="font-black">${cost.toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></span>
+          <span class="font-black">${formatNumber(cost)} <span aria-label="diamonds">💎</span></span>
         </div>
       </button>
     `;
@@ -729,10 +996,11 @@ function openIdolDetailsModal(idolKey) {
           <div class="min-w-0">
             <p class="text-xl font-black text-gray-900 truncate">${idol.display}</p>
             <div class="mt-1" style="height:3px; border-radius:9999px; background:${rarityColor};"></div>
-            <p class="text-xs text-gray-500 font-bold mt-2">${rarityDisplayName(rarity)}</p>
-
-            ${abilityButton}
-
+            <div class="idol-rarity-row">
+              <p class="text-xs text-gray-500 font-bold">${rarityDisplayName(rarity)}</p>
+              ${abilityButton}
+            </div>
+            ${abilityCard}
             ${loveSection}
           </div>
           <div class="text-right">
@@ -839,39 +1107,28 @@ function confirmPurchaseModal({
 }
 
 async function attemptBuyIdol(idolKey, sourceBtnEl) {
-  if (!currentUser) {
-    showToast('Not logged in', 'error');
-    return;
-  }
-  if (isIdolOwned(idolKey)) {
-    showToast('You already own this idol', 'info');
-    return;
-  }
-  const rarity = IDOL_RARITY[idolKey] || "rare";
-  const cost = IDOL_SHOP_COST[rarity] ?? 0;
-  if (GAME_STATE.coins < cost) {
-    showToast(`Not enough coins. Need ${cost.toLocaleString()} coins`, 'error');
+  if (!currentUser) { showToast('Not logged in', 'error'); return; }
+  if (isIdolOwned(idolKey)) { showToast('You already own this idol', 'info'); return; }
+  const rarity = IDOL_RARITY[idolKey] || 'rare';
+  const cost = Math.max(1, Number(IDOL_SHOP_COST[rarity] ?? 0));
+  if (Number(GAME_STATE.diamonds || 0) < cost) {
+    showToast(`Not enough Diamonds. Need ${formatNumber(cost)} 💎`, 'error');
     return;
   }
   const idol = IDOLS.find(i => i.key === idolKey);
   confirmPurchaseModal({
-    title: "Confirm Purchase",
-    message: `Buy ${idol?.display || idolKey} for ${cost.toLocaleString()} coins?`,
+    title: 'Confirm Purchase',
+    message: `Buy ${escapeHtml(idol?.display || idolKey)} for ${formatNumber(cost)} 💎?`,
     onYes: async () => {
-      const before = GAME_STATE.coins;
-      GAME_STATE.coins -= cost;
+      if (isIdolOwned(idolKey)) { showToast('You already own this idol', 'info'); return; }
+      if (Number(GAME_STATE.diamonds || 0) < cost) { showToast('Not enough Diamonds', 'error'); return; }
+      GAME_STATE.diamonds = Math.max(0, Number(GAME_STATE.diamonds || 0) - cost);
       GAME_STATE.ownedIdols[idolKey] = true;
       ensureIdolPowerDefaults();
+      await savePlayerState();
       renderHub();
       renderIdols();
-      animateNumber(document.getElementById('hubCoins'), before, GAME_STATE.coins);
-      animateNumber(document.getElementById('gameCoins'), before, GAME_STATE.coins);
-      animateNumber(document.getElementById('questsCoins'), before, GAME_STATE.coins);
-      animateNumber(document.getElementById('idolsCoins'), before, GAME_STATE.coins);
-      const shopCoins = document.getElementById('shopCoins');
-      if (shopCoins) animateNumber(shopCoins, before, GAME_STATE.coins);
-      await savePlayerState();
-      // Show unlock animation — save/toast after dismiss
+      refreshShopBalances();
       showIdolUnlockAnimation(idolKey, () => {
         showToast('Purchased!', 'success');
         renderHub();
