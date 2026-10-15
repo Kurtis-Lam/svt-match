@@ -89,6 +89,13 @@ let LB_CACHE = { rows: null, at: 0 };
 let LB_LOAD_TOKEN = 0;
 const LB_CACHE_MS = 60 * 1000;
 
+function invalidateLeaderboardCache() {
+  LB_CACHE = { rows: null, at: 0 };
+  const screen = document.getElementById('leaderboardScreen');
+  if (screen && !screen.classList.contains('hidden')) renderLeaderboard(true);
+}
+window.invalidateLeaderboardCache = invalidateLeaderboardCache;
+
 function lbFindMetric(id) {
   for (const c of LB_CATS) {
     const m = c.metrics.find(x => x.id === id);
