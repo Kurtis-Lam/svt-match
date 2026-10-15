@@ -26,41 +26,28 @@ function authFail(status, message, code) {
   return e;
 }
 
-async function verifyIdToken(req, checkRevoked = true) {
+async function verifyIdToken(req) {
   const header = req.headers.authorization || '';
   const match = /^Bearer (.+)$/.exec(header);
   if (!match) throw httpError(401, 'Missing bearer token');
-  const token = match[1];
-  const admin = getAdmin();
   try {
-    return await admin.auth().verifyIdToken(token, false);
+    return await getAdmin().auth().verifyIdToken(match[1], true);
   } catch (e) {
     const code = e && e.code ? String(e.code) : 'unknown';
     console.error('[auth] verifyIdToken failed:', code, e && e.message);
-    if (code === 'auth/id-token-expired') throw authFail(401, 'Invalid or expired token', code);
-    // auth/argument-error with an "aud"/"iss" message means FIREBASE_PROJECT_ID / service account
-    // on Vercel belongs to a different Firebase project than the one the game signs in with.
+    if (code === 'auth/user-disabled') throw authFail(403, 'This account is suspended', code);
+    if (code === 'auth/user-not-found') throw authFail(401, 'Account no longer exists', code);
+    if (code === 'auth/id-token-revoked') throw authFail(401, 'Session was revoked, please sign in again', code);
     throw authFail(401, 'Invalid or expired token (' + code + ')', code);
   }
 }
 
-async function checkNotRevoked(uid, iat) {
-  try {
-    const user = await getAdmin().auth().getUser(uid);
-    const validSince = user.tokensValidAfterTime ? Date.parse(user.tokensValidAfterTime) / 1000 : 0;
-    if (validSince && iat && iat < validSince) throw authFail(401, 'Session was revoked, please sign in again', 'auth/id-token-revoked');
-  } catch (e) {
-    if (e && e.code === 'auth/id-token-revoked') throw e;
-    console.error('[auth] revocation check skipped:', e && e.code, e && e.message);
-  }
-}
-
-async function requireUser(req) {
-  const decoded = await verifyIdToken(req, false);
-  await checkNotRevoked(decoded.uid, decoded.iat);
-  const uid = decoded.uid;
-  const snap = await getAdmin().database().ref(`guard/${uid}/banned`).once('value');
-  if (snap.val()) throw httpError(403, 'This account is suspended');
+async function requireUser(req, opts) {
+  const decoded = await verifyIdToken(req);
+  const snap = await getAdmin().database().ref(`guard/${decoded.uid}`).once('value');
+  const g = snap.val() || {};
+  if (g.banned) throw httpError(403, 'This account is suspended');
+  if (g.deleting && !(opts && opts.allowDeleting)) throw httpError(410, 'This account is being deleted');
   return decoded;
 }
 
@@ -77,8 +64,7 @@ async function isAuthorizedUid(uid) {
 }
 
 async function requireAdminAccount(req) {
-  const decoded = await verifyIdToken(req, false);
-  await checkNotRevoked(decoded.uid, decoded.iat);
+  const decoded = await verifyIdToken(req);
   if (!(await isAuthorizedUid(decoded.uid))) throw httpError(403, 'Not an authorised admin');
   return decoded;
 }
