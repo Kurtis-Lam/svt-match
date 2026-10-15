@@ -1,8 +1,8 @@
 const HOUR_MS = 60 * 60 * 1000;
 
 const LIMITS = {
-  SINGLE_EARN: 260000,
-  HOURLY_EARN: 1500000,
+  SINGLE_EARN: 600000,
+  HOURLY_EARN: 4000000,
   LEVEL_MS: 5000,
   LEVEL_SINGLE_MAX: 20,
   LEVEL_HOURLY: 720,
@@ -22,7 +22,12 @@ const LIMITS = {
   FRIEND_REQ_HOURLY: 30,
   MAX_STATE_BYTES: 400000,
   MAX_LIST: 300,
-  MAX_ITEM_BYTES: 60000
+  MAX_ITEM_BYTES: 60000,
+  MAX_INCOMING_BATTLES: 50,
+  MAX_BATTLES_PER_SENDER: 5,
+  MAX_INCOMING_REQUESTS: 100,
+  BATTLE_STAT_HOURLY: 60,
+  BATTLE_CREATE_HOURLY: 60
 };
 
 const ITEM_MAPS = ['ownedIdols', 'ownedAvatars', 'ownedProfileBackgrounds', 'ownedProfileTitles', 'marriedIdols', 'ownedFrames'];
@@ -206,29 +211,21 @@ function sanitizeOwnState(oldState, nextState, guard, now, uid) {
     next[mapKey] = nMap;
   }
 
-  const b = next.battles && typeof next.battles === 'object' ? next.battles : {};
+  const b = next.battles && typeof next.battles === 'object' && !Array.isArray(next.battles) ? next.battles : {};
   const ob = old.battles && typeof old.battles === 'object' ? old.battles : {};
   const oldIncomingIds = new Set(toArr(ob.pendingIncoming).map((x) => x && x.id));
-  const incoming = toArr(b.pendingIncoming);
-  const keptIncoming = incoming.filter((x) => x && oldIncomingIds.has(x.id));
-  if (keptIncoming.length !== incoming.length) flag('forged_incoming', 'incoming battle not issued by another player');
-  b.pendingIncoming = keptIncoming;
+  b.pendingIncoming = toArr(b.pendingIncoming).filter((x) => x && oldIncomingIds.has(x.id));
   const oldOutgoingIds = new Set(toArr(ob.pendingOutgoing).map((x) => x && x.id));
-  const uidHint = uid;
-  const outgoing = toArr(b.pendingOutgoing);
-  const keptOutgoing = outgoing.filter((x) => x && (oldOutgoingIds.has(x.id) || (x.fromUserId === uidHint)));
-  if (keptOutgoing.length !== outgoing.length) flag('forged_outgoing', 'outgoing battle not owned by player');
-  b.pendingOutgoing = keptOutgoing;
+  b.pendingOutgoing = toArr(b.pendingOutgoing).filter((x) => x && (oldOutgoingIds.has(x.id) || x.fromUserId === uid));
   b.logs = toArr(b.logs).slice(-LIMITS.MAX_LIST);
   b.active = null;
   next.battles = b;
 
-  const f = next.friends && typeof next.friends === 'object' ? next.friends : {};
+  const f = next.friends && typeof next.friends === 'object' && !Array.isArray(next.friends) ? next.friends : {};
   const oldFriendIds = new Set(toArr(old.friends && old.friends.list).map((x) => x && x.userId));
-  const list = toArr(f.list);
-  const keptList = list.filter((x) => x && oldFriendIds.has(x.userId));
-  if (keptList.length !== list.length) flag('forged_friend', 'friend added without an accepted request');
-  f.list = keptList;
+  f.list = toArr(f.list).filter((x) => x && oldFriendIds.has(x.userId));
+  delete f.incoming;
+  delete f.outgoing;
   next.friends = f;
 
   return { state: next, clamped, guard: g };
