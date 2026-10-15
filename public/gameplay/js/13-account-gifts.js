@@ -1209,8 +1209,21 @@ async function submitChangeUsername() {
       return;
     }
 
-    // Do not reload or sign out the Firebase user after the server updates the email.
-    // Keeping this Firebase session preserves the current game state and screen.
+    // Changing the Firebase Auth email revokes every refresh token for the account, so the
+    // session this tab holds is now dead. Sign in again with the new email and the password
+    // just confirmed; this keeps the current screen and game state.
+    try {
+      await auth.signInWithEmailAndPassword(usernameToEmail(newU), pass);
+    } catch (e) {
+      try { localStorage.removeItem('currentUser'); } catch (e2) {}
+      try { await auth.signOut(); } catch (e2) {}
+      currentUser = null;
+      closeModal();
+      showToast('Username changed. Please sign in with your new username.', 'info');
+      showScreen('welcomeScreen');
+      return;
+    }
+
     currentUser.username = newU;
     if (displayNameUsesUsername) currentUser.displayName = newU;
     syncCurrentUserIdentityViews();
