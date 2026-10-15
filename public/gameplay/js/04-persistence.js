@@ -5,7 +5,7 @@
 // at the console will trigger this guard and their save will be discarded.
 let _lastSavedCoins = 0;
 let _lastSavedLevel = 0;
-const _MAX_COIN_JUMP  = 300_000;  // PATCH S-07: raised to cover offlinelove cap (250 000)
+const _MAX_COIN_JUMP  = 800_000;  // PATCH S-07: raised to cover offlinelove cap (250 000)
 const _MAX_LEVEL_JUMP = 1;        // levels advance one at a time
 
 function _snapshotState() {
@@ -162,10 +162,17 @@ function savePlayerStateLocal() {
   if (!currentUser) return;
   if (isSaveBlocked()) return;
   localStorage.setItem(`playerState:${currentUser.username}`, JSON.stringify(buildPlayerStatePayload()));
+  localStorage.setItem(`playerStateOwner:${currentUser.username}`, String(currentUser.id || ''));
 }
 
 function loadPlayerStateLocal() {
   if (!currentUser) return null;
+  const owner = localStorage.getItem(`playerStateOwner:${currentUser.username}`);
+  if (owner !== null && owner !== String(currentUser.id || '')) {
+    localStorage.removeItem(`playerState:${currentUser.username}`);
+    localStorage.removeItem(`playerStateOwner:${currentUser.username}`);
+    return null;
+  }
   const raw = localStorage.getItem(`playerState:${currentUser.username}`);
   if (!raw) return null;
   try {
