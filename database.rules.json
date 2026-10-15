@@ -6,15 +6,19 @@
     "users": {
       ".indexOn": ["username"],
       ".read": "auth != null",
+      ".write": false,
       "$uid": {
         ".write": false
       }
     },
 
     "seasons": {
+      ".read": false,
+      ".write": false,
       "$seasonId": {
         ".indexOn": ["sp"],
         ".read": "auth != null",
+        ".write": false,
         "$uid": {
           ".write": false
         }
@@ -27,6 +31,11 @@
     },
 
     "adminLogs": {
+      ".read": false,
+      ".write": false
+    },
+
+    "$other": {
       ".read": false,
       ".write": false
     }
