@@ -117,20 +117,24 @@ function openSpotlightStreakInfoModal() {
 }
 
 function openCoinsInfoModal() {
-  openModalWithHtmlTitle(`<span style="display:flex;align-items:center;gap:6px;"><img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">How to earn coins</span>`, `
+  openModalWithHtmlTitle(`<span style="display:flex;align-items:center;gap:6px;"><img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">Coins &amp; Diamonds</span>`, `
     <div class="glass-card rounded-2xl p-4 space-y-3">
-      <p class="text-sm text-gray-700 font-semibold">All ways to earn coins in SVT MATCH:</p>
-      <ul class="text-xs text-gray-600 font-bold list-disc pl-5 space-y-2">
-        <li><b>✅ Complete a Showtime level</b> – base 100 coins</li>
-        <li><b>⭐ Daily Draw (Wheel)</b> – spin for a random prize (10‑1000 coins)</li>
-        <li><b>📦 Daily Box</b> – open after 3 daily wins (completed under 20s); rewards scale with rarity</li>
-        <li><b>🎯 Spotlight game</b> – earn coins for each correct tap; streak bonus available</li>
-        <li><b>🐾 Kkuma bonus</b> – if Kkuma appears and is matched, +5000 coins</li>
-        <li><b>🏆 Idol rarity bonus</b> – extra coins per level based on idols present (rare 10 → legendary 500)</li>
-        <li><b>📜 Quests</b> – claim tiered rewards for matching idols or completing levels quickly</li>
-        <li><b>💕 Offline Love</b> – after being away, collect love coins from married idols (love level ≥ 5)</li>
-      </ul>
-      <p class="text-xs text-gray-500 font-bold">All earnings are added immediately. Keep an eye on the coin bar!</p>
+      <div>
+        <p class="text-sm text-gray-800 font-extrabold flex items-center gap-1"><img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"> Earn coins</p>
+        <ul class="text-xs text-gray-600 font-bold list-disc pl-5 mt-1 space-y-1">
+          <li>Play Showtime, Spotlight, Snakeventeen &amp; Choreo Echo</li>
+          <li>Spin the Daily Draw &amp; open Daily Boxes</li>
+          <li>Complete quests &amp; win battles</li>
+          <li>Collect love coins from married idols, etc.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-sm text-gray-800 font-extrabold">💎 Earn diamonds</p>
+        <ul class="text-xs text-gray-600 font-bold list-disc pl-5 mt-1 space-y-1">
+          <li>Climb the Season Pass levels</li>
+          <li>Special rewards &amp; events, etc.</li>
+        </ul>
+      </div>
     </div>
   `);
 }
