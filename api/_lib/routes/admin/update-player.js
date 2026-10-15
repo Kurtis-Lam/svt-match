@@ -1,3 +1,4 @@
+// File: api/_lib/routes/admin/update-player.js
 const { handler, send, httpError, rateLimit } = require('../../http');
 const { requireAdminSession } = require('../../auth');
 const { getAdmin } = require('../../firebase');
