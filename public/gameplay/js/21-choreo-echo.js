@@ -406,7 +406,14 @@
     }
     if (rounds > s.bestRounds) s.bestRounds = rounds;
     const newBest = E.mode === 'endless' && rounds > s.bestEndless;
-    if (newBest) s.bestEndless = rounds;
+    if (E.mode === 'endless') {
+      s.bestEndless = Math.max(s.bestEndless, rounds);
+      // Save the record before the server award transaction so it cannot be overwritten
+      // by an award based on an older player-state snapshot. Re-save even for an existing
+      // best so records retained locally from an earlier failed save are synced to the server.
+      try { await savePlayerState(); } catch (e) { console.warn('[Echo] Could not save Endless record before award:', e); }
+      try { if (typeof invalidateLeaderboardCache === 'function') invalidateLeaderboardCache(); } catch (e) {}
+    }
 
     // Coins and the echo level are awarded by the server (api/_lib/awards.js).
     const award = await claimAwardSafe('echo', {
@@ -432,7 +439,10 @@
 
     if (passed) grantDailyBox(show); else show();
 
-    try { savePlayerState(); } catch (e) {}
+    try { await savePlayerState(); } catch (e) { console.warn('[Echo] Could not save run result:', e); }
+    if (E.mode === 'endless') {
+      try { if (typeof invalidateLeaderboardCache === 'function') invalidateLeaderboardCache(); } catch (e) {}
+    }
     renderHub();
   }
 
