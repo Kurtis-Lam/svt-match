@@ -1,3 +1,4 @@
+// File: public/gameplay/js/19-meta-core.js
 /* ──────────────────────────────────────────────────────────────────────────
    META LOOP — logic
    State lives in GAME_STATE.meta (one additive key in playerState):
@@ -99,7 +100,7 @@ const Meta = (() => {
     e.xp = Math.min(99999, (Number(e.xp) || 0) + Math.round(amt));
     const after = levelOf(k), ups = [];
     for (let lv = before + 1; lv <= after; lv++) {
-      addCoinsToGame(lv * D.LEVELUP_COINS_PER_LEVEL, 'mastery');
+      claimAwardSafe('mastery', { idolKey: k, level: lv }, true).then(() => { try { renderHub(); } catch (e) {} });
       ups.push(lv);
     }
     return ups;
@@ -127,9 +128,9 @@ const Meta = (() => {
   function claimableCount() { return claimableTiers().length + claimableGoals().length; }
 
   // Grants a tier reward; returns what was actually given (for summaries)
-  function grantReward(r) {
+  function grantReward(r, serverPaid) {
     const given = { coins: 0, rings: 0, xp: 0, diamonds: 0, boxes: 0 };
-    if (r.coins) { addCoinsToGame(r.coins, 'season'); given.coins += r.coins; }
+    if (r.coins) given.coins += r.coins; // coins are paid by the server (see claimTier / tick)
     if (r.rings) { GAME_STATE.rings = (GAME_STATE.rings || 0) + r.rings; given.rings += r.rings; }
     if (r.diamonds) { GAME_STATE.diamonds = (GAME_STATE.diamonds || 0) + r.diamonds; given.diamonds += r.diamonds; }
     if (r.boxes) { state().season.boxes = (state().season.boxes || 0) + r.boxes; given.boxes += r.boxes; }
@@ -139,17 +140,20 @@ const Meta = (() => {
         k = ownedKeys().sort((a, b) => xpOf(a) - xpOf(b))[0] || null;
       }
       if (k) { addXp(k, r.xp); given.xp += r.xp; given.xpIdol = k; }
-      else { addCoinsToGame(150, 'season'); given.coins += 150; }
     }
     return given;
   }
 
-  function claimTier(i) {
+  async function claimTier(i) {
     ensure();
     const s = state().season;
     if (!D.TIERS[i] || s.claimed['t' + i] || s.sp < D.TIERS[i].sp) return false;
+    const res = await claimAwardSafe('season', { tier: i });
+    if (!res) return false;
+    if (s.claimed['t' + i]) return false;
     s.claimed['t' + i] = 1;
-    const g = grantReward(D.TIERS[i].reward);
+    const g = grantReward(D.TIERS[i].reward, true);
+    g.coins = Number(res.added) || 0;
     persist();
     return g;
   }
@@ -173,7 +177,8 @@ const Meta = (() => {
     let autoCoins = 0, autoRings = 0, autoDiamonds = 0, autoBoxes = 0;
     for (let i = 0; i < reached; i++) {
       if (s.claimed['t' + i]) continue;
-      const r = grantReward(D.TIERS[i].reward);
+      claimAwardSafe('season', { tier: i, prev: true }, true).then(() => { try { renderHub(); } catch (e) {} });
+      const r = grantReward(D.TIERS[i].reward, true);
       autoCoins += r.coins; autoRings += r.rings; autoDiamonds += r.diamonds; autoBoxes += r.boxes;
     }
     g.last = { id: s.id, num: s.num, sp: s.sp, tier: reached, autoCoins, autoRings, autoDiamonds, autoBoxes };
@@ -249,8 +254,8 @@ const Meta = (() => {
     if (info.targetKey && info.passed) ups.push(...addXp(info.targetKey, D.XP.targetPass).map(l => [info.targetKey, l]));
 
     // Fandom Power coin bonus on the run's own coins
-    const bonus = Math.floor((Number(info.coins) || 0) * coinBonusPct());
-    if (bonus > 0) { addCoinsToGame(bonus, 'mastery'); parts.push(`+${Number(bonus).toLocaleString()} fandom coins`); }
+    const bonus = Math.floor(Number(info.fandomCoins) || 0); // paid by the server with the run
+    if (bonus > 0) parts.push(`+${Number(bonus).toLocaleString()} fandom coins`);
 
     syncBattles();
     try { showToast(parts.join(' · '), 'success'); } catch (e) {}
