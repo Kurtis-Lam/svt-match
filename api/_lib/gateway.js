@@ -1,3 +1,4 @@
+// File: api/_lib/gateway.js
 const { getAdmin } = require('./firebase');
 const { httpError } = require('./http');
 const G = require('./guard');
