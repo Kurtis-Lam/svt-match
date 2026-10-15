@@ -92,6 +92,9 @@ function idSet(arr) {
 
 function checkBattleList(kind, me, target, oldArr, newArr) {
   validateItems(newArr);
+  if (kind === 'pendingIncoming' && newArr.length > LIMITS.MAX_INCOMING_BATTLES && newArr.length > oldArr.length) {
+    throw httpError(429, 'This player has too many pending battles');
+  }
   const isMine = (b) => involvesBattle(b, me);
   const restOld = oldArr.filter((b) => !isMine(b));
   const restNew = newArr.filter((b) => !isMine(b));
@@ -103,6 +106,9 @@ function checkBattleList(kind, me, target, oldArr, newArr) {
     if (kind === 'pendingIncoming') {
       if (b.fromUserId !== me || b.toUserId !== target) throw httpError(403, 'Invalid battle challenge');
       if (b.status !== 'awaiting_accept') throw httpError(400, 'Invalid battle status');
+      if (newArr.filter((x) => x && x.fromUserId === me).length > LIMITS.MAX_BATTLES_PER_SENDER) {
+        throw httpError(429, 'Too many pending battles with this player');
+      }
     } else {
       throw httpError(403, 'You cannot create this battle entry');
     }
@@ -158,8 +164,22 @@ async function txn(path, fn) {
 }
 
 async function userExists(uid) {
-  const s = await db().ref(`users/${uid}/username`).once('value');
-  return s.exists();
+  const [u, d] = await Promise.all([
+    db().ref(`users/${uid}/username`).once('value'),
+    db().ref(`guard/${uid}/deleting`).once('value')
+  ]);
+  return u.exists() && !d.exists();
+}
+
+async function rollbackIfGone(uid, paths) {
+  if (await userExists(uid)) return false;
+  for (const p of paths) await db().ref(p).remove().catch(() => {});
+  return true;
+}
+
+async function areFriends(a, b) {
+  const s = await db().ref(`users/${b}/playerState/friends/list`).once('value');
+  return toArr(s.val()).some((f) => f && f.userId === a);
 }
 
 async function getGuard(uid) {
@@ -169,6 +189,7 @@ async function getGuard(uid) {
 }
 
 async function saveGuard(uid, g) {
+  if (!(await userExists(uid))) return;
   const out = cleanKeys(clone(g));
   delete out.banned;
   const keep = await db().ref(`guard/${uid}/banned`).once('value');
@@ -256,9 +277,7 @@ async function processWrite(me, rawOps) {
     const sub = segs.slice(2);
 
     if (sub.length === 0) {
-      if (owner !== me || value !== null) throw httpError(403, 'Not allowed');
-      directWrites.push({ kind: 'deleteAccount' });
-      continue;
+      throw httpError(403, 'Use the delete-account endpoint to delete an account');
     }
 
     if (sub[0] === 'displayName' && sub.length === 1) {
@@ -323,7 +342,13 @@ async function processWrite(me, rawOps) {
     throw httpError(403, 'Not allowed');
   }
 
+  const friendChecked = new Map();
+  const mustBeFriends = async (target) => {
+    if (!friendChecked.has(target)) friendChecked.set(target, await areFriends(me, target));
+    if (!friendChecked.get(target)) throw httpError(403, 'You can only do this with friends');
+  };
   for (const c of crossOps) {
+    if (c.rel === 'battles/pendingIncoming' || c.rel === 'battles/logs') await mustBeFriends(c.target);
     const path = `users/${c.target}/playerState/${c.rel}`;
     if (!(await userExists(c.target))) throw httpError(404, 'Player not found');
     const newArr = c.value === null ? [] : toArr(c.value);
@@ -337,9 +362,7 @@ async function processWrite(me, rawOps) {
       else out = checkRemovalOnly(me, 'req', oldArr, newArr);
       return out.length ? out : null;
     });
-    if (!r.committed && c.rel !== 'battles/logs') {
-      // aborted by validation handled via throw; an unchanged value is fine
-    }
+    if (r.committed && (await rollbackIfGone(c.target, [path]))) throw httpError(404, 'Player not found');
   }
 
   for (const s of statOps) {
@@ -350,6 +373,9 @@ async function processWrite(me, rawOps) {
     const targetLost = entry.loser && entry.loser.userId === s.target;
     if (s.key === 'battleWins' && !targetWon) throw httpError(403, 'Log does not show a win for this player');
     if (s.key === 'battleLosses' && !targetLost) throw httpError(403, 'Log does not show a loss for this player');
+    await mustBeFriends(s.target);
+    if (num(w.bs) >= LIMITS.BATTLE_STAT_HOURLY) throw httpError(429, 'Too many battle updates');
+    w.bs = num(w.bs) + 1;
     const pairKey = `bp_${s.target}`.slice(0, 40);
     const last = num(guard.t[pairKey]);
     if (now - last < 15000) throw httpError(429, 'Too many battle updates');
@@ -415,7 +441,14 @@ async function processWrite(me, rawOps) {
           if (num(w.fr) >= LIMITS.FRIEND_REQ_HOURLY) throw httpError(429, 'Too many friend requests');
           w.fr = num(w.fr) + 1;
         }
-        await db().ref(`users/${d.owner}/friendRequests/${d.dir}/${d.reqId}`).set(d.value);
+        const reqPath = `users/${d.owner}/friendRequests/${d.dir}/${d.reqId}`;
+        if (d.dir === 'incoming') {
+          const inbox = (await db().ref(`users/${d.owner}/friendRequests/incoming`).once('value')).val() || {};
+          const keys = Object.keys(inbox);
+          if (!(d.reqId in inbox) && keys.length >= LIMITS.MAX_INCOMING_REQUESTS) throw httpError(429, 'This player has too many pending requests');
+        }
+        await db().ref(reqPath).set(d.value);
+        if (d.owner !== me && (await rollbackIfGone(d.owner, [reqPath]))) throw httpError(404, 'Player not found');
       }
     } else if (d.kind === 'reqRemove') {
       const ref = db().ref(`users/${d.owner}/friendRequests/${d.dir}/${d.reqId}`);
@@ -430,14 +463,10 @@ async function processWrite(me, rawOps) {
       const clean = G.sanitizeSeason(cur, d.value, guard, now);
       if (!clean) throw httpError(400, 'Invalid season entry');
       await ref.set(clean);
-    } else if (d.kind === 'deleteAccount') {
-      await db().ref(`users/${me}`).remove();
-      await db().ref(`guard/${me}`).remove();
-      guard.__deleted = true;
     }
   }
 
-  if (!guard.__deleted) await saveGuard(me, guard);
+  await saveGuard(me, guard);
   return result;
 }
 
