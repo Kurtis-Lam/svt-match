@@ -104,26 +104,14 @@ function sanitizeOwnState(oldState, nextState, guard, now, uid) {
   const stats = next.stats;
 
   const oE = num(oStats.totalCoinsEarned);
-  let nE = num(stats.totalCoinsEarned, oE);
-  if (nE < oE) {
-    nE = oE;
-    flag('earned_decrease', 'totalCoinsEarned lowered');
-  }
-  let earned = nE - oE;
-  const room = Math.max(0, Math.min(LIMITS.SINGLE_EARN, LIMITS.HOURLY_EARN - num(w.earn)));
-  if (earned > room) {
-    flag('earn_rate', `earned +${earned}, allowed +${room}`);
-    earned = room;
-  }
-  stats.totalCoinsEarned = oE + earned;
-  w.earn = num(w.earn) + earned;
+  if (num(stats.totalCoinsEarned, oE) > oE) flag('earned_locked', 'totalCoinsEarned can only be raised by the server');
+  stats.totalCoinsEarned = oE;
 
   const oC = Math.max(0, num(old.coins));
   let nC = Math.max(0, Math.floor(num(next.coins, oC)));
-  const maxC = oC + earned + 1;
-  if (nC > maxC) {
-    flag('coin_jump', `coins ${oC} -> ${nC}, allowed up to ${maxC}`);
-    nC = maxC;
+  if (nC > oC) {
+    flag('coin_locked', `coins ${oC} -> ${nC}; coins can only be awarded by the server`);
+    nC = oC;
   }
   next.coins = nC;
 
@@ -144,26 +132,11 @@ function sanitizeOwnState(oldState, nextState, guard, now, uid) {
 
   next.idolFrameAssignments = next.idolFrameAssignments && typeof next.idolFrameAssignments === 'object' && !Array.isArray(next.idolFrameAssignments) ? next.idolFrameAssignments : {};
 
-  for (const [field, key] of LEVEL_FIELDS) {
+  for (const [field] of LEVEL_FIELDS) {
     const oL = Math.max(0, Math.floor(num(old[field])));
-    let nL = Math.max(0, Math.floor(num(next[field], oL)));
-    if (nL < oL) {
-      flag('level_decrease', `${field} ${oL} -> ${nL}`);
-      nL = oL;
-    }
-    const last = num(g.t[key], now - 15000);
-    const timeAllowed = Math.min(LIMITS.LEVEL_SINGLE_MAX, 1 + Math.floor(Math.max(0, now - last) / LIMITS.LEVEL_MS));
-    const hourlyLeft = Math.max(0, LIMITS.LEVEL_HOURLY - num(w[key]));
-    const allowed = Math.min(timeAllowed, hourlyLeft);
-    if (nL - oL > allowed) {
-      flag('level_jump', `${field} ${oL} -> ${nL}, allowed +${allowed}`);
-      nL = oL + allowed;
-    }
-    if (nL > oL) {
-      g.t[key] = now;
-      w[key] = num(w[key]) + (nL - oL);
-    }
-    next[field] = nL;
+    const nL = Math.max(0, Math.floor(num(next[field], oL)));
+    if (nL !== oL) flag('level_locked', `${field} ${oL} -> ${nL}; levels can only be awarded by the server`);
+    next[field] = oL;
   }
 
   const oRings = Math.max(0, num(old.rings));
@@ -176,14 +149,18 @@ function sanitizeOwnState(oldState, nextState, guard, now, uid) {
   if (nRings > oRings) w.rg = num(w.rg) + (nRings - oRings);
   next.rings = nRings;
 
-  const oLC = num(oStats.levelsCompleted);
-  let nLC = num(stats.levelsCompleted, oLC);
-  if (nLC < oLC) nLC = oLC;
-  if (nLC - oLC > LIMITS.STAT_SINGLE) {
-    flag('stat_jump', `levelsCompleted ${oLC} -> ${nLC}`);
-    nLC = oLC + LIMITS.STAT_SINGLE;
+  for (const k of ['levelsCompleted', 'levelsUnder30', 'levelsUnder20']) {
+    const o = num(oStats[k]);
+    if (num(stats[k], o) > o) flag('stat_locked', `${k} can only be raised by the server`);
+    stats[k] = o;
   }
-  stats.levelsCompleted = nLC;
+
+  next.meta = next.meta && typeof next.meta === 'object' && !Array.isArray(next.meta) ? next.meta : {};
+  const oEcho = old.meta && old.meta.echo && typeof old.meta.echo === 'object' ? old.meta.echo : {};
+  next.meta.echo = next.meta.echo && typeof next.meta.echo === 'object' && !Array.isArray(next.meta.echo) ? next.meta.echo : {};
+  const oEchoLevel = Math.max(0, Math.floor(num(oEcho.level)));
+  if (num(next.meta.echo.level, oEchoLevel) !== oEchoLevel) flag('level_locked', 'echo level can only be raised by the server');
+  next.meta.echo.level = oEchoLevel;
 
   for (const k of ['battleWins', 'battleLosses']) {
     const o = num(oStats[k]);
