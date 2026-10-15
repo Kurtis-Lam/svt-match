@@ -772,7 +772,7 @@ async function openProfileModal(userId) {
           border:1px solid rgba(255,255,255,0.6);
           font-size:11px;font-weight:800;color:#ffffff;
           text-shadow:0 1px 3px rgba(0,0,0,0.35);
-        ">${p.hasCustomTitle ? p.titleLabel : `🎮 Joined ${p.joinDate}`}</div>
+        ">${p.hasCustomTitle ? p.titleLabel : `Joined ${p.joinDate}`}</div>
       </div>
     </div>
 
@@ -802,30 +802,6 @@ async function openProfileModal(userId) {
         <div style="font-size:24px;line-height:1;">💕</div>
         <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:3px;">${p.totalLoveLevel}</div>
         <div style="font-size:9px;color:#64748b;font-weight:800;margin-top:2px;">TOTAL LOVE LVL</div>
-      </div>
-
-      <div style="background:rgba(255,255,255,0.92);border-radius:16px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.8);box-shadow:0 4px 14px rgba(0,0,0,0.06);">
-        <div style="font-size:24px;line-height:1;">🎤</div>
-        <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:3px;">${p.showtimeLevel}</div>
-        <div style="font-size:9px;color:#64748b;font-weight:800;margin-top:2px;">SHOWTIME LVL</div>
-      </div>
-
-      <div style="background:rgba(255,255,255,0.92);border-radius:16px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.8);box-shadow:0 4px 14px rgba(0,0,0,0.06);">
-        <div style="font-size:24px;line-height:1;">🔎</div>
-        <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:3px;">${p.spotlightLevel}</div>
-        <div style="font-size:9px;color:#64748b;font-weight:800;margin-top:2px;">SPOTLIGHT LVL</div>
-      </div>
-
-      <div style="background:rgba(255,255,255,0.92);border-radius:16px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.8);box-shadow:0 4px 14px rgba(0,0,0,0.06);">
-        <div style="display:flex; justify-content:center; align-items:center; font-size:24px;"><img src="./imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"></div>
-        <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:3px;">${p.bestStreak}</div>
-        <div style="font-size:9px;color:#64748b;font-weight:800;margin-top:2px;">BEST SHOWTIME STREAK</div>
-      </div>
-
-      <div style="background:rgba(255,255,255,0.92);border-radius:16px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.8);box-shadow:0 4px 14px rgba(0,0,0,0.06);">
-        <div style="display:flex; justify-content:center; align-items:center; font-size:24px;"><img src="./imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"></div>
-        <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:3px;">${p.bestSpotlightStreak}</div>
-        <div style="font-size:9px;color:#64748b;font-weight:800;margin-top:2px;">BEST SPOTLIGHT STREAK</div>
       </div>
 
       <div style="background:rgba(255,255,255,0.92);border-radius:16px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.8);box-shadow:0 4px 14px rgba(0,0,0,0.06);">
