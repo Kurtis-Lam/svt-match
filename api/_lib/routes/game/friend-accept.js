@@ -1,6 +1,6 @@
 const { handler, send, httpError, rateLimit } = require('../../http');
 const { requireUser } = require('../../auth');
-const { db, txn, UID_RE } = require('../../gateway');
+const { db, txn, UID_RE, userExists } = require('../../gateway');
 const { toArr } = require('../../guard');
 
 function meta(uid, user, ps) {
@@ -45,7 +45,7 @@ module.exports = handler(['POST'], async (req, res) => {
     db().ref(`users/${me}`).once('value'),
     db().ref(`users/${other}`).once('value')
   ]);
-  if (!otherSnap.exists()) {
+  if (!otherSnap.exists() || !(await userExists(other))) {
     await reqRef.remove();
     throw httpError(404, 'User no longer exists');
   }
@@ -56,6 +56,15 @@ module.exports = handler(['POST'], async (req, res) => {
 
   const myList = await addToList(me, otherMeta);
   await addToList(other, myMeta);
+  if (!(await userExists(other))) {
+    await txn(`users/${me}/playerState/friends/list`, (cur) => {
+      const list = toArr(cur).filter((f) => f && f.userId !== other);
+      return list.length ? list : null;
+    });
+    await db().ref(`users/${other}/playerState/friends/list`).remove().catch(() => {});
+    await reqRef.remove();
+    throw httpError(404, 'User no longer exists');
+  }
 
   await Promise.all([
     reqRef.remove(),
