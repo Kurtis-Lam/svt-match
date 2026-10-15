@@ -18,6 +18,10 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/support/$(ticketId)).data.userId == request.auth.uid;
     }
 
+    function ticketOpen(ticketId) {
+      return get(/databases/$(database)/documents/support/$(ticketId)).data.status in ['pending', 'open', 'resolved'];
+    }
+
     match /admin/{doc} {
       allow read, write: if false;
     }
@@ -31,7 +35,9 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly(['category', 'email', 'title', 'description', 'userId', 'username', 'displayName', 'status', 'submittedAt'])
         && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
         && request.resource.data.title.size() <= 200
         && request.resource.data.description is string
         && request.resource.data.description.size() <= 5000;
@@ -44,7 +50,10 @@ service cloud.firestore {
           || (ownsTicket(ticketId)
               && request.resource.data.senderId == request.auth.uid
               && request.resource.data.senderRole == 'user'
+              && ticketOpen(ticketId)
+              && request.resource.data.keys().hasOnly(['text', 'senderId', 'senderName', 'senderRole', 'sentAt'])
               && request.resource.data.text is string
+              && request.resource.data.text.size() >= 1
               && request.resource.data.text.size() <= 2000);
         allow update, delete: if isAdmin();
       }
