@@ -1,3 +1,4 @@
+// File: public/gameplay/js/12-quests-daily.js
 // ── Quest stats read live from the save (used by the per-game tiered quests) ──
 const QUEST_STAT_GETTERS = {
   showtimeLevel: () => GAME_STATE.level || 0,
@@ -400,14 +401,13 @@ async function claimDailyQuest(id, el) {
   const it = ensureDailyQuests().items[id];
   if (!def || !it || it.claimed || it.progress < def.target) return;
   _claimingIds.add(key);
+  const res = await claimAwardSafe('quest', { kind: 'daily', id });
+  if (!res) { _claimingIds.delete(key); return; }
   it.claimed = true;
-  addCoinsToGame(def.coins, 'quest');
   try {
-    await _finishQuestClaim(def.coins, el);
+    await _finishQuestClaim(Number(res.added) || 0, el);
   } catch (err) {
     it.claimed = false;
-    GAME_STATE.coins = Math.max(0, GAME_STATE.coins - def.coins);
-    GAME_STATE.stats.totalCoinsEarned = Math.max(0, (GAME_STATE.stats.totalCoinsEarned || 0) - def.coins);
     console.error('[claimDailyQuest] failed, reverted:', err);
     showToast('Claim failed – please try again', 'error');
     try { renderQuests(); renderHub(); } catch (e) {}
@@ -423,10 +423,16 @@ async function claimQuest(questId, questElForAnim) {
   if (q.claimed || _claimingIds.has('q:' + questId)) return;
   if (!questIsDone(q)) return;
   _claimingIds.add('q:' + questId);
-  const added = q.rewardCoins;
+  let ctx = null;
+  if (q.type === "match_idol_tier") ctx = { kind: 'idol', idolKey: q.idolKey, tier: q.target };
+  else if (q.type === "complete_level_under_30s") ctx = { kind: 'fast', tier: q.target };
+  else if (q.type === "complete_level_under_20s") ctx = { kind: 'blitz', tier: q.target };
+  else if (q.type === "stat_tier") ctx = { kind: 'tiered', id: q.defId, tier: q.target };
+  const res = ctx ? await claimAwardSafe('quest', ctx) : null;
+  if (!res) { _claimingIds.delete('q:' + questId); return; }
+  const added = Number(res.added) || 0;
   try {
     q.claimed = true;
-    addCoinsToGame(added, 'quest');
     if (q.type === "match_idol_tier") {
       const nextTier = QUEST_TIERS[QUEST_TIERS.indexOf(q.target) + 1];
       if (nextTier) {
@@ -461,8 +467,6 @@ async function claimQuest(questId, questElForAnim) {
   } catch (_claimErr) {
     // Q-05 FIX: revert on failure
     q.claimed = false;
-    GAME_STATE.coins = Math.max(0, GAME_STATE.coins - added);
-    GAME_STATE.stats.totalCoinsEarned = Math.max(0, (GAME_STATE.stats.totalCoinsEarned || 0) - added);
     console.error('[claimQuest] failed, reverted:', _claimErr);
     showToast('Claim failed – please try again', 'error');
     try { renderQuests(); renderHub(); } catch (e) {}
@@ -611,20 +615,29 @@ function closeDailyPrizeOverlay() {
   document.getElementById('dailyPrizeOverlay').setAttribute('aria-hidden', 'true');
 }
 
-function spinDailyWheelFromOverlay() {
+async function spinDailyWheelFromOverlay() {
   if (!currentUser) return;
   ensureDailyResetIfNeeded();
   if (GAME_STATE.daily.hasDrawn) return;
   if (WHEEL_SPINNING) return;
   // PATCH S-04/G-06: lock out a second spin immediately so rapid taps
   // or closing-and-reopening the overlay cannot spin again.
-  GAME_STATE.daily.hasDrawn = true;   // provisional – reverted if prize not claimed (browser refresh)
   WHEEL_SPINNING = true;
-  savePlayerState();
   const btn = document.getElementById('wheelSpinBtn');
   btn.disabled = true;
   btn.textContent = '...';
-  const prize = randomDailyPrize();
+  const wheelBefore = GAME_STATE.coins;
+  // The server picks the prize and pays it; the wheel only animates the result.
+  const wheelRes = await claimAwardSafe('dailywheel', {});
+  if (!wheelRes) {
+    WHEEL_SPINNING = false;
+    btn.disabled = false;
+    btn.innerHTML = 'TAP<br/>SPIN';
+    return;
+  }
+  GAME_STATE.daily.hasDrawn = true;
+  savePlayerState();
+  const prize = Number(wheelRes.extra && wheelRes.extra.prize) || 0;
   const idx = DAILY_PRIZES.indexOf(prize);
   const segmentCenterDeg = (idx * WHEEL_SEG_DEG) + (WHEEL_SEG_DEG / 2);
   const TOP_DEG = 270;
@@ -641,7 +654,7 @@ function spinDailyWheelFromOverlay() {
   }
   WHEEL_RESULT = {
     prize,
-    beforeCoins: GAME_STATE.coins
+    beforeCoins: wheelBefore
   };
   setTimeout(() => {
     WHEEL_SPINNING = false;
@@ -666,7 +679,7 @@ async function claimDailyPrize() {
   } = WHEEL_RESULT;
   WHEEL_RESULT = null; // consume immediately: double-tap can't pay twice
   GAME_STATE.daily.hasDrawn = true;
-  addCoinsToGame(prize, 'dailywheel');
+  // coins were already paid by the server when the wheel was spun
   renderHub();
   updateDailyDrawUI();
   closeDailyPrizeOverlay();
@@ -816,6 +829,18 @@ function renderDailyBoxRewardLine(reward) {
   return `+${reward.coins} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
 }
 
+// The server rolls the star upgrades and pays the coins; the client only animates the result.
+async function svtOpenDailyBoxServer(via) {
+  const beforeCoins = GAME_STATE.coins;
+  const box = await svtResolveDailyBox(via);
+  if (!box) return null;
+  return {
+    star: box.star,
+    reward: { coins: box.coins, idol: null, idolRarity: null },
+    beforeCoins
+  };
+}
+
 function resolveDailyBoxReward(star) {
   const cfg = DAILY_BOX_REWARDS[star] || DAILY_BOX_REWARDS[1];
   return {
@@ -827,7 +852,14 @@ function resolveDailyBoxReward(star) {
 
 async function applyDailyBoxReward(reward) {
   const before = GAME_STATE.coins;
-  addCoinsToGame((reward.coins || 0), 'dailybox');
+  const box = await svtResolveDailyBox('daily');
+  if (box) {
+    reward.coins = box.coins;
+    GAME_STATE.daily.box.star = box.star;
+  } else {
+    reward.coins = 0;
+    showToast('No daily box is ready right now', 'info');
+  }
   renderHub();
   renderIdols();
   animateNumber(document.getElementById('hubCoins'), before, GAME_STATE.coins);
