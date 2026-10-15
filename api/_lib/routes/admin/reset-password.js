@@ -1,3 +1,4 @@
+// File: api/_lib/routes/admin/reset-password.js
 const crypto = require('crypto');
 const { handler, send, httpError, rateLimit } = require('../../http');
 const { requireAdminSession } = require('../../auth');
