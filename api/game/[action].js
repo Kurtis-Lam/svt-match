@@ -1,3 +1,4 @@
+// File: api/game/[action].js
 const routes = {
   write: require('../_lib/routes/game/write'),
   award: require('../_lib/routes/game/award'),
