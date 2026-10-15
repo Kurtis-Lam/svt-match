@@ -170,15 +170,8 @@ function makeOwnedGiftThumbHTML(imgSrc) {
 }
 
 function updateRingsOwnedDisplay() {
-  const ringsShop = document.getElementById('ringsCountShop');
-  if (!ringsShop) return;
-  // Show ring image before "Ring" text + count (transparent PNG)
-  ringsShop.innerHTML = `
-    <div class="flex items-center gap-2">
-      ${makeOwnedGiftThumbHTML(SHOP_ITEM_IMAGES.ring || './imgs/assets/shop_ring.png')}
-      <span class="text-sm font-extrabold text-gray-900">Ring: ${GAME_STATE.rings || 0}</span>
-    </div>
-  `;
+  // Rings and gifts are rendered together in one box by updateOwnedGiftsSummary()
+  updateOwnedGiftsSummary();
 }
 // Shop rendering
 
@@ -235,19 +228,15 @@ function renderShopItems() {
 function updateOwnedGiftsSummary() {
   const el = document.getElementById('ownedGiftsSummary');
   if (!el) return;
-  const giftCells = SHOP_GIFTS.map(g => {
-    const count = GAME_STATE.giftsInventory[g.key] || 0;
-    const img = getGiftImagePath(g);
-    return `
-      <div class="owned-gift-item flex items-center gap-2 min-w-0" style="min-width:0;">
+  const cell = (img, name, count) => `
+      <div class="owned-gift-item flex items-center gap-2 min-w-0" style="min-width:0;background:rgba(255,255,255,0.7);border-radius:12px;padding:6px 8px;">
         ${makeOwnedGiftThumbHTML(img)}
-        <div class="owned-gift-text text-xs font-semibold text-gray-900 leading-tight truncate" style="min-width:0;">
-          ${g.name}: <span class="count font-extrabold">${count}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
-  el.innerHTML = `<div class="owned-gifts-grid grid grid-cols-2 gap-2">${giftCells}</div>`;
+        <div class="owned-gift-text text-xs font-semibold text-gray-900 leading-tight truncate" style="min-width:0;flex:1;">${name}</div>
+        <span class="count font-extrabold text-sm text-gray-900">${count}</span>
+      </div>`;
+  const ringCell = cell(SHOP_ITEM_IMAGES.ring || './imgs/assets/shop_ring.png', 'Ring', GAME_STATE.rings || 0);
+  const giftCells = SHOP_GIFTS.map(g => cell(getGiftImagePath(g), g.name, GAME_STATE.giftsInventory[g.key] || 0)).join('');
+  el.innerHTML = `<div class="owned-gifts-grid grid grid-cols-2 gap-2">${ringCell}${giftCells}</div>`;
 }
 
 let __shopPurchaseQty = 1;
@@ -1009,7 +998,9 @@ function openSettings() {
     showToast('Not logged in', 'error');
     return;
   }
-  document.getElementById('settingsUsername').textContent = '@' + (currentUser.username || '');
+  document.getElementById('settingsUsername').textContent = (currentUser.displayName || '').trim() || currentUser.username || '';
+  const handleEl = document.getElementById('settingsHandle');
+  if (handleEl) handleEl.textContent = 'Logged in as @' + (currentUser.username || '');
   renderAvatars();
   showScreen('settingsScreen');
 }
@@ -1214,6 +1205,20 @@ async function submitChangePassword() {
   
 
 
+
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter' || e.isComposing || e.shiftKey) return;
+  const t = e.target;
+  if (!t || t.tagName !== 'INPUT') return;
+  const login = document.getElementById('loginScreen');
+  const signup = document.getElementById('signupScreen');
+  let btn = null;
+  if (login && login.contains(t)) btn = document.getElementById('loginBtn');
+  else if (signup && signup.contains(t)) btn = document.getElementById('signupBtn');
+  if (!btn || btn.disabled) return;
+  e.preventDefault();
+  btn.click();
+});
 
 async function handleLogin() {
   const username = document.getElementById('loginUsername').value.trim().toLowerCase();
