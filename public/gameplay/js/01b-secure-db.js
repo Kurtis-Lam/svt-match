@@ -55,6 +55,7 @@
   const rawDb = db;
   let chain = Promise.resolve();
   let pendingState = null;
+  let awardEpoch = 0;
 
   function send(ops) {
     return svtApi('/api/game/write', { body: { ops } }).then((res) => {
@@ -68,13 +69,21 @@
   function enqueue(ops, coalesce) {
     if (coalesce && pendingState) {
       pendingState.ops = ops;
+      pendingState.epoch = awardEpoch;
       return new Promise((resolve, reject) => pendingState.waiters.push({ resolve, reject }));
     }
-    const job = { ops, waiters: [] };
+    const job = { ops, waiters: [], isState: !!coalesce, epoch: awardEpoch };
     const promise = new Promise((resolve, reject) => job.waiters.push({ resolve, reject }));
     if (coalesce) pendingState = job;
     chain = chain.then(async () => {
       if (pendingState === job) pendingState = null;
+      if (job.isState && job.epoch !== awardEpoch) {
+        // A server award landed after this save was built, so it carries stale coins/levels.
+        // Drop it and save a fresh copy built from the up-to-date state.
+        job.waiters.forEach((w) => w.resolve(undefined));
+        setTimeout(() => { try { if (typeof savePlayerState === 'function') savePlayerState(); } catch (e) {} }, 0);
+        return;
+      }
       try {
         const r = await send(job.ops);
         job.waiters.forEach((w) => w.resolve(r));
@@ -84,6 +93,25 @@
     });
     return promise;
   }
+
+  // Coins and levels are only ever raised by the server. The client reports what happened
+  // (finished a level, claimed a quest ...) and applies the authoritative numbers it gets back.
+  window.svtAward = function (source, ctx) {
+    return new Promise((resolve, reject) => {
+      chain = chain.then(async () => {
+        try {
+          const res = await svtApi('/api/game/award', { body: { source, ctx: ctx || {} } });
+          awardEpoch++;
+          if (res && res.values && typeof window.__svtApplyServerValues === 'function') {
+            try { window.__svtApplyServerValues(res.values); } catch (e) {}
+          }
+          resolve(res);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+  };
 
   function clean(p) {
     return String(p || '').replace(/^\/+|\/+$/g, '');
