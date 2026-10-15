@@ -337,7 +337,8 @@ function awardEcho(L, ctx, now) {
   const passed = rounds >= R.passRounds;
   const elite = rounds >= R.eliteRounds;
   const perfect = mode === 'set' && ctx.perfect === true && rounds >= R.setRounds;
-  L.sk.echo = elite ? num(L.sk.echo) + 1 : 0;
+  if (mode === 'set') L.sk.echo = elite ? num(L.sk.echo) + 1 : 0;
+  else L.sk.echo = num(L.sk.echo);
   L.c.echoBest = Math.max(num(L.c.echoBest), rounds);
   const base = rounds * R.perRound + (perfect ? R.perfect : 0);
   const streakBonus = L.sk.echo * R.streakPer;
