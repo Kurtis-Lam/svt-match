@@ -207,7 +207,7 @@
       </button>
       <button class="echo-mode-card" onclick="closeModal(); openEcho('endless')">
         <span class="echo-mode-ico">♾️</span>
-        <span class="echo-mode-txt"><b>${M.endless.name}</b><small>${M.endless.blurb}</small></span>
+        <span class="echo-mode-txt"><b>${M.endless.name}</b><small>${M.endless.blurb}</small><small style="color:#be185d;">(doesn't count towards streak)</small></span>
         <span class="echo-mode-tag">Best ${s.bestEndless}</span>
       </button>`);
   };
@@ -396,7 +396,9 @@
     const elite = rounds >= CFG.eliteRounds;
     const perfect = E.mode === 'set' && E.lives === CFG.lives && rounds >= CFG.setRounds;
 
-    if (elite) {
+    if (E.mode === 'endless') {
+      // endless runs never change the streak
+    } else if (elite) {
       s.streak++;
       if (s.streak > s.bestStreak) s.bestStreak = s.streak;
     } else {
