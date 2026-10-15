@@ -1,3 +1,4 @@
+// File: public/gameplay/js/15-snake.js
 // ── snakeventeen ──────────────────────────────────────────────
 const SNK = GAME_CONFIG.games.snakeventeen;
 const SNAKE_STATE = {
@@ -120,6 +121,7 @@ function initsnakeventeen(battleSpec = null) {
   SNAKE_STATE.dirQueue = [];
   SNAKE_STATE.turn = 0;
   SNAKE_STATE.gameOver = false;
+  SNAKE_STATE._ending = false;
   SNAKE_STATE.score = 0;
   stopSnakeClock();
   clearInterval(SNAKE_STATE.gameTimer);
@@ -444,7 +446,9 @@ function openBattleSnakeResultModal(length) {
   `);
 }
 
-function endSnakeGame() {
+async function endSnakeGame() {
+  if (SNAKE_STATE._ending) return;
+  SNAKE_STATE._ending = true;
   const battleCtx = GAME_STATE.battles?.active;
   clearInterval(SNAKE_STATE.gameTimer);
   stopSnakeClock();
@@ -458,8 +462,7 @@ function endSnakeGame() {
     GAME_STATE.battles.active = null;
   } else {
     // Normal game
-    const coins = length * SNK.coinsPerLength;
-    // PATCH BUG3: credit coins BEFORE daily-box/modal so balance is correct
+    // PATCH BUG3: the server awards coins and the level BEFORE daily-box/modal so balance is correct
     if (length >= SNK.streakLength) {
       GAME_STATE.snakeventeenStreak = (GAME_STATE.snakeventeenStreak || 0) + 1;
       if ((GAME_STATE.stats.snakeventeenBestStreak || 0) < GAME_STATE.snakeventeenStreak) {
@@ -468,28 +471,28 @@ function endSnakeGame() {
     } else {
       GAME_STATE.snakeventeenStreak = 0;
     }
-    const streakBonus = (GAME_STATE.snakeventeenStreak || 0) * SNK.streakBonusPerPoint;
-    addCoinsToGame(coins + streakBonus, 'snakeventeen'); // PATCH BUG3: credited first
+    const award = await claimAwardSafe('snakeventeen', {
+      length,
+      eaten: Number(SNAKE_STATE.score) || 0,
+      fandomPct: svtFandomPct(),
+      leadBonus: svtLeadBonus()
+    });
+    const awardExtra = (award && award.extra) || {};
+    const coins = Number(awardExtra.lengthCoins) || 0;
+    const streakBonus = Number(awardExtra.streakBonus) || 0;
     if (passedSnake) {
-      GAME_STATE.snakeventeenLevel = (GAME_STATE.snakeventeenLevel || 0) + 1;
       // L99: grant a daily box for completing a Snakeventeen level
       ensureDailyResetIfNeeded();
       const _snWins = GAME_STATE.daily.wins || 0;
       if (_snWins < 6) {
         GAME_STATE.daily.wins = _snWins + 1;
-        if (isDailyBoxReady()) {
-          // FIX BUG2: pre-resolve star + reward NOW (mirrors levelComplete path)
-          let _snPreviewStar = 1;
-          GAME_STATE.daily.box.star = 1;
-          for (let _a = 0; _a < 4; _a++) {
-            if (_snPreviewStar >= 5) break;
-            const _p = STAR_UPGRADE_PROB[_snPreviewStar] || 0;
-            if (Math.random() < _p) _snPreviewStar = Math.min(5, _snPreviewStar + 1);
-          }
+        const _snBox = isDailyBoxReady() ? await svtOpenDailyBoxServer('daily') : null;
+        if (_snBox) {
+          // The server rolled the star and already paid the coins
+          const _snPreviewStar = _snBox.star;
           GAME_STATE.daily.box.star = _snPreviewStar;
-          const _snReward = resolveDailyBoxReward(_snPreviewStar);
-          const _snBeforeCoins = GAME_STATE.coins;
-          addCoinsToGame((_snReward.coins || 0), 'dailybox');
+          const _snReward = _snBox.reward;
+          const _snBeforeCoins = _snBox.beforeCoins;
           markNextUnclaimedDailyWinCellClaimed();   // claim cell before any UI
           resetDailyBoxStarForNextClaim();
           GAME_STATE.daily.box.star = _snPreviewStar;
@@ -521,7 +524,7 @@ function endSnakeGame() {
     }
     if (passedSnake) fireLevelSuccessBurst();
     try {
-      const seasonXpGained = Number(Meta.onRunComplete('snakeventeen', { passed: passedSnake, elite: length >= SNK.streakLength, coins: coins + streakBonus, value: length })) || 0;
+      const seasonXpGained = Number(Meta.onRunComplete('snakeventeen', { passed: passedSnake, elite: length >= SNK.streakLength, coins: coins + streakBonus, fandomCoins: Number(awardExtra.fandomCoins) || 0, value: length })) || 0;
       GAME_STATE.meta ||= {};
       GAME_STATE.meta.lastRunXpGained = seasonXpGained;
     } catch (e) { console.warn('[Meta]', e); }
