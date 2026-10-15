@@ -1,3 +1,4 @@
+// File: public/gameplay/js/11-showtime-game.js
 const __preloadedUrls = new Set();
 const __preloadQueue = [];
 let __preloadPumping = false;
@@ -1144,20 +1145,21 @@ async function levelComplete() {
       }
     }
   }
-  // L99 FIX: Apply level increment immediately so it persists on reload,
-  // before any overlay or daily box animation is shown.
-  if (timeSec <= 30) {
-    GAME_STATE.level += 1;
-    GAME_STATE.pendingNextLevel = true; // kept for UI flow only, not for persistence
-  } else {
-    GAME_STATE.pendingNextLevel = false;
-  }
-  GAME_STATE.stats.levelsCompleted += 1;
+  // Level, coins and run counters are awarded by the server (api/_lib/awards.js).
+  const before = GAME_STATE.coins;
+  const kkumaFlag = !!GAME_STATE.kkumaMatchedThisLevel && !isBattleRunActive();
+  const award = await claimAwardSafe('showtime', {
+    timeSec,
+    pairs: { ...(GAME_STATE.currentLevelPairs || {}) },
+    kkuma: kkumaFlag,
+    fandomPct: svtFandomPct(),
+    leadBonus: svtLeadBonus()
+  });
+  const awardExtra = (award && award.extra) || {};
+  GAME_STATE.pendingNextLevel = !!awardExtra.passed;
   if (GAME_STATE.stats.bestTimeSec == null || timeSec < GAME_STATE.stats.bestTimeSec) {
     GAME_STATE.stats.bestTimeSec = timeSec;
   }
-  if (timeSec <= 30) GAME_STATE.stats.levelsUnder30 = (GAME_STATE.stats.levelsUnder30 || 0) + 1;
-  if (timeSec <= 20) GAME_STATE.stats.levelsUnder20 = (GAME_STATE.stats.levelsUnder20 || 0) + 1;
   updateTimedQuestsAfterLevel(timeSec);
   const prevStreak = GAME_STATE.streak || 0;
   // STREAK MAINTAINED ONLY IF time < 20 seconds (strict)
@@ -1172,36 +1174,18 @@ async function levelComplete() {
     if (prevStreak > 0) streakLostText = `Streak lost! (${prevStreak} → 0)`;
     GAME_STATE.streak = 0;
   }
-  // Streak multiplier
-  let streakBonus = 0;
-  if (within20Strict && GAME_STATE.streak > 0) {
-    streakBonus = GAME_STATE.streak * 10;
-  }
+  // Bonuses shown on the result screen come from the server's calculation
+  const streakBonus = Number(awardExtra.streakBonus) || 0;
   let abilityBonus = 0;
-  // Existing kkuma bonus
-  let kkumaBonus = 0;
-  if (GAME_STATE.kkumaMatchedThisLevel && !isBattleRunActive()) {
-    kkumaBonus = 5000;
+  if (kkumaFlag) {
     GAME_STATE.stats.kkumaHits = (GAME_STATE.stats.kkumaHits || 0) + 1;
   }
-  // NEW: idol rarity bonus
-  const IDOL_RARITY_BONUS = {
-    rare: 10,
-    superrare: 20,
-    epic: 50,
-    mythic: 100,
-    legendary: 500
-  };
-  let idolBonus = 0;
-  Object.entries(GAME_STATE.currentLevelPairs || {}).forEach(([key, rarity]) => {
-    if (key !== 'kkuma') idolBonus += IDOL_RARITY_BONUS[rarity] || 0;
-  });
-  const baseReward = 100;
-  const totalReward = baseReward + streakBonus + idolBonus + kkumaBonus;
-  const before = GAME_STATE.coins;
-  addCoinsToGame(totalReward, 'level');
+  const kkumaBonus = Number(awardExtra.kkumaBonus) || 0;
+  const idolBonus = Number(awardExtra.idolBonus) || 0;
+  const baseReward = Number(awardExtra.base) || 0;
+  const totalReward = Number(awardExtra.runCoins) || 0;
   let seasonXpGained = 0;
-  try { seasonXpGained = Number(Meta.onRunComplete('showtime', { passed: timeSec <= 30, elite: within20Strict, coins: totalReward, keys: Object.keys(GAME_STATE.currentLevelPairs || {}) })) || 0; } catch (e) { console.warn('[Meta]', e); }
+  try { seasonXpGained = Number(Meta.onRunComplete('showtime', { passed: !!awardExtra.passed, elite: within20Strict, coins: totalReward, fandomCoins: Number(awardExtra.fandomCoins) || 0, keys: Object.keys(GAME_STATE.currentLevelPairs || {}) })) || 0; } catch (e) { console.warn('[Meta]', e); }
   renderHub();
   await savePlayerState();
   animateNumber(document.getElementById('hubCoins'), before, GAME_STATE.coins);
@@ -1210,7 +1194,7 @@ async function levelComplete() {
   animateNumber(document.getElementById('idolsCoins'), before, GAME_STATE.coins);
   const shopCoins = document.getElementById('shopCoins');
   if (shopCoins) animateNumber(shopCoins, before, GAME_STATE.coins);
-  const passedLevel = timeSec <= 30;
+  const passedLevel = !!awardExtra.passed;
   if (passedLevel) fireLevelSuccessBurst();
   openLevelCompleteOverlay({
     timeSec,
@@ -1229,30 +1213,22 @@ async function levelComplete() {
   };
   updateDailyWinsUI();
 
-  if (shouldTriggerDailyBox && isDailyBoxReady()) {
+  const _srvBox = (shouldTriggerDailyBox && isDailyBoxReady()) ? await svtOpenDailyBoxServer('daily') : null;
+  if (_srvBox) {
     // ── DAILY BOX PRE-RESOLVE FIX ──────────────────────────────────────────
     // Decide the entire daily box outcome (star upgrades + reward) RIGHT NOW,
     // before any popup is shown. Coins are added and persisted immediately so
     // a page reload never loses them. The fullscreen animation is purely cosmetic.
 
-    // 1) Pre-simulate the star upgrade sequence (4 attempts)
-    let previewStar = 1;
-    GAME_STATE.daily.box.star = 1;
-    for (let attempt = 0; attempt < 4; attempt++) {
-      if (previewStar >= 5) break;
-      const p = STAR_UPGRADE_PROB[previewStar] || 0;
-      if (Math.random() < p) {
-        previewStar = Math.min(5, previewStar + 1);
-      }
-    }
+    // 1) The server rolled the star upgrades and already paid the coins
+    const previewStar = _srvBox.star;
     GAME_STATE.daily.box.star = previewStar;
 
-    // 2) Resolve reward based on final star rating
-    const preResolvedReward = resolveDailyBoxReward(previewStar);
+    // 2) Reward for that star
+    const preResolvedReward = _srvBox.reward;
 
-    // 3) Apply coins and mark the cell claimed NOW (before any animation)
-    const boxBeforeCoins = GAME_STATE.coins;
-    addCoinsToGame((preResolvedReward.coins || 0), 'dailybox');
+    // 3) Mark the cell claimed NOW (before any animation)
+    const boxBeforeCoins = _srvBox.beforeCoins;
     markNextUnclaimedDailyWinCellClaimed();
     resetDailyBoxStarForNextClaim();
     // Force the final star into the box state so the fullscreen renders it correctly
