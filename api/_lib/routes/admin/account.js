@@ -2,7 +2,7 @@ const { handler, send, httpError, rateLimit } = require('../../http');
 const { requireAdminSession, auditLog } = require('../../auth');
 const { getAdmin } = require('../../firebase');
 const U = require('../../usernames');
-const { removeUserEverywhere } = require('../../cleanup');
+const { deleteAccountCompletely } = require('../../cleanup');
 
 module.exports = handler(['POST'], async (req, res) => {
   const decoded = await requireAdminSession(req);
@@ -56,10 +56,7 @@ module.exports = handler(['POST'], async (req, res) => {
   }
   if (action === 'delete') {
     if (body.confirm !== true) throw httpError(400, 'Confirmation required');
-    const cleanup = await removeUserEverywhere(uid);
-    try { await fb.auth().deleteUser(uid); } catch (e) {
-      if (!(e && e.code === 'auth/user-not-found')) throw e;
-    }
+    const cleanup = await deleteAccountCompletely(uid);
     await auditLog(decoded.uid, 'delete-account', { uid, cleaned: cleanup.cleaned });
     return send(res, 200, { ok: true, cleaned: cleanup.cleaned });
   }
