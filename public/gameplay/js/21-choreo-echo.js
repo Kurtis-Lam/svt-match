@@ -1,3 +1,4 @@
+// File: public/gameplay/js/21-choreo-echo.js
 /* ──────────────────────────────────────────────────────────────────────────
    CHOREO ECHO — 4th game mode (Simon-style idol sequence memory)
    Watch the idols light up, then repeat the choreography. Round N shows N steps.
@@ -218,6 +219,7 @@
     E.token++;
     clearTimers();
     E.mode = mode;
+    E._finishing = false;
     E.pads = pickIdolsForLevel(CFG.pads).map(i => i.key);
     // The first 9 steps are a shuffle of ALL pads, so every idol is used; endless continues randomly after that.
     E.order = shuffled(Array.from({ length: CFG.pads }, (_, i) => i));
@@ -383,7 +385,9 @@
   }
 
   // ── results ───────────────────────────────────────────────────────────────
-  function finish() {
+  async function finish() {
+    if (E._finishing) return;
+    E._finishing = true;
     E.phase = 'over';
     setPadsEnabled(false);
     const s = st();
@@ -402,15 +406,22 @@
     const newBest = E.mode === 'endless' && rounds > s.bestEndless;
     if (newBest) s.bestEndless = rounds;
 
-    const base = rounds * CFG.coinsPerRound + (perfect ? CFG.perfectBonus : 0);
-    const streakBonus = s.streak * CFG.streakBonus;
-    const total = base + streakBonus;
-    addCoinsToGame(total, 'echo');
-    if (passed) s.level++;
+    // Coins and the echo level are awarded by the server (api/_lib/awards.js).
+    const award = await claimAwardSafe('echo', {
+      rounds,
+      mode: E.mode,
+      perfect,
+      fandomPct: svtFandomPct(),
+      leadBonus: svtLeadBonus()
+    });
+    const ex = (award && award.extra) || {};
+    const base = Number(ex.base) || 0;
+    const streakBonus = Number(ex.streakBonus) || 0;
+    const total = Number(ex.runCoins) || 0;
     if (passed && typeof fireLevelSuccessBurst === 'function') fireLevelSuccessBurst();
 
     try {
-      const seasonXpGained = Number(Meta.onRunComplete('echo', { passed, elite, coins: total, keys: E.pads.slice(), value: rounds })) || 0;
+      const seasonXpGained = Number(Meta.onRunComplete('echo', { passed, elite, coins: total, fandomCoins: Number(ex.fandomCoins) || 0, keys: E.pads.slice(), value: rounds })) || 0;
       GAME_STATE.meta ||= {};
       GAME_STATE.meta.lastRunXpGained = seasonXpGained;
     } catch (e) { console.warn('[Meta]', e); }
@@ -424,7 +435,7 @@
   }
 
   // Same daily-box reward flow as the other modes (one box per passed level)
-  function grantDailyBox(after) {
+  async function grantDailyBox(after) {
     try {
       ensureDailyResetIfNeeded();
       const wins = GAME_STATE.daily.wins || 0;
@@ -432,15 +443,12 @@
       GAME_STATE.daily.wins = wins + 1;
       if (!isDailyBoxReady()) { updateDailySixBoxesUI(); after(); return; }
 
-      let star = 1;
-      GAME_STATE.daily.box.star = 1;
-      for (let a = 0; a < 4 && star < 5; a++) {
-        if (Math.random() < (STAR_UPGRADE_PROB[star] || 0)) star = Math.min(5, star + 1);
-      }
+      const box = await svtOpenDailyBoxServer('daily');
+      if (!box) { after(); return; }
+      const star = box.star;
       GAME_STATE.daily.box.star = star;
-      const reward = resolveDailyBoxReward(star);
-      const beforeCoins = GAME_STATE.coins;
-      addCoinsToGame(reward.coins || 0, 'dailybox');
+      const reward = box.reward;
+      const beforeCoins = box.beforeCoins;
       markNextUnclaimedDailyWinCellClaimed();
       resetDailyBoxStarForNextClaim();
       GAME_STATE.daily.box.star = star;
