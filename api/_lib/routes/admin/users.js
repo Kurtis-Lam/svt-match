@@ -1,3 +1,4 @@
+// File: api/_lib/routes/admin/users.js
 const { handler, send, httpError } = require('../../http');
 const { requireAdminSession } = require('../../auth');
 const { getAdmin } = require('../../firebase');
