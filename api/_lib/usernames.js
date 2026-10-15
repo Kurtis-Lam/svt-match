@@ -48,8 +48,18 @@ async function renameUser(uid, newName) {
   }
   const updates = { [`users/${uid}/username`]: name };
   if (user.playerState) updates[`users/${uid}/playerState/username`] = name;
+
+  // When the display name is still the default username, keep it aligned with the rename.
+  // Preserve custom display names chosen by the player.
+  const oldDisplayName = String(user.displayName || '').trim();
+  const displayNameUsesUsername = !oldDisplayName || normalize(oldDisplayName) === oldName;
+  if (displayNameUsesUsername) {
+    updates[`users/${uid}/displayName`] = name;
+    if (user.playerState) updates[`users/${uid}/playerState/displayName`] = name;
+  }
+
   await fb.database().ref().update(updates);
-  return { oldName, username: name };
+  return { oldName, username: name, displayName: displayNameUsesUsername ? name : oldDisplayName };
 }
 
 module.exports = { normalize, validate, toEmail, findAuthByUsername, renameUser, EMAIL_DOMAIN };
