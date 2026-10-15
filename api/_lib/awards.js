@@ -1,3 +1,4 @@
+// File: api/_lib/awards.js
 const crypto = require('crypto');
 const { httpError } = require('./http');
 const G = require('./guard');
