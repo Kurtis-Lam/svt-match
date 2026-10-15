@@ -1,3 +1,4 @@
+// File: public/gameplay/js/14-spotlight.js
 function buildSpotlightRevealSchedule(targetKey, gridCards, targetGridIdx, isKkuma) {
   // Pre‑generate every reveal that will happen during the 20‑second game.
   // Each entry: { timeSec: number, cardIdx: number, idolKey: string, display: string, src: string, rarity: string, isTarget: boolean, showDuration: number }
@@ -382,6 +383,7 @@ function _startSlGame() {
   }
   SPOTLIGHT_STATE.earnedCoins = 0;
   SPOTLIGHT_STATE.lostCoins = 0;
+  SPOTLIGHT_STATE._ended = false;
   SPOTLIGHT_STATE.revealIdx = 0;
   SPOTLIGHT_STATE._currentRevealBatch = [];
   SPOTLIGHT_STATE._activeRevealEntries = [];
@@ -615,7 +617,9 @@ function _showSlFeedback(cardEl, delta) {
   setTimeout(() => fly.remove(), 950);
 }
 
-function _endSlGame() {
+async function _endSlGame() {
+  if (SPOTLIGHT_STATE._ended) return;
+  SPOTLIGHT_STATE._ended = true;
   const battleCtx = GAME_STATE.battles?.active;
   SPOTLIGHT_STATE.phase = 'done';
   if (SPOTLIGHT_STATE.revealTimerId) clearTimeout(SPOTLIGHT_STATE.revealTimerId);
@@ -677,36 +681,34 @@ function _endSlGame() {
   } else {
     GAME_STATE.spotlightStreak = 0;
   }
-  const streakBonusCoins = (GAME_STATE.spotlightStreak || 0) * 10;
-  let kkumaBonus = 0;
+  // Coins and the level are awarded by the server (api/_lib/awards.js).
+  const award = await claimAwardSafe('spotlight', {
+    correct: correctHits,
+    wrong: wrongHits,
+    kkuma: !!SPOTLIGHT_STATE.isKkuma,
+    fandomPct: svtFandomPct(),
+    leadBonus: svtLeadBonus()
+  });
+  const awardExtra = (award && award.extra) || {};
+  const streakBonusCoins = Number(awardExtra.streakBonus) || 0;
   if (SPOTLIGHT_STATE.isKkuma) {
-    kkumaBonus = 5000;
     GAME_STATE.stats.kkumaHits = (GAME_STATE.stats.kkumaHits || 0) + 1;
   }
-  const totalReward = net + streakBonusCoins + kkumaBonus;
-  if (totalReward > 0) {
-    addCoinsToGame(totalReward, 'spotlight'); // PATCH BUG4: credited before box/modal
-  }
+  const kkumaBonus = Number(awardExtra.kkumaBonus) || 0;
+  const totalReward = Number(awardExtra.runCoins) || 0;
   if (passedSpotlight) {
-    GAME_STATE.spotlightLevel = (GAME_STATE.spotlightLevel || 0) + 1;
     // L99: grant a daily box for completing a Spotlight level
     ensureDailyResetIfNeeded();
     const _spWins = GAME_STATE.daily.wins || 0;
     if (_spWins < 6) {
       GAME_STATE.daily.wins = _spWins + 1;
-      if (isDailyBoxReady()) {
-        // FIX BUG2: pre-resolve star + reward NOW (mirrors levelComplete path)
-        let _slPreviewStar = 1;
-        GAME_STATE.daily.box.star = 1;
-        for (let _a = 0; _a < 4; _a++) {
-          if (_slPreviewStar >= 5) break;
-          const _p = STAR_UPGRADE_PROB[_slPreviewStar] || 0;
-          if (Math.random() < _p) _slPreviewStar = Math.min(5, _slPreviewStar + 1);
-        }
+      const _slBox = isDailyBoxReady() ? await svtOpenDailyBoxServer('daily') : null;
+      if (_slBox) {
+        // The server rolled the star and already paid the coins
+        const _slPreviewStar = _slBox.star;
         GAME_STATE.daily.box.star = _slPreviewStar;
-        const _slReward = resolveDailyBoxReward(_slPreviewStar);
-        const _slBeforeCoins = GAME_STATE.coins;
-        addCoinsToGame((_slReward.coins || 0), 'dailybox');
+        const _slReward = _slBox.reward;
+        const _slBeforeCoins = _slBox.beforeCoins;
         markNextUnclaimedDailyWinCellClaimed();   // claim cell before any UI
         resetDailyBoxStarForNextClaim();
         GAME_STATE.daily.box.star = _slPreviewStar;
@@ -733,7 +735,7 @@ function _endSlGame() {
       }
     }
   }
-  try { SPOTLIGHT_STATE.seasonXpGained = Number(Meta.onRunComplete('spotlight', { passed: passedSpotlight, elite: correctHits >= 7, coins: totalReward, targetKey: SPOTLIGHT_STATE.isKkuma ? null : SPOTLIGHT_STATE.targetKey })) || 0; } catch (e) { console.warn('[Meta]', e); }
+  try { SPOTLIGHT_STATE.seasonXpGained = Number(Meta.onRunComplete('spotlight', { passed: passedSpotlight, elite: correctHits >= 7, coins: totalReward, fandomCoins: Number(awardExtra.fandomCoins) || 0, targetKey: SPOTLIGHT_STATE.isKkuma ? null : SPOTLIGHT_STATE.targetKey })) || 0; } catch (e) { console.warn('[Meta]', e); }
   savePlayerState();
   renderHub();
   // BUG-G09b: passedSpotlight already declared above
