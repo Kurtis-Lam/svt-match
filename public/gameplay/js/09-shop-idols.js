@@ -498,12 +498,9 @@ function openShopIdolGifts() {
     <div class="text-sm font-extrabold text-gray-900">Items</div>
     <div class="mt-3 space-y-2" id="shopItemsHost"></div>
     </div>
-    <div class="mt-3 glass-card rounded-2xl px-3 py-2 text-sm font-extrabold text-gray-900">
-    <div class="flex items-center justify-between gap-2 w-full" id="ringsCountShop"></div>
-    </div>
-    <div class="mt-2 glass-card rounded-2xl px-3 py-2 text-sm font-extrabold text-gray-900">
-    <div>Owned Gifts</div>
-    <div class="mt-1 whitespace-pre-line" id="ownedGiftsSummary">—</div>
+    <div class="mt-3 glass-card rounded-2xl px-3 py-3 text-sm font-extrabold text-gray-900">
+    <div class="mb-2">Owned Items</div>
+    <div id="ownedGiftsSummary">—</div>
     </div>
   `;
   renderShopItems();
