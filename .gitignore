@@ -1,11 +1,12 @@
 .firebase/
+.vercel/
+credentials/
 node_modules/
 
-credentials/
-sampledata.json
-misc.txt
+public/imgs/
 
-svt.zip
+.env.local
 format.py
-.vercel
-.env*
+misc.txt
+sampledata.json
+svt.zip
