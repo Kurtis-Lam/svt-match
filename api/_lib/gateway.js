@@ -192,8 +192,16 @@ async function saveGuard(uid, g) {
   if (!(await userExists(uid))) return;
   const out = cleanKeys(clone(g));
   delete out.banned;
-  const keep = await db().ref(`guard/${uid}/banned`).once('value');
+  delete out.a;
+  delete out.deleting;
+  const [keep, ledger, deleting] = await Promise.all([
+    db().ref(`guard/${uid}/banned`).once('value'),
+    db().ref(`guard/${uid}/a`).once('value'),
+    db().ref(`guard/${uid}/deleting`).once('value')
+  ]);
   if (keep.exists()) out.banned = keep.val();
+  if (ledger.exists()) out.a = ledger.val();
+  if (deleting.exists()) return;
   await db().ref(`guard/${uid}`).set(out);
 }
 
@@ -283,7 +291,7 @@ async function processWrite(me, rawOps) {
     if (sub[0] === 'displayName' && sub.length === 1) {
       if (owner !== me) throw httpError(403, 'Not allowed');
       const name = String(value === null ? '' : value).trim();
-      if (name.length < 2 || name.length > 30 || !/^[\w\s\-'.!?]+$/u.test(name)) throw httpError(400, 'Invalid display name');
+      if (name.length < 2 || name.length > 30 || !/^[\p{L}\p{N}\p{M}\s_\-'.!?]+$/u.test(name)) throw httpError(400, 'Invalid display name');
       directWrites.push({ kind: 'plain', path: `users/${me}/displayName`, value: name });
       directWrites.push({ kind: 'plainIfExists', path: `users/${me}/playerState/displayName`, value: name });
       continue;
