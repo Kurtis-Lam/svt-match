@@ -1306,6 +1306,11 @@ async function handleSignup() {
     const fakeEmail = usernameToEmail(username);
     const cred = await auth.createUserWithEmailAndPassword(fakeEmail, password);
     const uid = cred.user.uid;
+    try {
+      localStorage.removeItem(`playerState:${username.toLowerCase()}`);
+      localStorage.removeItem(`playerStateOwner:${username.toLowerCase()}`);
+      localStorage.removeItem('currentUser');
+    } catch (e) {}
     // hashedPw intentionally not generated – Firebase Auth owns passwords.
 
     // 3. Store user profile in Realtime DB
@@ -1448,6 +1453,7 @@ function wipeLocalUserData(user) {
       localStorage.setItem('users', JSON.stringify(users));
     }
     localStorage.removeItem(`playerState:${user.username}`);
+    localStorage.removeItem(`playerStateOwner:${user.username}`);
   } catch (e) {}
 }
 
