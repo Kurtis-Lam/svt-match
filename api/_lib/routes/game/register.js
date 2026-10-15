@@ -1,3 +1,4 @@
+// File: api/_lib/routes/game/register.js
 const { handler, send, httpError, rateLimit } = require('../../http');
 const { getAdmin } = require('../../firebase');
 const U = require('../../usernames');
@@ -21,7 +22,7 @@ module.exports = handler(['POST'], async (req, res) => {
   }
 
   let displayName = String((req.body && req.body.displayName) || '').trim() || username;
-  if (displayName.length < 2 || displayName.length > 30 || !/^[\w\s\-'.!?]+$/u.test(displayName)) {
+  if (displayName.length < 2 || displayName.length > 30 || !/^[\p{L}\p{N}\p{M}\s_\-'.!?]+$/u.test(displayName)) {
     displayName = username.slice(0, 30);
   }
 
