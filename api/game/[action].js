@@ -1,5 +1,6 @@
 const routes = {
   write: require('../_lib/routes/game/write'),
+  award: require('../_lib/routes/game/award'),
   'delete-account': require('../_lib/routes/game/delete-account'),
   register: require('../_lib/routes/game/register'),
   username: require('../_lib/routes/game/username'),
