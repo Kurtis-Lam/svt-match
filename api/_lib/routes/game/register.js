@@ -25,16 +25,19 @@ module.exports = handler(['POST'], async (req, res) => {
     displayName = username.slice(0, 30);
   }
 
-  const ref = getAdmin().database().ref(`users/${decoded.uid}`);
-  const existing = await ref.once('value');
-  if (existing.exists()) throw httpError(409, 'Profile already exists');
+  if (!decoded.firebase || decoded.firebase.sign_in_provider !== 'password') {
+    throw httpError(403, 'Unsupported sign-in method');
+  }
+
+  const db = getAdmin().database();
+  const guardSnap = await db.ref(`guard/${decoded.uid}`).once('value');
+  const g = guardSnap.val() || {};
+  if (g.banned || g.deleting) throw httpError(403, 'This account cannot be registered');
 
   const now = Date.now();
-  await ref.set({
-    displayName,
-    username,
-    joinDate: new Date(now).toISOString().split('T')[0],
-    createdAt: now
-  });
-  send(res, 200, { ok: true, user: { displayName, username, joinDate: new Date(now).toISOString().split('T')[0], createdAt: now } });
+  const joinDate = new Date(now).toISOString().split('T')[0];
+  const profile = { displayName, username, joinDate, createdAt: now };
+  const tx = await db.ref(`users/${decoded.uid}`).transaction((cur) => (cur === null ? profile : undefined), undefined, false);
+  if (!tx.committed) throw httpError(409, 'Profile already exists');
+  send(res, 200, { ok: true, user: profile });
 });
