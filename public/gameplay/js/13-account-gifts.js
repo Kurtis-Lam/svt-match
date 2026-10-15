@@ -1,3 +1,4 @@
+// File: public/gameplay/js/13-account-gifts.js
 function checkSession() {
   // PATCH S-05: wrap JSON.parse to handle corrupt localStorage gracefully
   const saved = localStorage.getItem('currentUser');
@@ -728,7 +729,7 @@ async function submitChangeDisplayName() {
   const pass = document.getElementById('displayNamePasswordInput')?.value || '';
   if (!name || !pass) { setModalError('Fill in all fields.'); return; }
   if (name.length < 2 || name.length > 30) { setModalError('Display name must be 2–30 characters.'); return; }
-  if (!/^[\w\s\-'.!?]+$/u.test(name)) { setModalError('Display name contains invalid characters.'); return; }
+  if (!/^[\p{L}\p{N}\p{M}\s_\-'.!?]+$/u.test(name)) { setModalError('Display name contains invalid characters.'); return; }
 
   try {
     const fakeEmail = usernameToEmail(currentUser.username);
@@ -868,9 +869,10 @@ let __offlineLoveClaiming = false;  // BUG-G01: double-tap guard
 async function claimOfflineLoveReward() {
   if (__offlineLoveClaiming) return;
   __offlineLoveClaiming = true;
-  const coins = _offlineLoveTotal || 0;
   const before = GAME_STATE.coins;
-  addCoinsToGame(coins, 'offlinelove');
+  // The server works out the payout from the time away and your married idols' love levels.
+  const res = await claimAwardSafe('offlinelove', {}, true);
+  const coins = res ? Number(res.added) || 0 : 0;
   _offlineLoveTotal = 0;
   renderHub();
   animateNumber(document.getElementById('hubCoins'), before, GAME_STATE.coins);
@@ -882,7 +884,7 @@ async function claimOfflineLoveReward() {
     lockEl.style.display = 'none';
   }, 400);
   await savePlayerState();
-  showToast(`Claimed +${coins.toLocaleString()} love coins! 💕`, 'success');
+  if (coins > 0) showToast(`Claimed +${coins.toLocaleString()} love coins! 💕`, 'success');
   __offlineLoveClaiming = false;  // BUG-G01: release
 }
 // Auth flows
