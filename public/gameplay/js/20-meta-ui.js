@@ -1,3 +1,4 @@
+// File: public/gameplay/js/20-meta-ui.js
 /* META LOOP — SVT Pass interface and Idol Mastery. */
 (function () {
   const D = META;
@@ -52,8 +53,8 @@
   window.closeSeason = function () { clearInterval(_clock); showScreen('hubScreen'); renderHub(); };
   window.setSeasonTab = function (t) { TAB = ['track', 'goals', 'idols'].includes(t) ? t : 'track'; renderSeason(); };
 
-  window.claimSeasonTier = function (i) {
-    const g = Meta.claimTier(i);
+  window.claimSeasonTier = async function (i) {
+    const g = await Meta.claimTier(i);
     if (!g) return;
     const bits = [];
     if (g.coins) bits.push(`+${amount(g.coins)} coins`);
@@ -75,15 +76,12 @@
     Meta.ensure();
     const season = Meta.state().season;
     if (!season || Number(season.boxes || 0) < 1) { showToast('No SVT Boxes available', 'info'); return; }
+    const box = await svtOpenDailyBoxServer('season');
+    if (!box) { showToast('Could not open the box right now', 'error'); return; }
     season.boxes = Math.max(0, Number(season.boxes) - 1);
-    let finalStar = 1;
-    for (let i = 0; i < 4; i++) {
-      const chance = (GAME_CONFIG.dailyBox?.starUpgradeChance || {})[finalStar] || 0;
-      if (finalStar < 5 && Math.random() < chance) finalStar++;
-    }
-    const reward = resolveDailyBoxReward(finalStar);
-    const beforeCoins = GAME_STATE.coins;
-    addCoinsToGame(reward.coins || 0, 'dailybox');
+    const finalStar = box.star;
+    const reward = box.reward;
+    const beforeCoins = box.beforeCoins;
     GAME_STATE.daily.box.star = 1;
     __dailyBoxAttempts = 4;
     __dailyBoxPhase = 'upgrade';
