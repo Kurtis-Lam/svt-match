@@ -176,11 +176,12 @@ function lbRowHtml(r, rank, metric, meId) {
 }
 
 function lbPodiumHtml(ranked, metric, meId) {
+  if (!ranked.some(e => e.rank <= 3)) return '';
   const order = [2, 1, 3];
   const medal = { 1: '🥇', 2: '🥈', 3: '🥉' };
   return `<div class="lb-podium">${order.map(place => {
     const group = ranked.filter(e => e.rank === place);
-    if (!group.length) return `<div class="lb-pod p${place} empty" aria-label="Rank ${place} vacant"><span class="lb-pod-vacant">${place}.</span></div>`;
+    if (!group.length) return '<div aria-hidden="true"></div>';
     return `<div class="lb-pod p${place} ${group.some(e => e.row.userId === meId) ? 'me' : ''}">
       <span class="lb-pod-medal">${medal[place]}</span>
       <div class="lb-pod-entries">${group.map(e => {
@@ -253,7 +254,7 @@ async function renderLeaderboard(forceRefresh = false) {
 }
 function renderHub() {
   ensureDailyResetIfNeeded();
-  document.getElementById('hubUserName').textContent = (currentUser?.displayName || '').trim() || "Carat";
+  document.getElementById('hubUserName').textContent = (currentUser?.displayName || '').trim() || (currentUser?.username || '').trim() || "Carat";
   document.getElementById('hubLevel').textContent = GAME_STATE.level;
   document.getElementById('hubCoins').textContent = Number(GAME_STATE.coins || 0).toLocaleString();
   document.getElementById('gameCoins').textContent = Number(GAME_STATE.coins || 0).toLocaleString();
