@@ -327,6 +327,7 @@ function buildQuestSection(key, title, icon, metaHtml, cards, claimableN) {
       ${claimableN ? `<span class="qsec-badge">${claimableN}</span>` : ''}
       <i class="fas fa-chevron-down qsec-chev"></i>
     </button>
+    ${claimableN > 1 ? `<button type="button" class="btn-theme black-text" style="margin:6px 12px 0;padding:8px 14px;font-size:13px;width:calc(100% - 24px)" onclick="claimAllQuests('${key === 'daily' ? 'daily' : 'quests'}')">Claim all (${claimableN})</button>` : ''}
     <div class="qsec-collapse"><div class="qsec-inner"><div class="qsec-list"></div></div></div>`;
   const list = sec.querySelector('.qsec-list');
   cards.forEach(c => list.appendChild(c));
@@ -365,39 +366,53 @@ function renderQuests() {
     `${quests.length} quests · rewards are bigger`, qCards, qClaimable));
 }
 
-async function _finishQuestClaim(added, before, el) {
+async function _finishQuestClaim(added, el) {
+  const startCoins = GAME_STATE.coins - added;
   renderHub();
   renderQuests();
   updateQuestBadges();
-  await animateCoinsToBar(el || document.getElementById('questsList'), added);
-  animateNumber(document.getElementById('hubCoins'), before, GAME_STATE.coins);
-  animateNumber(document.getElementById('gameCoins'), before, GAME_STATE.coins);
-  animateNumber(document.getElementById('questsCoins'), before, GAME_STATE.coins);
-  animateNumber(document.getElementById('idolsCoins'), before, GAME_STATE.coins);
+  const saving = savePlayerState();
+  animateCoinsToBar(el || document.getElementById('questsList'), added).catch(() => {});
+  animateNumber(document.getElementById('hubCoins'), startCoins, GAME_STATE.coins);
+  animateNumber(document.getElementById('gameCoins'), startCoins, GAME_STATE.coins);
+  animateNumber(document.getElementById('questsCoins'), startCoins, GAME_STATE.coins);
+  animateNumber(document.getElementById('idolsCoins'), startCoins, GAME_STATE.coins);
   const shopCoins = document.getElementById('shopCoins');
-  if (shopCoins) animateNumber(shopCoins, before, GAME_STATE.coins);
-  await savePlayerState();
+  if (shopCoins) animateNumber(shopCoins, startCoins, GAME_STATE.coins);
+  await saving;
 }
 
-let _dailyClaiming = false;
+async function claimAllQuests(kind) {
+  const jobs = [];
+  if (kind === 'daily') {
+    dailyQuestView().filter(q => questIsDone(q) && !q.claimed).forEach(q => jobs.push(claimDailyQuest(q.id, null)));
+  } else {
+    (GAME_STATE.quests || []).filter(q => questIsDone(q) && !q.claimed).map(q => q.id).forEach(id => jobs.push(claimQuest(id, null)));
+  }
+  await Promise.all(jobs);
+}
+
+const _claimingIds = new Set();
 async function claimDailyQuest(id, el) {
-  if (_dailyClaiming) return;
+  const key = 'd:' + id;
+  if (_claimingIds.has(key)) return;
   const def = dailyQuestDefs().find(d => d.id === id);
   const it = ensureDailyQuests().items[id];
   if (!def || !it || it.claimed || it.progress < def.target) return;
-  _dailyClaiming = true;
-  const before = GAME_STATE.coins;
+  _claimingIds.add(key);
+  it.claimed = true;
+  addCoinsToGame(def.coins, 'quest');
   try {
-    it.claimed = true;
-    addCoinsToGame(def.coins, 'quest');
-    await _finishQuestClaim(def.coins, before, el);
+    await _finishQuestClaim(def.coins, el);
   } catch (err) {
     it.claimed = false;
-    GAME_STATE.coins = before;
+    GAME_STATE.coins = Math.max(0, GAME_STATE.coins - def.coins);
+    GAME_STATE.stats.totalCoinsEarned = Math.max(0, (GAME_STATE.stats.totalCoinsEarned || 0) - def.coins);
     console.error('[claimDailyQuest] failed, reverted:', err);
     showToast('Claim failed – please try again', 'error');
+    try { renderQuests(); renderHub(); } catch (e) {}
   } finally {
-    _dailyClaiming = false;
+    _claimingIds.delete(key);
   }
 }
 
@@ -405,10 +420,9 @@ async function claimQuest(questId, questElForAnim) {
   const idx = (GAME_STATE.quests || []).findIndex(x => x.id === questId);
   if (idx < 0) return;
   const q = GAME_STATE.quests[idx];
-  if (q.claimed || q._claiming) return;  // G-11 FIX: optimistic lock
+  if (q.claimed || _claimingIds.has('q:' + questId)) return;
   if (!questIsDone(q)) return;
-  q._claiming = true;  // set before any await
-  const before = GAME_STATE.coins;
+  _claimingIds.add('q:' + questId);
   const added = q.rewardCoins;
   try {
     q.claimed = true;
@@ -443,15 +457,17 @@ async function claimQuest(questId, questElForAnim) {
       const ti = def ? def.tiers.indexOf(q.target) : -1;
       if (def && ti >= 0 && ti + 1 < def.tiers.length) GAME_STATE.quests[idx] = makeStatQuest(def, ti + 1);
     }
-    await _finishQuestClaim(added, before, questElForAnim);
+    await _finishQuestClaim(added, questElForAnim);
   } catch (_claimErr) {
     // Q-05 FIX: revert on failure
     q.claimed = false;
-    GAME_STATE.coins = before;
+    GAME_STATE.coins = Math.max(0, GAME_STATE.coins - added);
+    GAME_STATE.stats.totalCoinsEarned = Math.max(0, (GAME_STATE.stats.totalCoinsEarned || 0) - added);
     console.error('[claimQuest] failed, reverted:', _claimErr);
     showToast('Claim failed – please try again', 'error');
+    try { renderQuests(); renderHub(); } catch (e) {}
   } finally {
-    q._claiming = false;
+    _claimingIds.delete('q:' + questId);
   }
 }
 
