@@ -1,3 +1,4 @@
+// File: public/gameplay/js/04-persistence.js
 // ── SECURITY FIX [1]: Tamper detection for GAME_STATE ────────────────────
 // We snapshot coins & level after every legitimate save.  Before the next
 // save we check for unexpected jumps.  A cheater who types
@@ -26,6 +27,26 @@ window.__svtOnServerClamp = function (v) {
   try { savePlayerStateLocal(); } catch (e) {}
   try { renderHub(); } catch (e) {}
   try { showToast('Some progress did not pass the server check and was corrected.', 'error'); } catch (e) {}
+};
+
+window.__svtApplyServerValues = function (v) {
+  if (!v) return;
+  if (typeof v.coins === 'number') GAME_STATE.coins = v.coins;
+  if (typeof v.level === 'number') GAME_STATE.level = v.level;
+  if (typeof v.spotlightLevel === 'number') GAME_STATE.spotlightLevel = v.spotlightLevel;
+  if (typeof v.snakeventeenLevel === 'number') GAME_STATE.snakeventeenLevel = v.snakeventeenLevel;
+  if (!GAME_STATE.stats) GAME_STATE.stats = {};
+  if (typeof v.totalCoinsEarned === 'number') GAME_STATE.stats.totalCoinsEarned = v.totalCoinsEarned;
+  if (typeof v.levelsCompleted === 'number') GAME_STATE.stats.levelsCompleted = v.levelsCompleted;
+  if (typeof v.levelsUnder30 === 'number') GAME_STATE.stats.levelsUnder30 = v.levelsUnder30;
+  if (typeof v.levelsUnder20 === 'number') GAME_STATE.stats.levelsUnder20 = v.levelsUnder20;
+  if (typeof v.echoLevel === 'number') {
+    if (!GAME_STATE.meta || typeof GAME_STATE.meta !== 'object') GAME_STATE.meta = {};
+    if (!GAME_STATE.meta.echo || typeof GAME_STATE.meta.echo !== 'object') GAME_STATE.meta.echo = {};
+    GAME_STATE.meta.echo.level = v.echoLevel;
+  }
+  _snapshotState();
+  try { savePlayerStateLocal(); } catch (e) {}
 };
 
 function _detectTampering() {
