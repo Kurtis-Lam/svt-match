@@ -193,33 +193,40 @@ function showIdolUnlockAnimation(idolKey, onDone) {
   // Allow tap after card has landed
   setTimeout(() => overlay.addEventListener('click', onTap), 1100);
 }
-// Helper to add coins and track total earned
-
-// SECURITY FIX [1]: Validate coin deltas before applying them.
-// Each legitimate source has a documented cap; anything exceeding it
-// is silently clamped and logged so anomalies are visible in the console.
-const _COIN_CAPS = {
-  level:        6_500,   // base(100) + streak(up to ~1000) + idol-bonus(500*8) + kkuma(5000)
-  dailywheel:   1_000,
-  dailybox:     5_000,
-  spotlight:    3_000,   // 20 correct(100ea) + streak(200) + kkuma(5000)
-  snakeventeen: 5_000,   // ~60 segments * 75 + streaks
-  offlinelove:  250_000, // P-07 FIX: raised for high-love-level long-offline players
-  quest:        120_000, // top quest reward
-  season:         3_000, // season tier reward (max single tier)
-  mastery:        2_000, // idol level-up reward + fandom run bonus
-};
-
-function addCoinsToGame(amount, reason = '') {
-  const before = GAME_STATE.coins;
-  const cap = _COIN_CAPS[reason] ?? 200_000; // unknown sources get a sanity cap
-  const safe = Math.max(0, Math.min(Math.round(amount), cap));  // S-03 patch: floor already 0
-  if (safe !== Math.round(amount) && amount > 0) {
-    console.warn(`[Security] addCoinsToGame: clamped ${amount} → ${safe} (reason: ${reason})`);
+// Coins and levels are awarded by the server only (api/_lib/awards.js).
+// The client reports what happened and applies the numbers the server returns.
+// Calling this never changes coins locally on its own.
+async function claimAward(source, ctx) {
+  if (typeof window.svtAward !== 'function') {
+    throw new Error('Reward service unavailable. Refresh the page and try again.');
   }
-  GAME_STATE.coins += safe;
-  GAME_STATE.stats.totalCoinsEarned = (GAME_STATE.stats.totalCoinsEarned || 0) + safe;
-  return before;
+  return window.svtAward(source, ctx || {});
+}
+
+async function claimAwardSafe(source, ctx, quiet) {
+  try {
+    return await claimAward(source, ctx);
+  } catch (err) {
+    console.warn('[award]', source, err);
+    if (!quiet) {
+      try { showToast('Reward not granted: ' + ((err && err.message) || 'please try again'), 'error'); } catch (e) {}
+    }
+    return null;
+  }
+}
+
+function svtFandomPct() {
+  try { return Number(Meta.coinBonusPct()) || 0; } catch (e) { return 0; }
+}
+
+function svtLeadBonus() {
+  try { return Number(Meta.leadSpBonus()) || 0; } catch (e) { return 0; }
+}
+
+async function svtResolveDailyBox(via) {
+  const res = await claimAwardSafe('dailybox', { via: via || 'daily' }, true);
+  if (!res) return null;
+  return { star: Number(res.extra && res.extra.star) || 1, coins: Number(res.added) || 0 };
 }
 let _selectedBattleOpponentId = null;  // S-07: was window.__selectedBattleOpponentId
 
@@ -275,6 +282,18 @@ function __svtBoot() {
       auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
           // Logged in via Firebase Auth
+          if (currentUser && currentUser.id === firebaseUser.uid) {
+          // Same session: refresh the profile names so the hub never shows a stale or fallback name
+          try {
+              const ps = await db.ref(`users/${firebaseUser.uid}`).once('value');
+              const fresh = ps.val();
+              if (fresh) {
+                  if (fresh.displayName) currentUser.displayName = fresh.displayName;
+                  if (fresh.username) currentUser.username = fresh.username;
+                  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+              }
+          } catch (e) {}
+          }
           if (!currentUser || currentUser.id !== firebaseUser.uid) {
           // Refresh from DB
           const snap = await db.ref(`users/${firebaseUser.uid}`).once('value');
