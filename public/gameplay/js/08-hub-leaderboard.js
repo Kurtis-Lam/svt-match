@@ -1,3 +1,4 @@
+// File: public/gameplay/js/08-hub-leaderboard.js
 // ── Leaderboard rows ──────────────────────────────────────────────────────
 function lbRowFromPlayerState(uid, username, displayName, ps, avatarSrc) {
   const marriedIdols = ps?.marriedIdols || {};
@@ -252,7 +253,7 @@ async function renderLeaderboard(forceRefresh = false) {
 }
 function renderHub() {
   ensureDailyResetIfNeeded();
-  document.getElementById('hubUserName').textContent = currentUser?.displayName || "Carat";
+  document.getElementById('hubUserName').textContent = (currentUser?.displayName || '').trim() || "Carat";
   document.getElementById('hubLevel').textContent = GAME_STATE.level;
   document.getElementById('hubCoins').textContent = Number(GAME_STATE.coins || 0).toLocaleString();
   document.getElementById('gameCoins').textContent = Number(GAME_STATE.coins || 0).toLocaleString();
