@@ -682,6 +682,56 @@ async function sendGiftsToIdol() {
   }, 250);
 }
 
+let __accountProfileUpdateInProgress = false;
+
+function showAccountActionLoading(message) {
+  let overlay = document.getElementById('accountActionLoadingOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'accountActionLoadingOverlay';
+    overlay.setAttribute('role', 'status');
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(10,14,28,.68);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);';
+    const panel = document.createElement('div');
+    panel.style.cssText = 'width:min(100%,300px);padding:28px 24px;border-radius:24px;background:rgba(255,255,255,.97);box-shadow:0 24px 70px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;';
+    const spinner = document.createElement('div');
+    spinner.style.cssText = 'width:42px;height:42px;border:4px solid #e5e7eb;border-top-color:#ec4899;border-radius:50%;animation:accountActionSpin .8s linear infinite;';
+    const label = document.createElement('p');
+    label.dataset.accountLoadingMessage = 'true';
+    label.style.cssText = 'margin:0;color:#111827;font-weight:800;font-size:15px;';
+    panel.append(spinner, label);
+    overlay.appendChild(panel);
+    if (!document.getElementById('accountActionLoadingStyle')) {
+      const style = document.createElement('style');
+      style.id = 'accountActionLoadingStyle';
+      style.textContent = '@keyframes accountActionSpin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(style);
+    }
+    document.body.appendChild(overlay);
+  }
+  const label = overlay.querySelector('[data-account-loading-message]');
+  if (label) label.textContent = message || 'Updating your account…';
+  overlay.style.display = 'flex';
+}
+
+function hideAccountActionLoading() {
+  const overlay = document.getElementById('accountActionLoadingOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function syncCurrentUserIdentityViews() {
+  const username = String(currentUser?.username || '').trim();
+  const displayName = String(currentUser?.displayName || '').trim() || username || 'Carat';
+  const hubName = document.getElementById('hubUserName');
+  if (hubName) hubName.textContent = displayName;
+  const settingsName = document.getElementById('settingsUsername');
+  if (settingsName) settingsName.textContent = displayName;
+  const settingsHandle = document.getElementById('settingsHandle');
+  if (settingsHandle) settingsHandle.textContent = 'Logged in as @' + username;
+  try { localStorage.setItem('currentUser', JSON.stringify(currentUser)); } catch (e) {}
+  try { if (typeof invalidateLeaderboardCache === 'function') invalidateLeaderboardCache(); } catch (e) {}
+}
+
 function openChangeDisplayNameModal() {
   if (!currentUser) {
     showToast('Not logged in', 'error');
@@ -694,14 +744,14 @@ function openChangeDisplayNameModal() {
       <label class="text-sm text-gray-600 font-medium ml-1">New Display Name</label>
       <div class="relative mt-1">
        <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-       <input type="text" id="newDisplayNameInput" class="w-full input-field rounded-xl py-4 pl-12 pr-4" placeholder="Your new display name" />
+       <input type="text" id="newDisplayNameInput" class="w-full input-field rounded-xl py-4 pl-12 pr-4" placeholder="Your new display name" maxlength="30" />
       </div>
      </div>
      <div>
       <label class="text-sm text-gray-600 font-medium ml-1">Password (to confirm)</label>
       <div class="relative mt-1">
        <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-       <input type="password" id="displayNamePasswordInput" class="w-full input-field rounded-xl py-4 pl-12 pr-4" placeholder="Your password" />
+       <input type="password" id="displayNamePasswordInput" class="w-full input-field rounded-xl py-4 pl-12 pr-4" placeholder="Your password" autocomplete="current-password" />
       </div>
      </div>
     </div>
@@ -714,27 +764,44 @@ function openChangeDisplayNameModal() {
 }
 
 async function submitChangeDisplayName() {
-  const name = (document.getElementById('newDisplayNameInput')?.value || '').trim().replace(/\s+/g, ' ');  // A-04 FIX: collapse internal whitespace
-  const pass = document.getElementById('displayNamePasswordInput')?.value || '';
+  if (__accountProfileUpdateInProgress) return;
+  const modalBody = document.getElementById('modalBody');
+  // Scope lookups to the visible modal: game.html also contains a hidden legacy input with the same ID.
+  const name = (modalBody?.querySelector('#newDisplayNameInput')?.value || '').trim().replace(/\s+/g, ' ');
+  const pass = modalBody?.querySelector('#displayNamePasswordInput')?.value || '';
   if (!name || !pass) { setModalError('Fill in all fields.'); return; }
   if (name.length < 2 || name.length > 30) { setModalError('Display name must be 2–30 characters.'); return; }
   if (!/^[\p{L}\p{N}\p{M}\s_\-'.!?]+$/u.test(name)) { setModalError('Display name contains invalid characters.'); return; }
+  if (!currentUser?.id || !auth?.currentUser) { setModalError('Your session has expired. Please sign in again.'); return; }
 
+  __accountProfileUpdateInProgress = true;
+  showAccountActionLoading('Updating display name…');
   try {
-    const fakeEmail = usernameToEmail(currentUser.username);
-    const cred = firebase.auth.EmailAuthProvider.credential(fakeEmail, pass);
-    await auth.currentUser.reauthenticateWithCredential(cred);
-  } catch (e) {
-    setModalError('Incorrect password.');
-    return;
-  }
+    try {
+      const fakeEmail = usernameToEmail(currentUser.username);
+      const cred = firebase.auth.EmailAuthProvider.credential(fakeEmail, pass);
+      await auth.currentUser.reauthenticateWithCredential(cred);
+    } catch (e) {
+      setModalError('Incorrect password.');
+      return;
+    }
 
-  await db.ref(`users/${currentUser.id}`).update({ displayName: name });
-  currentUser.displayName = name;
-  localStorage.setItem('currentUser', JSON.stringify(currentUser));
-  renderHub();
-  closeModal();
-  showToast('Display name updated!', 'success');
+    try {
+      await db.ref(`users/${currentUser.id}`).update({ displayName: name });
+    } catch (e) {
+      console.error('[Account] Display-name update failed:', e);
+      setModalError((e && e.message) ? `Could not update display name: ${e.message}` : 'Could not update display name. Please try again.');
+      return;
+    }
+
+    currentUser.displayName = name;
+    syncCurrentUserIdentityViews();
+    closeModal();
+    showToast('Display name changed successfully!', 'success');
+  } finally {
+    hideAccountActionLoading();
+    __accountProfileUpdateInProgress = false;
+  }
 }
 
 function escapeHtml(s) {
@@ -1105,44 +1172,66 @@ function openChangeUsernameModal() {
 }
 
 async function submitChangeUsername() {
-  const input = document.getElementById('newUsernameInput');
+  if (__accountProfileUpdateInProgress) return;
+  const modalBody = document.getElementById('modalBody');
+  const input = modalBody?.querySelector('#newUsernameInput');
   const newU = normalizeUsername(input?.value || '');
-  const pass = document.getElementById('usernamePasswordInput')?.value || '';
+  const pass = modalBody?.querySelector('#usernamePasswordInput')?.value || '';
 
   if (!newU || !pass) { setModalError('Fill in all fields.'); return; }
   if (newU.length < 3) { setModalError('Username must be at least 3 characters.'); return; }
   if (newU.length > 30) { setModalError('Username must be 30 characters or fewer.'); return; }
-  if (newU === normalizeUsername(currentUser.username)) {
+  if (newU === normalizeUsername(currentUser?.username)) {
     setModalError('Same as current username.'); return;
   }
+  if (!currentUser?.id || !auth?.currentUser) { setModalError('Your session has expired. Please sign in again.'); return; }
 
+  const oldUsername = String(currentUser.username || '');
+  const oldDisplayName = String(currentUser.displayName || '').trim();
+  const displayNameUsesUsername = !oldDisplayName || normalizeUsername(oldDisplayName) === normalizeUsername(oldUsername);
+  __accountProfileUpdateInProgress = true;
+  showAccountActionLoading('Updating username…');
   try {
-    // ── Re-auth via Firebase, not DB lookup ──────────────────────────
-    const fakeEmail = usernameToEmail(currentUser.username);
-    const cred = firebase.auth.EmailAuthProvider.credential(fakeEmail, pass);
-    await auth.currentUser.reauthenticateWithCredential(cred);
-  } catch (e) {
-    setModalError('Incorrect password.');
-    return;
-  }
+    try {
+      const fakeEmail = usernameToEmail(oldUsername);
+      const cred = firebase.auth.EmailAuthProvider.credential(fakeEmail, pass);
+      await auth.currentUser.reauthenticateWithCredential(cred);
+    } catch (e) {
+      setModalError('Incorrect password.');
+      return;
+    }
 
-  try {
-    await auth.currentUser.getIdToken(true);
-    await svtApi('/api/game/username', { body: { username: newU } });
-  } catch (e) {
-    setModalError(e.message || 'Could not change username.');
-    return;
-  }
-  try { await auth.currentUser.reload(); } catch (e) {}
+    try {
+      await auth.currentUser.getIdToken(true);
+      await svtApi('/api/game/username', { body: { username: newU } });
+    } catch (e) {
+      setModalError((e && e.message) || 'Could not change username.');
+      return;
+    }
 
-  currentUser.username = newU;
-  localStorage.setItem('currentUser', JSON.stringify(currentUser));
-  // Migrate friend/battle references in other users' records
-  // (old display name → new display name where stored as username)
-  await migrateOldIdInFriendsAndBattles(currentUser.id, currentUser.id, currentUser).catch(() => {});
-  closeModal();
-  showToast('Username changed', 'success');
-  await savePlayerState();
+    // Do not reload or sign out the Firebase user after the server updates the email.
+    // Keeping this Firebase session preserves the current game state and screen.
+    currentUser.username = newU;
+    if (displayNameUsesUsername) currentUser.displayName = newU;
+    syncCurrentUserIdentityViews();
+    try { if (typeof savePlayerStateLocal === 'function') savePlayerStateLocal(); } catch (e) {}
+    try {
+      const users = JSON.parse(localStorage.getItem('users') || '{}');
+      if (users[currentUser.id]) {
+        users[currentUser.id].username = newU;
+        if (displayNameUsesUsername) users[currentUser.id].displayName = newU;
+        localStorage.setItem('users', JSON.stringify(users));
+      }
+      localStorage.removeItem(`playerState:${oldUsername}`);
+      localStorage.removeItem(`playerStateOwner:${oldUsername}`);
+    } catch (e) {}
+
+    closeModal();
+    showToast('Username changed successfully!', 'success');
+  } finally {
+    hideAccountActionLoading();
+    __accountProfileUpdateInProgress = false;
+  }
 }
 
 function openChangePasswordModal() {
