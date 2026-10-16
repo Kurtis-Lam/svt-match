@@ -5,8 +5,56 @@
   const API_BASE = String(window.__SVT_API_BASE__ || 'https://svt-match.vercel.app').replace(/\/$/, '');
   window.SVT_API_BASE = API_BASE;
 
+  let sessionDead = false;
+  const DEAD_AUTH_CODES = [
+    'auth/user-token-expired',
+    'auth/user-not-found',
+    'auth/user-disabled',
+    'auth/invalid-user-token',
+    'auth/id-token-revoked',
+    'auth/invalid-credential',
+    'auth/requires-recent-login'
+  ];
+
+  function isDeadSessionError(e) {
+    const code = e && e.code ? String(e.code) : '';
+    if (DEAD_AUTH_CODES.indexOf(code) !== -1) return true;
+    return /TOKEN_EXPIRED|USER_NOT_FOUND|USER_DISABLED|INVALID_REFRESH_TOKEN|INVALID_GRANT/i.test(String((e && e.message) || ''));
+  }
+
+  function endDeadSession() {
+    if (sessionDead) return;
+    sessionDead = true;
+    ['stopSecondsOnlineTicker', 'stopDailyResetWatcher', 'stopFriendsMetaRefresh', 'stopRealtimeSync'].forEach((fn) => {
+      try { if (typeof window[fn] === 'function') window[fn](); } catch (e) {}
+    });
+    try { localStorage.removeItem('currentUser'); } catch (e) {}
+    try { currentUser = null; } catch (e) {}
+    Promise.resolve()
+      .then(() => auth.signOut())
+      .catch(() => {})
+      .then(() => {
+        try { if (typeof showToast === 'function') showToast('Your session expired. Please sign in again.', 'error'); } catch (e) {}
+        try { if (typeof showScreen === 'function') showScreen('welcomeScreen'); } catch (e) {}
+      });
+  }
+
+  function sessionError() {
+    const err = new Error('Session expired. Please sign in again.');
+    err.status = 401;
+    err.code = 'permission-denied';
+    return err;
+  }
+
+  auth.onAuthStateChanged((u) => { if (u) sessionDead = false; });
+
   async function svtApi(path, opts) {
     const o = opts || {};
+    if (o.auth !== false && sessionDead) {
+      const e = new Error('Not signed in');
+      e.code = 'unauthenticated';
+      throw e;
+    }
     const method = o.method || (o.body !== undefined ? 'POST' : 'GET');
     const attempt = async (forceRefresh) => {
       const headers = {};
@@ -26,7 +74,16 @@
         body: o.body !== undefined ? JSON.stringify(o.body) : undefined
       });
     };
-    let res = await attempt(!!o.forceRefresh);
+    let res;
+    try {
+      res = await attempt(!!o.forceRefresh);
+    } catch (e) {
+      if (e && e.code !== 'unauthenticated' && o.auth !== false && isDeadSessionError(e)) {
+        endDeadSession();
+        throw sessionError();
+      }
+      throw e;
+    }
     if (res.status >= 500 && res.status !== 501) {
       await new Promise((r) => setTimeout(r, 800));
       try { res = await attempt(false); } catch (e) {}
@@ -34,10 +91,18 @@
     if (res.status === 401 && o.auth !== false) {
       try { res = await attempt(true); } catch (e) {
         if (e && e.code === 'unauthenticated') throw e;
-        const err = new Error('Session expired. Please sign in again.');
-        err.status = 401;
-        err.code = 'permission-denied';
+        if (isDeadSessionError(e)) {
+          endDeadSession();
+          throw sessionError();
+        }
+        const err = new Error('Could not refresh your session. Check your connection and try again.');
+        err.status = 0;
+        err.code = 'network-error';
         throw err;
+      }
+      if (res.status === 401) {
+        endDeadSession();
+        throw sessionError();
       }
     }
     let data = null;
