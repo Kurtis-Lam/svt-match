@@ -48,7 +48,7 @@ function handler(methods, fn) {
       const status = err && err.status ? err.status : 500;
       if (status >= 500) console.error('[api]', err);
       const body = { error: status >= 500 && !(err && err.expose) ? 'Internal error' : err.message };
-      if (status >= 500 && err && err.code) body.code = String(err.code).slice(0, 60);
+      if (err && err.code && (status >= 500 || status === 401 || status === 403)) body.code = String(err.code).slice(0, 60);
       send(res, status, body);
     }
   };
