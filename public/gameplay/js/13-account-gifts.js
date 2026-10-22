@@ -14,25 +14,6 @@ function checkSession() {
   return false;
 }
 
-function isAthScoupsGiftEligible() {
-  return (currentUser?.username === "ath._.naa");
-}
-
-function ensureGiftStateDefaults() {
-  if (!GAME_STATE.gifts) GAME_STATE.gifts = {
-    scoupsForAth: {
-      shown: false,
-      claimed: false
-    }
-  };
-  if (!GAME_STATE.gifts.scoupsForAth) GAME_STATE.gifts.scoupsForAth = {
-    shown: false,
-    claimed: false
-  };
-  if (typeof GAME_STATE.gifts.scoupsForAth.shown !== "boolean") GAME_STATE.gifts.scoupsForAth.shown = false;
-  if (typeof GAME_STATE.gifts.scoupsForAth.claimed !== "boolean") GAME_STATE.gifts.scoupsForAth.claimed = false;
-}
-
 function ensureIdolPowerDefaults() {
   GAME_STATE.idolPower ||= {};
   IDOLS.forEach(i => {
@@ -40,64 +21,6 @@ function ensureIdolPowerDefaults() {
   });
 }
 
-function buildGiftScoupsCardHtml() {
-  return `
-    <div class="glass-card rounded-2xl p-5 text-center">
-      <div style="font-size:48px;line-height:1.1">💎</div>
-      <p class="text-lg font-black text-gray-900 mt-2">Starter Diamond Pack</p>
-      <p class="text-sm text-gray-500 mt-1">A welcome bonus for the premium shop</p>
-      <div class="mt-3 rounded-2xl py-3" style="background:linear-gradient(135deg,#ede9fe,#dbeafe)">
-        <p class="text-2xl font-black" style="color:#6d28d9">+5 💎</p>
-        <p class="text-xs font-bold text-gray-600 mt-1">Idols must be purchased with diamonds</p>
-      </div>
-    </div>
-  `;
-}
-
-function openGiftOverlayScoups() {
-  const overlay = document.getElementById('giftOverlay');
-  const cardHost = document.getElementById('giftScoupsCard');
-  if (!overlay || !cardHost) return;
-  cardHost.innerHTML = buildGiftScoupsCardHtml();
-  overlay.classList.add('show');
-  overlay.setAttribute('aria-hidden', 'false');
-}
-
-function closeGiftOverlayScoups() {
-  const overlay = document.getElementById('giftOverlay');
-  overlay.classList.remove('show');
-  overlay.setAttribute('aria-hidden', 'true');
-}
-
-async function claimScoupsGift() {
-  if (!currentUser) return;
-  ensureGiftStateDefaults();
-  if (GAME_STATE.gifts.scoupsForAth.claimed) return;
-  GAME_STATE.diamonds = Math.max(0, Number(GAME_STATE.diamonds) || 0) + 5;
-  GAME_STATE.gifts.scoupsForAth.claimed = true;
-  GAME_STATE.gifts.scoupsForAth.shown = true;
-  renderHub();
-  renderIdols();
-  renderAvatars();
-  await savePlayerState();
-  closeGiftOverlayScoups();
-  showToast('Gift claimed: +5 diamonds!', 'success');
-}
-
-function maybeShowAthScoupsGiftFirstOpen() {
-  if (!currentUser) return;
-  ensureGiftStateDefaults();
-  if (!isAthScoupsGiftEligible()) return;
-  if (GAME_STATE.gifts.scoupsForAth.shown) return;
-  if (GAME_STATE.gifts.scoupsForAth.claimed) return;
-  if (isIdolOwned("scoups")) {
-    GAME_STATE.gifts.scoupsForAth.shown = true;
-    return;
-  }
-  GAME_STATE.gifts.scoupsForAth.shown = true;
-  savePlayerState();
-  setTimeout(() => openGiftOverlayScoups(), 650);
-}
 /* =========================
    SHOP IMAGE CONFIG (CLEANED)
    Uses transparent PNGs from ./imgs/assets/shop_xxx.png
@@ -966,7 +889,6 @@ async function onLoginSuccess(isNew = false) {
   }
 
   await loadPlayerState();
-  ensureGiftStateDefaults();
   ensureDailyResetIfNeeded();
   ensureIdolPowerDefaults();
   ensureFriendsDefaults();
@@ -1039,7 +961,6 @@ async function onLoginSuccess(isNew = false) {
   setTimeout(async () => {
     showScreen('hubScreen');
     maybeAutoOpenDailyWheel();
-    maybeShowAthScoupsGiftFirstOpen();
     if (!isNew) {
       await checkOfflineLoveReward();
       const act = GAME_STATE.battles?.active;
@@ -1475,7 +1396,6 @@ async function handleSignup() {
       box: { claimed: false, opened: false, star: 1 },
       claimedCells: [false, false, false, false, false, false]
     };
-    GAME_STATE.gifts = { scoupsForAth: { shown: false, claimed: false } };
     GAME_STATE.idolPower = {};
     GAME_STATE.friends = { list: [], incoming: [], outgoing: [] };
     GAME_STATE.battles = {
