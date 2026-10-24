@@ -280,7 +280,11 @@
   }
 
   function stepMs() {
-    return Math.max(G.stepMinMs, G.stepStartMs - (E.round - 1) * G.stepSpeedupMs);
+    // Round 25 is the hard ceiling for speed: rounds 26+ use the exact same
+    // interval as round 25 instead of making the flashes progressively faster.
+    const cappedRound = Math.min(25, Math.max(1, Number(E.round) || 1));
+    const round25Cap = G.stepStartMs - (cappedRound - 1) * G.stepSpeedupMs;
+    return Math.max(Number(G.stepMinMs) || 0, round25Cap);
   }
 
   function playSequence() {
