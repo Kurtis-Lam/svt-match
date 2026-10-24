@@ -1,4 +1,4 @@
-// File: public/gameplay/js/04-persistence.js
+// File: public/js/gameplay/04-persistence.js
 // ── SECURITY FIX [1]: Tamper detection for GAME_STATE ────────────────────
 // We snapshot coins & level after every legitimate save.  Before the next
 // save we check for unexpected jumps.  A cheater who types
