@@ -1,43 +1,46 @@
 #hubScreen, #idolsScreen, #shopScreen, #questsScreen {
   touch-action: pan-y pinch-zoom;
   will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .screen.panel-nav-enter-from-right:not(.hidden) {
-  animation: panelEnterFromRight 360ms cubic-bezier(.22,.78,.26,1) both !important;
+  animation: panelEnterFromRight 390ms cubic-bezier(.22,.78,.26,1) both !important;
+  z-index: 2;
 }
 
 .screen.panel-nav-enter-from-left:not(.hidden) {
-  animation: panelEnterFromLeft 360ms cubic-bezier(.22,.78,.26,1) both !important;
+  animation: panelEnterFromLeft 390ms cubic-bezier(.22,.78,.26,1) both !important;
+  z-index: 2;
 }
 
-.screen.hidden.panel-nav-exit-to-left {
-  transform: translateX(-100%) !important;
-  opacity: 0 !important;
+.screen.panel-nav-exit-to-left:not(.hidden) {
+  animation: panelExitToLeft 390ms cubic-bezier(.22,.78,.26,1) both !important;
   pointer-events: none !important;
-  transition: transform 360ms cubic-bezier(.22,.78,.26,1), opacity 260ms ease, visibility 0s linear 360ms !important;
+  z-index: 1;
 }
 
-.screen.hidden.panel-nav-exit-to-right {
-  transform: translateX(100%) !important;
-  opacity: 0 !important;
+.screen.panel-nav-exit-to-right:not(.hidden) {
+  animation: panelExitToRight 390ms cubic-bezier(.22,.78,.26,1) both !important;
   pointer-events: none !important;
-  transition: transform 360ms cubic-bezier(.22,.78,.26,1), opacity 260ms ease, visibility 0s linear 360ms !important;
+  z-index: 1;
 }
 
 .panel-nav-dock {
   transform: translateY(0);
   opacity: 1;
-  transition: transform 300ms cubic-bezier(.22,.78,.26,1), opacity 220ms ease;
   padding-bottom: max(.75rem, env(safe-area-inset-bottom));
   will-change: transform, opacity;
   z-index: 70;
 }
 
 .panel-nav-dock.panel-nav-dock-hidden {
-  transform: translateY(calc(100% + 18px));
-  opacity: 0;
+  animation: dockBounceDown 390ms cubic-bezier(.22,.78,.26,1) both;
   pointer-events: none;
+}
+
+.panel-nav-dock.panel-nav-dock-entering {
+  animation: dockBounceUp 390ms cubic-bezier(.22,.78,.26,1) both;
 }
 
 #hubNavigationDock .nav-item {
@@ -81,24 +84,47 @@
 }
 
 @keyframes panelEnterFromRight {
-  from { transform: translateX(100%); opacity: .72; }
-  to { transform: translateX(0); opacity: 1; }
+  from { transform: translate3d(100%, 0, 0); opacity: .72; }
+  to { transform: translate3d(0, 0, 0); opacity: 1; }
 }
 
 @keyframes panelEnterFromLeft {
-  from { transform: translateX(-100%); opacity: .72; }
-  to { transform: translateX(0); opacity: 1; }
+  from { transform: translate3d(-100%, 0, 0); opacity: .72; }
+  to { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+
+@keyframes panelExitToLeft {
+  from { transform: translate3d(0, 0, 0); opacity: 1; }
+  to { transform: translate3d(-28%, 0, 0); opacity: .55; }
+}
+
+@keyframes panelExitToRight {
+  from { transform: translate3d(0, 0, 0); opacity: 1; }
+  to { transform: translate3d(28%, 0, 0); opacity: .55; }
+}
+
+@keyframes dockBounceDown {
+  0% { transform: translateY(0); opacity: 1; }
+  58% { transform: translateY(calc(100% + 24px)); opacity: .2; }
+  74% { transform: translateY(calc(100% - 5px)); opacity: .08; }
+  100% { transform: translateY(calc(100% + 18px)); opacity: 0; }
+}
+
+@keyframes dockBounceUp {
+  0% { transform: translateY(calc(100% + 18px)); opacity: 0; }
+  60% { transform: translateY(-7px); opacity: 1; }
+  78% { transform: translateY(3px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .screen.panel-nav-enter-from-right:not(.hidden),
-  .screen.panel-nav-enter-from-left:not(.hidden) {
+  .screen.panel-nav-enter-from-left:not(.hidden),
+  .screen.panel-nav-exit-to-left:not(.hidden),
+  .screen.panel-nav-exit-to-right:not(.hidden),
+  .panel-nav-dock,
+  .panel-nav-dock.panel-nav-dock-entering,
+  .panel-nav-dock.panel-nav-dock-hidden {
     animation-duration: 1ms !important;
-  }
-
-  .screen.hidden.panel-nav-exit-to-left,
-  .screen.hidden.panel-nav-exit-to-right,
-  .panel-nav-dock {
-    transition-duration: 1ms !important;
   }
 }
