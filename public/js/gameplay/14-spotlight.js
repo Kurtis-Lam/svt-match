@@ -753,7 +753,7 @@ function _openSlResultModal(kkumaBonus, streakBonusCoins, passedLevel = false) {
   const kRow = kkumaBonus ? `
     <div class="earn-row">
         <div class="label">🐾 Kkuma Bonus</div>
-        <div class="val">+5,000 <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val">+5,000 <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
   ` : '';
   const title = passedLevel ? '✅ Level Complete!' : '❌ Level Failed';
@@ -772,20 +772,20 @@ function _openSlResultModal(kkumaBonus, streakBonusCoins, passedLevel = false) {
     </div>
     <div class="earn-row">
         <div class="label">Earned (correct)</div>
-        <div class="val">+${Number(earned).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val">+${Number(earned).toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row" style="color:#dc2626;">
         <div class="label">Penalty (wrong)</div>
-        <div class="val">-${Number(lost).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val">-${Number(lost).toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row">
         <div class="label"><img src="/imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Streak Bonus (${streakCount}×)</div>
-        <div class="val">${streakBonusCoins > 0 ? '+' + Number(streakBonusCoins).toLocaleString() : '0'} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val">${streakBonusCoins > 0 ? '+' + Number(streakBonusCoins).toLocaleString() : '0'} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     ${kRow}
     <div class="earn-row" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));border:none;">
         <div class="label font-black">Total earned</div>
-        <div class="val font-black">${total >= 0 ? '+' : ''}${Number(total).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val font-black">${total >= 0 ? '+' : ''}${Number(total).toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row"><div class="label">Season XP</div><div class="val">+${Number(SPOTLIGHT_STATE.seasonXpGained ?? GAME_STATE.meta?.lastRunXpGained ?? 0).toLocaleString()} XP</div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
