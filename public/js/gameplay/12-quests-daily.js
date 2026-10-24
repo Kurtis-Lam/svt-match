@@ -283,12 +283,12 @@ function questBarColor(q) {
 
 function rewardHtml(coins) {
   return `
-    <span class="qcard-coins">+${Number(coins).toLocaleString()}<img src="./imgs/assets/coins.png" alt=""></span>
+    <span class="qcard-coins">+${Number(coins).toLocaleString()}<img src="/imgs/assets/coins.png" alt=""></span>
   `;
 }
 
 function questIconHtml(q) {
-  if (q.type === "match_idol_tier") return `<img src="./imgs/${escapeHtml(q.idolKey)}/1.jpg" alt="" loading="lazy" decoding="async">`;
+  if (q.type === "match_idol_tier") return `<img src="/imgs/${escapeHtml(q.idolKey)}/1.jpg" alt="" loading="lazy" decoding="async">`;
   if (q.type === "complete_level_under_20s" || q.type === "complete_level_under_30s") return '<span>⏱️</span>';
   return `<span>${QUEST_GAME_ICON[q.game] || '⭐'}</span>`;
 }
@@ -588,7 +588,7 @@ function renderWheelLabels() {
     const centerDeg = (idx * segmentDeg) + (segmentDeg / 2);
     const el = document.createElement('div');
     el.className = 'wheel-label';
-    el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:2px;line-height:1;">${prize}<img src="./imgs/assets/coins.png" style="width:0.82em;height:0.82em;margin-left:2px;"></span>`;
+    el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:2px;line-height:1;">${prize}<img src="/imgs/assets/coins.png" style="width:0.82em;height:0.82em;margin-left:2px;"></span>`;
     const tangentDeg = centerDeg + 90;
     el.style.transform = `rotate(${centerDeg}deg) translate(${radius}px) rotate(${tangentDeg - centerDeg}deg) translate(-50%, -50%)`;
     host.appendChild(el);
@@ -869,7 +869,7 @@ function attachDailyBoxTapHandler() {
 }
 
 function renderDailyBoxRewardLine(reward) {
-  return `+${reward.coins} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
+  return `+${reward.coins} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
 }
 
 // The server rolls the star upgrades and pays the coins; the client only animates the result.
@@ -955,7 +955,7 @@ function openRewardExperience(reward) {
     const pair = IDOL_THEME[idol.key] || ["#f5c6d0", "#9ec5d9"];
     idolCard.style.setProperty('--idolTheme1', pair[0]);
     idolCard.style.setProperty('--idolTheme2', pair[1]);
-    const img = `./imgs/${idol.key}/1.jpg`;
+    const img = `/imgs/${idol.key}/1.jpg`;
     idolThumb.src = img;
     idolThumb.style.filter = 'blur(10px)';
     idolNameEl.textContent = idol.display;
@@ -1010,7 +1010,7 @@ function resetDailyBoxFullscreenContent() {
   content.innerHTML = `
     <div id="dailyBoxFsStars" class="daily-box-fs-stars"></div>
     <div class="daily-box-fs-box">
-      <img id="dailyBoxFsImg" src="./imgs/boxes/1.jpg" alt="Daily Box" />
+      <img id="dailyBoxFsImg" src="/imgs/boxes/1.jpg" alt="Daily Box" />
     </div>
     <div class="daily-box-fs-attempts">
       <div id="dailyBoxFsAttemptsLabel" class="label"></div>
