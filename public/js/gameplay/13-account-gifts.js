@@ -117,7 +117,7 @@ function renderShopItems() {
     </div>
     <div class="shop-item-right shop-item-cost-col">
       <div class="shop-item-cost-label">Price</div>
-      <div class="shop-item-cost-val">${ringPrice.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+      <div class="shop-item-cost-val">${ringPrice.toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
   `;
   host.appendChild(ringRow);
@@ -138,7 +138,7 @@ function renderShopItems() {
       </div>
       <div class="shop-item-right shop-item-cost-col">
         <div class="shop-item-cost-label">Price</div>
-        <div class="shop-item-cost-val">${giftPrice.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="shop-item-cost-val">${giftPrice.toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
       </div>
     `;
     host.appendChild(row);
@@ -169,7 +169,7 @@ function shopQuantityMarkup(price, currency = 'coins') {
   __shopPurchaseQty = 1;
   __shopPurchasePrice = Number(price) || 0;
   __shopPurchaseCurrency = currency;
-  const unit = currency === 'diamonds' ? '<img src="/imgs/assets/diamond.png" style="width:1em;height:1em;vertical-align:middle;" alt="">' : '<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">';
+  const unit = currency === 'diamonds' ? '<img src="/imgs/assets/diamond.png" style="width:1em;height:1em;vertical-align:middle;" alt="">' : '<img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;">';
   return `<div class="shop-quantity-control"><button type="button" onclick="adjustShopPurchaseQty(-1)" aria-label="Decrease quantity">−</button><input id="shopPurchaseQuantity" type="number" inputmode="numeric" min="1" max="99" value="1" oninput="syncShopPurchaseQty()" aria-label="Quantity to buy"><button type="button" onclick="adjustShopPurchaseQty(1)" aria-label="Increase quantity">+</button></div><div class="shop-purchase-total">Total: <b id="shopPurchaseTotal">${(Number(price) || 0).toLocaleString()} ${unit}</b></div>`;
 }
 function readShopPurchaseQty() {
@@ -188,7 +188,7 @@ function syncShopPurchaseQty() {
   const out = document.getElementById('shopPurchaseTotal');
   const qty = readShopPurchaseQty();
   if (!out) return;
-  const unit = __shopPurchaseCurrency === 'diamonds' ? '<img src="/imgs/assets/diamond.png" style="width:1em;height:1em;vertical-align:middle;" alt="">' : '<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">';
+  const unit = __shopPurchaseCurrency === 'diamonds' ? '<img src="/imgs/assets/diamond.png" style="width:1em;height:1em;vertical-align:middle;" alt="">' : '<img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;">';
   out.innerHTML = `${(__shopPurchasePrice * qty).toLocaleString()} ${unit}`;
 }
 
@@ -206,7 +206,7 @@ function openShopItemModal(type, key) {
           </div>
           <div class="shop-price-col">
             <div class="shop-item-cost-label">Price</div>
-            <div class="shop-item-cost-val">${price.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+            <div class="shop-item-cost-val">${price.toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
           </div>
         </div>
 
@@ -232,7 +232,7 @@ function openShopItemModal(type, key) {
         </div>
         <div class="shop-price-col">
           <div class="shop-item-cost-label">Price</div>
-          <div class="shop-item-cost-val">${g.price.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+          <div class="shop-item-cost-val">${g.price.toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
         </div>
       </div>
 
@@ -822,7 +822,7 @@ function showOfflineLoveRewardPopup(rewards, totalCoins) {
           </div>
           <div style="font-weight:900;font-size:12px;color:#0f172a;text-align:center;">${idol?.display||r.idolKey}</div>
           <div style="font-size:11px;font-weight:800;color:#64748b;">Love Lv. ${r.loveLevel}</div>
-          <div style="font-weight:900;font-size:15px;color:#b45309;">+${r.coins.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+          <div style="font-weight:900;font-size:15px;color:#b45309;">+${r.coins.toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
       </div>
     `;
   }).join('');
