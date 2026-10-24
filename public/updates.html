@@ -5,121 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Updates – SVT MATCH</title>
   <link rel="icon" type="image/png" href="imgs/logo.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" onload="this.rel='stylesheet'" />
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" onload="this.rel='stylesheet'" />
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  </noscript>
+  <link rel="stylesheet" href="/svt.css" />
 
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --pink: #f5c6d0; --blue: #9ec5d9;
-      --pink-deep: #e8889e; --blue-deep: #5a9fc0;
-      --bg1: #f8d7e0; --bg2: #a8d4e6;
-      --glass: rgba(255,255,255,0.78);
-    }
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
-      min-height: 100vh; color: #1e293b;
-    }
     .container { max-width: 620px; margin: 0 auto; padding: 0 20px 60px; }
-
     header { display: flex; align-items: center; gap: 16px; padding: 32px 0 28px; }
-    .back-btn {
-      width: 40px; height: 40px; background: var(--glass);
-      border: 1px solid rgba(255,255,255,0.7); border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      text-decoration: none; color: #475569; font-size: 16px;
-      flex-shrink: 0; backdrop-filter: blur(10px);
-    }
-    .page-title {
-      font-size: 26px; font-weight: 900;
-      background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .page-sub { font-size: 13px; color: #64748b; margin-top: 2px; }
+    .page-title { font-size: 26px; font-weight: 900; }
 
-    /* LOADING */
-    .loading {
-      text-align: center; padding: 60px 20px; color: #94a3b8;
-    }
+    .loading { text-align: center; padding: 60px 20px; color: var(--faint); }
     .spinner {
       width: 36px; height: 36px; border: 3px solid rgba(232,136,158,0.2);
-      border-top-color: var(--pink-deep); border-radius: 50%;
-      animation: spin 0.8s linear infinite; margin: 0 auto 14px;
+      border-top-color: var(--pink-deep); border-radius: 50%; margin: 0 auto 14px;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* EMPTY */
-    .empty { text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 14px; }
+    .empty { text-align: center; padding: 60px 20px; color: var(--faint); font-size: 14px; }
     .empty .empty-icon { font-size: 48px; margin-bottom: 14px; }
 
-    /* UPDATE CARDS */
     .updates-list { display: flex; flex-direction: column; gap: 16px; }
-
-    .update-card {
-      background: var(--glass);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.7);
-      border-radius: 20px;
-      padding: 24px;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.07);
-      animation: fadeUp 0.4s ease both;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .update-card:nth-child(1) { animation-delay: 0.05s; }
-    .update-card:nth-child(2) { animation-delay: 0.10s; }
-    .update-card:nth-child(3) { animation-delay: 0.15s; }
-    .update-card:nth-child(4) { animation-delay: 0.20s; }
-    .update-card:nth-child(5) { animation-delay: 0.25s; }
-
-    .update-header {
-      display: flex; align-items: flex-start;
-      justify-content: space-between; gap: 12px; margin-bottom: 14px;
-    }
+    .update-card { border-radius: 20px; padding: 24px; }
+    .update-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
     .update-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 12px;
-      background: linear-gradient(135deg, rgba(245,198,208,0.5), rgba(158,197,217,0.5));
-      border: 1px solid rgba(255,255,255,0.7);
-      border-radius: 20px;
-      font-size: 10px; font-weight: 800;
-      text-transform: uppercase; letter-spacing: 1px;
-      color: #475569;
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
+      background: var(--svt-soft); border: 1px solid rgba(255,255,255,0.7); border-radius: 20px;
+      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #475569;
     }
-    .update-badge.latest {
-      background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
-      border-color: transparent; color: white;
-    }
-    .update-date {
-      font-size: 11px; color: #94a3b8; font-weight: 500;
-      white-space: nowrap; margin-top: 3px;
-    }
-    .update-title {
-      font-size: 18px; font-weight: 800;
-      color: #1e293b; margin-bottom: 14px; line-height: 1.3;
-    }
-    .update-bullets {
-      list-style: none; display: flex; flex-direction: column; gap: 8px;
-    }
-    .update-bullets li {
-      display: flex; align-items: flex-start; gap: 10px;
-      font-size: 13px; color: #475569; line-height: 1.5;
-    }
-    .bullet-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
-      flex-shrink: 0; margin-top: 7px;
-    }
-  
-    @keyframes svtRise { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
-    @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    .update-badge.latest { background: var(--svt-accent); border-color: transparent; color: white; }
+    .update-date { font-size: 11px; color: var(--faint); font-weight: 500; white-space: nowrap; margin-top: 3px; }
+    .update-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 14px; line-height: 1.3; }
+    .update-bullets { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .update-bullets li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #475569; line-height: 1.5; }
+    .bullet-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--svt-accent); flex-shrink: 0; margin-top: 7px; }
   </style>
 </head>
 <body>
@@ -139,7 +63,9 @@
     </div>
   </div>
 
-  <script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
     // ✏️ FILL IN YOUR FIREBASE CONFIG HERE
     const firebaseConfig = {
         apiKey: "AIzaSyBfpCJrqAul3meDQ764dUetTxQvf0_iOK8",
@@ -193,7 +119,7 @@
           ).join('');
 
           html += `
-            <div class="update-card" style="animation: svtRise .45s cubic-bezier(.2,.8,.3,1) both; animation-delay:${Math.min(i, 8) * 60}ms">
+            <div class="update-card" style="animation: svt-rise .45s var(--ease) backwards; animation-delay:${Math.min(i, 8) * 60}ms">
               <div class="update-header">
                 <div>
                   <div class="update-badge ${isLatest ? 'latest' : ''}">
