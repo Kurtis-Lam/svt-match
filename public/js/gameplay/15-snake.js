@@ -93,7 +93,7 @@ function preloadsnakeventeenAssets() {
   const urls = [];
   // All 1.jpg images of every idol (including kkuma if present)
   Object.keys(IDOL_IMAGES).forEach(idolKey => {
-    urls.push(`./imgs/${idolKey}/1.jpg`);
+    urls.push(`/imgs/${idolKey}/1.jpg`);
   });
   // Important: also preload a few food images (the gameplay uses idol 1.jpg as food)
   // Actually the food is already covered by others.
@@ -284,7 +284,7 @@ function placeSnakeFood() {
     x,
     y,
     idolKey: chosen.key,
-    imgSrc: `./imgs/${chosen.key}/1.jpg`
+    imgSrc: `/imgs/${chosen.key}/1.jpg`
   };
 }
 
@@ -346,7 +346,7 @@ function renderSnakeGrid() {
     cls[fi] = 'sn-cell sn-food';
     src[fi] = f.imgSrc;
   }
-  const bodySrc = `./imgs/${SNAKE_STATE.headIdolKey}/1.jpg`;
+  const bodySrc = `/imgs/${SNAKE_STATE.headIdolKey}/1.jpg`;
   const snake = SNAKE_STATE.snake;
   for (let k = 0; k < snake.length; k++) {
     const idx = snake[k].y * size + snake[k].x;
@@ -544,12 +544,12 @@ function openSnakeResultModal(coins, streakBonus, length, passedLevel = false) {
         </div>
         <div class="earn-row">
           <div class="label">Length × ${SNK.coinsPerLength}</div>
-          <div class="val">+${Number(coins).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+          <div class="val">+${Number(coins).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
         </div>
         ${streakBonus > 0 ? `` : ''}
         <div class="earn-row" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));border:none;">
           <div class="label font-black">Total</div>
-          <div class="val font-black">+${Number(total).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+          <div class="val font-black">+${Number(total).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
         </div>
         <div class="earn-row"><div class="label">Season XP</div><div class="val">+${Number(GAME_STATE.meta?.lastRunXpGained || 0).toLocaleString()} XP</div></div>
         <div class="grid grid-cols-2 gap-3">
@@ -635,7 +635,7 @@ async function finalizeSnakeBattle(length) {
     userId: b.fromUserId,
     username: b.fromUsername,
     displayName: b.fromDisplayName || b.fromUsername,
-    avatarSrc: './imgs/assets/default_avatar.png'
+    avatarSrc: '/imgs/assets/default_avatar.png'
   };
   // Log entry for myself
   const logId = `log_${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -667,7 +667,7 @@ async function finalizeSnakeBattle(length) {
     try {
       const oppSnap2 = await db.ref(`users/${b.fromUserId}/playerState`).once('value').catch(() => null);
       const oppPS2 = oppSnap2?.val() || {};
-      if (oppPS2.equippedIdolKey) oppMeta.avatarSrc = `./imgs/${oppPS2.equippedIdolKey}/1.jpg`;
+      if (oppPS2.equippedIdolKey) oppMeta.avatarSrc = `/imgs/${oppPS2.equippedIdolKey}/1.jpg`;
     } catch (e) {}
     // Build mirrored log entry for opponent
     const oppRef = db.ref(`users/${b.fromUserId}/playerState`);
