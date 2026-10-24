@@ -84,7 +84,10 @@
       }
       throw e;
     }
-    if (res.status >= 500 && res.status !== 501) {
+    // Never automatically replay a POST award/write after a server error: the
+    // first request may already have committed, and replaying can turn a success
+    // into an apparent duplicate-claim failure. Retrying GET reads is safe.
+    if (method === 'GET' && res.status >= 500 && res.status !== 501) {
       await new Promise((r) => setTimeout(r, 800));
       try { res = await attempt(false); } catch (e) {}
     }
