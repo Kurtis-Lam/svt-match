@@ -28,7 +28,7 @@ function buildSpotlightRevealSchedule(targetKey, gridCards, targetGridIdx, isKku
     const imgs = IDOL_IMAGES[card.key] || ['1.jpg'];
     const pool = imgs.filter(f => f !== '1.jpg');
     const imgFile = pool.length ? pool[Math.floor(Math.random() * pool.length)] : imgs[0];
-    const src = `./imgs/${card.key}/${imgFile}`;
+    const src = `/imgs/${card.key}/${imgFile}`;
     const showDuration = showDurationMin + Math.random() * (showDurationMax - showDurationMin);
     schedule.push({
       timeSec: currentTime,
@@ -74,7 +74,7 @@ function buildSpotlightBattleSpec() {
       cards.push({
         key: tKey,
         display: isKkuma ? 'Kkuma' : tDisplay,
-        src: (isKkuma ? './imgs/kkuma/' : './imgs/' + tKey + '/') + f,
+        src: (isKkuma ? '/imgs/kkuma/' : '/imgs/' + tKey + '/') + f,
         rarity: tRarity,
         isTarget: true,
         isKkuma
@@ -87,7 +87,7 @@ function buildSpotlightBattleSpec() {
       cards.push({
         key: k,
         display: idol?.display || k,
-        src: './imgs/' + k + '/' + f,
+        src: '/imgs/' + k + '/' + f,
         rarity: IDOL_RARITY[k] || 'rare',
         isTarget: false,
         isKkuma: false
@@ -117,7 +117,7 @@ function buildSnakeBattleSpec() {
     foodSchedule.push({
       appearAtSec: t,
       idolKey: foodIdol.key,
-      imgSrc: `./imgs/${foodIdol.key}/1.jpg`
+      imgSrc: `/imgs/${foodIdol.key}/1.jpg`
     });
   }
   return {
@@ -154,7 +154,7 @@ function preloadSpotlightImages() {
   if (_slImagesPreloaded) return;
   _slImagesPreloaded = true;
   const urls = [];
-  Object.keys(IDOL_IMAGES).forEach(key => (IDOL_IMAGES[key] || []).forEach(f => urls.push(`./imgs/${key}/${f}`)));
+  Object.keys(IDOL_IMAGES).forEach(key => (IDOL_IMAGES[key] || []).forEach(f => urls.push(`/imgs/${key}/${f}`)));
   lowPriorityPreload(urls);
 }
 
@@ -179,21 +179,21 @@ function openSpotlight(battleSpec) {
     tDisplay = useSpec.targetDisplay;
     tRarity = useSpec.targetRarity;
     const imgs = IDOL_IMAGES[tKey] || ['1.jpg'];
-    tImgSrc = './imgs/' + tKey + '/' + imgs[Math.floor(Math.random() * imgs.length)];
+    tImgSrc = '/imgs/' + tKey + '/' + imgs[Math.floor(Math.random() * imgs.length)];
     // will override grid cards later
   } else if (isKkuma) {
     tKey = 'kkuma';
     tDisplay = 'Kkuma';
     tRarity = 'kkuma';
     const imgs = IDOL_IMAGES.kkuma || ['1.jpg'];
-    tImgSrc = './imgs/kkuma/' + imgs[Math.floor(Math.random() * imgs.length)];
+    tImgSrc = '/imgs/kkuma/' + imgs[Math.floor(Math.random() * imgs.length)];
   } else {
     const idol = IDOLS[Math.floor(Math.random() * IDOLS.length)];
     tKey = idol.key;
     tDisplay = idol.display;
     tRarity = IDOL_RARITY[tKey] || 'rare';
     const imgs = IDOL_IMAGES[tKey] || ['1.jpg'];
-    tImgSrc = './imgs/' + tKey + '/' + imgs[Math.floor(Math.random() * imgs.length)];
+    tImgSrc = '/imgs/' + tKey + '/' + imgs[Math.floor(Math.random() * imgs.length)];
   }
   Object.assign(SPOTLIGHT_STATE, {
     targetKey: tKey,
@@ -244,7 +244,7 @@ function _buildSpotlightGrid(tKey, tRarity, isKkuma) {
       cards.push({
         key: tKey,
         display: isKkuma ? 'Kkuma' : (IDOLS.find(x => x.key === tKey)?.display || tKey),
-        src: (isKkuma ? './imgs/kkuma/' : './imgs/' + tKey + '/') + f,
+        src: (isKkuma ? '/imgs/kkuma/' : '/imgs/' + tKey + '/') + f,
         rarity: tRarity,
         isTarget: true,
         isKkuma
@@ -257,7 +257,7 @@ function _buildSpotlightGrid(tKey, tRarity, isKkuma) {
       cards.push({
         key: k,
         display: idol?.display || k,
-        src: './imgs/' + k + '/' + f,
+        src: '/imgs/' + k + '/' + f,
         rarity: IDOL_RARITY[k] || 'rare',
         isTarget: false,
         isKkuma: false
@@ -487,14 +487,14 @@ function _scheduleSlReveal() {
     idolKey = SPOTLIGHT_STATE.targetKey;
     display = SPOTLIGHT_STATE.targetDisplay;
     rarity = SPOTLIGHT_STATE.targetRarity;
-    src = (idolKey === 'kkuma' ? './imgs/kkuma/' : `./imgs/${idolKey}/`) + _slRandomImg(idolKey);
+    src = (idolKey === 'kkuma' ? '/imgs/kkuma/' : `/imgs/${idolKey}/`) + _slRandomImg(idolKey);
   } else {
     const nonTargetKeys = Object.keys(IDOL_IMAGES).filter(k => k !== 'kkuma' && k !== SPOTLIGHT_STATE.targetKey);
     idolKey = nonTargetKeys[Math.floor(Math.random() * nonTargetKeys.length)];
     const idol = IDOLS.find(x => x.key === idolKey);
     display = idol ? idol.display : idolKey;
     rarity = IDOL_RARITY[idolKey] || 'rare';
-    src = `./imgs/${idolKey}/` + _slRandomImg(idolKey);
+    src = `/imgs/${idolKey}/` + _slRandomImg(idolKey);
   }
   // Update the single card's content
   const fi = el.querySelector('.sl-card-front img');
@@ -753,7 +753,7 @@ function _openSlResultModal(kkumaBonus, streakBonusCoins, passedLevel = false) {
   const kRow = kkumaBonus ? `
     <div class="earn-row">
         <div class="label">🐾 Kkuma Bonus</div>
-        <div class="val">+5,000 <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val">+5,000 <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
   ` : '';
   const title = passedLevel ? '✅ Level Complete!' : '❌ Level Failed';
@@ -772,20 +772,20 @@ function _openSlResultModal(kkumaBonus, streakBonusCoins, passedLevel = false) {
     </div>
     <div class="earn-row">
         <div class="label">Earned (correct)</div>
-        <div class="val">+${Number(earned).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val">+${Number(earned).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row" style="color:#dc2626;">
         <div class="label">Penalty (wrong)</div>
-        <div class="val">-${Number(lost).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val">-${Number(lost).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row">
-        <div class="label"><img src="./imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Streak Bonus (${streakCount}×)</div>
-        <div class="val">${streakBonusCoins > 0 ? '+' + Number(streakBonusCoins).toLocaleString() : '0'} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="label"><img src="/imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Streak Bonus (${streakCount}×)</div>
+        <div class="val">${streakBonusCoins > 0 ? '+' + Number(streakBonusCoins).toLocaleString() : '0'} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     ${kRow}
     <div class="earn-row" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));border:none;">
         <div class="label font-black">Total earned</div>
-        <div class="val font-black">${total >= 0 ? '+' : ''}${Number(total).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="val font-black">${total >= 0 ? '+' : ''}${Number(total).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row"><div class="label">Season XP</div><div class="val">+${Number(SPOTLIGHT_STATE.seasonXpGained ?? GAME_STATE.meta?.lastRunXpGained ?? 0).toLocaleString()} XP</div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
@@ -926,14 +926,14 @@ async function finalizeSpotlightBattle(hits) {
     userId: b.fromUserId,
     username: b.fromUsername,
     displayName: b.fromDisplayName || b.fromUsername,
-    avatarSrc: './imgs/assets/default_avatar.png'
+    avatarSrc: '/imgs/assets/default_avatar.png'
   };
   // (Optional: try to load the opponent's actual avatar from DB)
   if (db && b.fromUserId) {
     try {
       const snap = await db.ref(`users/${b.fromUserId}/playerState`).once('value').catch(() => null);
       const ps = snap?.val() || null;
-      if (ps?.equippedIdolKey) oppMeta.avatarSrc = `./imgs/${ps.equippedIdolKey}/1.jpg`;
+      if (ps?.equippedIdolKey) oppMeta.avatarSrc = `/imgs/${ps.equippedIdolKey}/1.jpg`;
     } catch (e) {}
   }
   const logId = `log_${Date.now()}_${Math.random().toString(16).slice(2)}`;
