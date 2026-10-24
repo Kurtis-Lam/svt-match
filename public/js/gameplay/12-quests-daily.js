@@ -1,4 +1,4 @@
-// File: public/gameplay/js/12-quests-daily.js
+// File: public/js/gameplay/12-quests-daily.js
 // ── Quest stats read live from the save (used by the per-game tiered quests) ──
 const QUEST_STAT_GETTERS = {
   showtimeLevel: () => GAME_STATE.level || 0,
@@ -405,7 +405,19 @@ async function claimDailyQuest(id, el) {
   if (!res) { _claimingIds.delete(key); return; }
   it.claimed = true;
   try {
-    await _finishQuestClaim(Number(res.added) || 0, el);
+    const added = Number(res.added) || 0;
+    await _finishQuestClaim(added, el);
+    if (el && window.RewardPopups) {
+      RewardPopups.show({
+        type: 'quest',
+        title: def.title,
+        description: 'Daily quest completed. Your coins have been added.',
+        icon: '🪙',
+        amount: added,
+        rewardLabel: 'coins',
+        onAction: () => {}
+      });
+    }
   } catch (err) {
     it.claimed = false;
     console.error('[claimDailyQuest] failed, reverted:', err);
@@ -422,6 +434,7 @@ async function claimQuest(questId, questElForAnim) {
   const q = GAME_STATE.quests[idx];
   if (q.claimed || _claimingIds.has('q:' + questId)) return;
   if (!questIsDone(q)) return;
+  const claimedQuestTitle = questTitle(q);
   _claimingIds.add('q:' + questId);
   let ctx = null;
   if (q.type === "match_idol_tier") ctx = { kind: 'idol', idolKey: q.idolKey, tier: q.target };
@@ -464,6 +477,17 @@ async function claimQuest(questId, questElForAnim) {
       if (def && ti >= 0 && ti + 1 < def.tiers.length) GAME_STATE.quests[idx] = makeStatQuest(def, ti + 1);
     }
     await _finishQuestClaim(added, questElForAnim);
+    if (questElForAnim && window.RewardPopups) {
+      RewardPopups.show({
+        type: 'quest',
+        title: claimedQuestTitle,
+        description: 'Quest completed. Your coins have been added.',
+        icon: '🪙',
+        amount: added,
+        rewardLabel: 'coins',
+        onAction: () => {}
+      });
+    }
   } catch (_claimErr) {
     // Q-05 FIX: revert on failure
     q.claimed = false;
@@ -603,16 +627,35 @@ function closeWheelOverlay() {
 }
 
 function openDailyPrizeOverlay(prize) {
+  if (window.RewardPopups) {
+    RewardPopups.show({
+      type: 'dailyWheel',
+      title: 'Daily Draw Reward',
+      description: 'Your Daily Draw coins are ready to collect.',
+      icon: '🪙',
+      amount: Number(prize) || 0,
+      rewardLabel: 'coins',
+      actionLabel: 'Claim',
+      onAction: claimDailyPrize
+    });
+    return;
+  }
   const el = document.getElementById('dailyPrizeCoins');
-  el.textContent = String(prize);
+  if (el) el.textContent = String(prize);
   const overlay = document.getElementById('dailyPrizeOverlay');
-  overlay.classList.add('show');
-  overlay.setAttribute('aria-hidden', 'false');
+  if (overlay) {
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+  }
 }
 
 function closeDailyPrizeOverlay() {
-  document.getElementById('dailyPrizeOverlay').classList.remove('show');
-  document.getElementById('dailyPrizeOverlay').setAttribute('aria-hidden', 'true');
+  if (window.RewardPopups) RewardPopups.close();
+  const overlay = document.getElementById('dailyPrizeOverlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
 }
 
 async function spinDailyWheelFromOverlay() {
