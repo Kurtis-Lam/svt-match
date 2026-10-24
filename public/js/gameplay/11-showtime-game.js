@@ -28,14 +28,14 @@ function preloadShowtimeAssets() {
   Object.keys(IDOL_IMAGES).forEach(idolKey => {
     const files = IDOL_IMAGES[idolKey] || [];
     files.filter(f => f !== '1.jpg').forEach(f => {
-      urls.push(`./imgs/${idolKey}/${f}`);
+      urls.push(`/imgs/${idolKey}/${f}`);
     });
   });
   // Daily box background
-  urls.push('./imgs/boxes/background.jpg');
+  urls.push('/imgs/boxes/background.jpg');
   // 5 box images
   for (let i = 1; i <= 5; i++) {
-    urls.push(`./imgs/boxes/${i}.jpg`);
+    urls.push(`/imgs/boxes/${i}.jpg`);
   }
   lowPriorityPreload(urls);
   return Promise.resolve();
@@ -128,7 +128,7 @@ function makeCardData(idol, rarity, filename) {
     idolKey: idol.key,
     idolName: idol.display,
     rarity,
-    imgSrc: `./imgs/${idol.key}/${filename}`,
+    imgSrc: `/imgs/${idol.key}/${filename}`,
   };
 }
 
@@ -507,7 +507,7 @@ function showDailyBoxFullscreen() {
   // The upgrade animation will cosmetically progress to the final star.
   const animStartStar = 1;
   GAME_STATE.daily.box.star = animStartStar;
-  preloadImages(['./imgs/boxes/background.jpg', './imgs/boxes/1.jpg', './imgs/boxes/2.jpg', './imgs/boxes/3.jpg', './imgs/boxes/4.jpg', './imgs/boxes/5.jpg']);
+  preloadImages(['/imgs/boxes/background.jpg', '/imgs/boxes/1.jpg', '/imgs/boxes/2.jpg', '/imgs/boxes/3.jpg', '/imgs/boxes/4.jpg', '/imgs/boxes/5.jpg']);
   const fs = document.getElementById('dailyBoxFullscreen');
   const fsBg = document.getElementById('dailyBoxFsBg');
   const fsImg = document.getElementById('dailyBoxFsImg');
@@ -516,7 +516,7 @@ function showDailyBoxFullscreen() {
   const hint = document.getElementById('dailyBoxFsTapHint');
   const resultCenter = document.getElementById('dailyResultCenter');
   ensureDailyResetIfNeeded();
-  fsBg.style.backgroundImage = "url('./imgs/boxes/background.jpg')";
+  fsBg.style.backgroundImage = "url('/imgs/boxes/background.jpg')";
   fs.classList.add('show');
   fs.setAttribute('aria-hidden', 'false');
   resultCenter.classList.remove('show');
@@ -717,7 +717,7 @@ async function openProfileModal(userId) {
     p = {
       displayName: u.displayName || ps.displayName || u.username || 'Friend',
       username: u.username || ps.username || '',
-      avatarSrc: equippedKey ? `./imgs/${equippedKey}/1.jpg` : './imgs/assets/default_avatar.png',
+      avatarSrc: equippedKey ? `/imgs/${equippedKey}/1.jpg` : '/imgs/assets/default_avatar.png',
       favIdol: IDOLS.find(i => i.key === equippedKey)?.display || '—',
       marriedCount: marriedKeys.length,
       totalLoveLevel: marriedKeys.reduce((s, k) => s + ((ps.love || {})[k]?.level || 1), 0),
@@ -839,25 +839,25 @@ function resetLevelCompleteOverlayHTML() {
         </div>
         <div class="text-right">
         <p class="text-xs text-gray-500 font-bold">Total</p>
-        <p class="text-lg font-black text-gray-900">+<span id="lcTotal">0</span><img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></p>
+        <p class="text-lg font-black text-gray-900">+<span id="lcTotal">0</span><img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></p>
         </div>
     </div>
     </div>
     <div class="earn-row" id="lcBaseRow">
     <div class="label">Base</div>
-    <div class="val">+<span id="lcBase">100</span><img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+    <div class="val">+<span id="lcBase">100</span><img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row muted" id="lcStreakRow">
-    <div class="label" id="lcStreakLabel"><img src="./imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Bonus</div>
-    <div class="val" id="lcStreakVal">+<span id="lcBonus">0</span><img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+    <div class="label" id="lcStreakLabel"><img src="/imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Bonus</div>
+    <div class="val" id="lcStreakVal">+<span id="lcBonus">0</span><img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row muted hidden" id="lcKkumaRow">
     <div class="label">🐾 Kkuma Bonus</div>
-    <div class="val">+5000<img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+    <div class="val">+5000<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row muted hidden" id="lcIdolBonusRow">
     <div class="label">🎭 Idol Bonus</div>
-    <div class="val">+<span id="lcIdolBonus">0</span><img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+    <div class="val">+<span id="lcIdolBonus">0</span><img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row muted" id="lcXpRow"><div class="label">Season XP</div><div class="val">+<span id="lcSeasonXp">0</span> XP</div></div>
     <div class="grid grid-cols-2 gap-3 pt-2">
@@ -990,13 +990,13 @@ function openLevelCompleteOverlay({
     const streakLabel = document.getElementById('lcStreakLabel');
     const streakVal = document.getElementById('lcStreakVal');
     if (streakLostText) {
-      if (streakLabel) streakLabel.innerHTML = `<img src="./imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> ${streakLostText}`;
+      if (streakLabel) streakLabel.innerHTML = `<img src="/imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> ${streakLostText}`;
       if (streakVal) streakVal.textContent = '';
     } else {
       // Show streak multiplier like Spotlight
       const currentStreak = GAME_STATE.streak || 1;
-      if (streakLabel) streakLabel.innerHTML = `<img src="./imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Streak (${currentStreak}x)`;
-      if (streakVal) streakVal.innerHTML = `+<span id="lcBonus">${Number(streakBonus || 0).toLocaleString()}</span> <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
+      if (streakLabel) streakLabel.innerHTML = `<img src="/imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Streak (${currentStreak}x)`;
+      if (streakVal) streakVal.innerHTML = `+<span id="lcBonus">${Number(streakBonus || 0).toLocaleString()}</span> <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
     }
   }
   // Kkuma Logic
@@ -1004,7 +1004,7 @@ function openLevelCompleteOverlay({
     if (kkumaBonus > 0) {
       kkumaRow.classList.remove('hidden');
       const valDiv = kkumaRow.querySelector('.val');
-      if (valDiv) valDiv.innerHTML = `+${Number(kkumaBonus).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
+      if (valDiv) valDiv.innerHTML = `+${Number(kkumaBonus).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
     } else {
       kkumaRow.classList.add('hidden');
     }
