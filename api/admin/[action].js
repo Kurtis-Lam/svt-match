@@ -4,6 +4,7 @@ const routes = {
   user: require('../_lib/routes/admin/user'),
   'reset-password': require('../_lib/routes/admin/reset-password'),
   'update-player': require('../_lib/routes/admin/update-player'),
+  'edit-state': require('../_lib/routes/admin/edit-state'),
   raw: require('../_lib/routes/admin/raw'),
   account: require('../_lib/routes/admin/account')
 };
