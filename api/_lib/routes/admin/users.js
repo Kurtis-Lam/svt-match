@@ -20,6 +20,37 @@ module.exports = handler(['GET'], async (req, res) => {
   const view = (req.query && req.query.view) || 'search';
   const db = getAdmin().database();
 
+  if (view === 'earnings') {
+    const uid = req.query && typeof req.query.uid === 'string' ? req.query.uid : '';
+    if (!/^[A-Za-z0-9_-]{6,128}$/.test(uid)) throw httpError(400, 'Invalid uid');
+    const [earningSnap, changeSnap, logSnap] = await Promise.all([
+      db.ref(`adminPlayerHistory/${uid}/earningsHistory`).orderByChild('at').limitToLast(300).once('value'),
+      db.ref(`adminPlayerHistory/${uid}/adminChangeHistory`).orderByChild('at').limitToLast(500).once('value'),
+      db.ref('adminLogs').orderByChild('at').limitToLast(500).once('value')
+    ]);
+    const earnings = [];
+    earningSnap.forEach(child => earnings.push({ id: child.key, ...(child.val() || {}) }));
+    earnings.sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0));
+    const changes = [];
+    const knownChangeTimes = new Set();
+    changeSnap.forEach(child => {
+      const entry = { id: child.key, ...(child.val() || {}) };
+      changes.push(entry);
+      knownChangeTimes.add(`${entry.action || ''}:${Number(entry.at) || 0}`);
+    });
+    // Include legacy raw edits from the global log, while using the durable per-player
+    // history for normal structured edits so records do not disappear as global logs grow.
+    logSnap.forEach(child => {
+      const entry = child.val() || {};
+      if (!entry.detail || entry.detail.uid !== uid || !String(entry.action || '').startsWith('raw-')) return;
+      const signature = `${entry.action || ''}:${Number(entry.at) || 0}`;
+      if (knownChangeTimes.has(signature)) return;
+      changes.push({ id: child.key, ...entry });
+    });
+    changes.sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0));
+    return send(res, 200, { earnings, changes });
+  }
+
   if (view === 'logs') {
     const snap = await db.ref('adminLogs').orderByChild('at').limitToLast(100).once('value');
     const logs = [];
