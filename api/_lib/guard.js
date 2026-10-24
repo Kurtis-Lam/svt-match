@@ -225,7 +225,15 @@ function sanitizeSeason(oldVal, nextVal, guard, now) {
     sp = oSp + allowed;
   }
   w.sp = num(w.sp) + Math.max(0, sp - oSp);
+  const HK_MS = 8 * 60 * 60 * 1000;
+  const local = new Date(now + HK_MS);
+  const year = local.getUTCFullYear();
+  const monthIndex = local.getUTCMonth();
+  const currentSerial = year * 12 + monthIndex;
+  const anchorSerial = 2026 * 12;
   const out = {
+    seasonId: `s${year}-${String(monthIndex + 1).padStart(2, '0')}`,
+    seasonNumber: Math.max(1, currentSerial - anchorSerial + 1),
     sp,
     t: Math.max(0, Math.min(50, Math.floor(num(nextVal.t)))),
     n: String(nextVal.n || 'Carat').slice(0, 24),
