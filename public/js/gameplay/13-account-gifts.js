@@ -23,21 +23,21 @@ function ensureIdolPowerDefaults() {
 
 /* =========================
    SHOP IMAGE CONFIG (CLEANED)
-   Uses transparent PNGs from ./imgs/assets/shop_xxx.png
+   Uses transparent PNGs from /imgs/assets/shop_xxx.png
 ========================= */
 const SHOP_RING_PRICE = Number(GAME_CONFIG.shop.ringPrice || 100000);
 // Image mapping for shop items (ring + gifts)
 const SHOP_ITEM_IMAGES = {
-  ring: './imgs/assets/shop_ring.png',
-  card: './imgs/assets/shop_card.png',
-  magazine: './imgs/assets/shop_magazine.png',
-  album: './imgs/assets/shop_album.png',
-  bongbongie: './imgs/assets/shop_bongbongie.png',
-  lightstick: './imgs/assets/shop_lightstick.png'
+  ring: '/imgs/assets/shop_ring.png',
+  card: '/imgs/assets/shop_card.png',
+  magazine: '/imgs/assets/shop_magazine.png',
+  album: '/imgs/assets/shop_album.png',
+  bongbongie: '/imgs/assets/shop_bongbongie.png',
+  lightstick: '/imgs/assets/shop_lightstick.png'
 };
 
 function getGiftImagePath(gift) {
-  return SHOP_ITEM_IMAGES[gift.key] || `./imgs/assets/shop_${gift.key}.png`;
+  return SHOP_ITEM_IMAGES[gift.key] || `/imgs/assets/shop_${gift.key}.png`;
 }
 // Full-image thumbnail: transparent background, no borders, no icon fallbacks
 
@@ -109,7 +109,7 @@ function renderShopItems() {
   ringRow.onclick = () => openShopItemModal('ring', 'ring');
   ringRow.innerHTML = `
     <div class="shop-item-left min-w-0">
-      ${makeShopThumbHTML(SHOP_ITEM_IMAGES.ring || './imgs/assets/shop_ring.png')}
+      ${makeShopThumbHTML(SHOP_ITEM_IMAGES.ring || '/imgs/assets/shop_ring.png')}
       <div class="min-w-0">
         <div class="shop-item-title">Ring</div>
         <div class="shop-item-sub">Required to marry an idol.</div>
@@ -117,7 +117,7 @@ function renderShopItems() {
     </div>
     <div class="shop-item-right shop-item-cost-col">
       <div class="shop-item-cost-label">Price</div>
-      <div class="shop-item-cost-val">${ringPrice.toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+      <div class="shop-item-cost-val">${ringPrice.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
   `;
   host.appendChild(ringRow);
@@ -138,7 +138,7 @@ function renderShopItems() {
       </div>
       <div class="shop-item-right shop-item-cost-col">
         <div class="shop-item-cost-label">Price</div>
-        <div class="shop-item-cost-val">${giftPrice.toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+        <div class="shop-item-cost-val">${giftPrice.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
       </div>
     `;
     host.appendChild(row);
@@ -157,7 +157,7 @@ function updateOwnedGiftsSummary() {
         <div class="owned-gift-text text-xs font-semibold text-gray-900 leading-tight truncate" style="min-width:0;flex:1;">${name}</div>
         <span class="count font-extrabold text-sm text-gray-900">${count}</span>
       </div>`;
-  const ringCell = cell(SHOP_ITEM_IMAGES.ring || './imgs/assets/shop_ring.png', 'Ring', GAME_STATE.rings || 0);
+  const ringCell = cell(SHOP_ITEM_IMAGES.ring || '/imgs/assets/shop_ring.png', 'Ring', GAME_STATE.rings || 0);
   const giftCells = SHOP_GIFTS.map(g => cell(getGiftImagePath(g), g.name, GAME_STATE.giftsInventory[g.key] || 0)).join('');
   el.innerHTML = `<div class="owned-gifts-grid grid grid-cols-2 gap-2">${ringCell}${giftCells}</div>`;
 }
@@ -169,7 +169,7 @@ function shopQuantityMarkup(price, currency = 'coins') {
   __shopPurchaseQty = 1;
   __shopPurchasePrice = Number(price) || 0;
   __shopPurchaseCurrency = currency;
-  const unit = currency === 'diamonds' ? '💎' : '<img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">';
+  const unit = currency === 'diamonds' ? '<img src="/imgs/assets/diamond.png" style="width:1em;height:1em;vertical-align:middle;" alt="">' : '<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">';
   return `<div class="shop-quantity-control"><button type="button" onclick="adjustShopPurchaseQty(-1)" aria-label="Decrease quantity">−</button><input id="shopPurchaseQuantity" type="number" inputmode="numeric" min="1" max="99" value="1" oninput="syncShopPurchaseQty()" aria-label="Quantity to buy"><button type="button" onclick="adjustShopPurchaseQty(1)" aria-label="Increase quantity">+</button></div><div class="shop-purchase-total">Total: <b id="shopPurchaseTotal">${(Number(price) || 0).toLocaleString()} ${unit}</b></div>`;
 }
 function readShopPurchaseQty() {
@@ -188,7 +188,7 @@ function syncShopPurchaseQty() {
   const out = document.getElementById('shopPurchaseTotal');
   const qty = readShopPurchaseQty();
   if (!out) return;
-  const unit = __shopPurchaseCurrency === 'diamonds' ? '💎' : '<img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">';
+  const unit = __shopPurchaseCurrency === 'diamonds' ? '<img src="/imgs/assets/diamond.png" style="width:1em;height:1em;vertical-align:middle;" alt="">' : '<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">';
   out.innerHTML = `${(__shopPurchasePrice * qty).toLocaleString()} ${unit}`;
 }
 
@@ -199,14 +199,14 @@ function openShopItemModal(type, key) {
     openModal(modalTitle, `
       <div class="space-y-3">
         <div class="glass-card rounded-2xl p-4 shop-modal-item">
-          ${makeShopThumbHTML(SHOP_ITEM_IMAGES.ring || './imgs/assets/shop_ring.png')}
+          ${makeShopThumbHTML(SHOP_ITEM_IMAGES.ring || '/imgs/assets/shop_ring.png')}
           <div>
             <div class="font-extrabold text-gray-900">Ring</div>
             <div class="text-xs text-gray-600 font-bold">Required to marry an idol.</div>
           </div>
           <div class="shop-price-col">
             <div class="shop-item-cost-label">Price</div>
-            <div class="shop-item-cost-val">${price.toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+            <div class="shop-item-cost-val">${price.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
           </div>
         </div>
 
@@ -232,7 +232,7 @@ function openShopItemModal(type, key) {
         </div>
         <div class="shop-price-col">
           <div class="shop-item-cost-label">Price</div>
-          <div class="shop-item-cost-val">${g.price.toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+          <div class="shop-item-cost-val">${g.price.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
         </div>
       </div>
 
@@ -818,11 +818,11 @@ function showOfflineLoveRewardPopup(rewards, totalCoins) {
     return `
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;min-width:0;">
           <div style="width:88px;height:110px;border-radius:16px;overflow:hidden;border:2px solid rgba(255,255,255,0.7);box-shadow:0 12px 28px rgba(0,0,0,0.18);background:linear-gradient(135deg,${pair[0]},${pair[1]});">
-          <img src="./imgs/${r.idolKey}/1.jpg" alt="${idol?.display||r.idolKey}" style="width:100%;height:100%;object-fit:cover;display:block;"/>
+          <img src="/imgs/${r.idolKey}/1.jpg" alt="${idol?.display||r.idolKey}" style="width:100%;height:100%;object-fit:cover;display:block;"/>
           </div>
           <div style="font-weight:900;font-size:12px;color:#0f172a;text-align:center;">${idol?.display||r.idolKey}</div>
           <div style="font-size:11px;font-weight:800;color:#64748b;">Love Lv. ${r.loveLevel}</div>
-          <div style="font-weight:900;font-size:15px;color:#b45309;">+${r.coins.toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+          <div style="font-weight:900;font-size:15px;color:#b45309;">+${r.coins.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
       </div>
     `;
   }).join('');
