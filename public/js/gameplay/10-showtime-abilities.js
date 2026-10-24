@@ -178,7 +178,7 @@ function renderAbilitySelectList() {
     const idolName = IDOLS.find(i => i.key === a.ownerIdol)?.display || a.ownerIdol;
     const rar = IDOL_RARITY[a.ownerIdol] || "rare";
     const col = rarityDotColor(rar);
-    const img = `./imgs/${a.ownerIdol}/1.jpg`;
+    const img = `/imgs/${a.ownerIdol}/1.jpg`;
     const row = document.createElement('button');
     row.className = `glass-card rounded-2xl p-3 w/full text-left ${selected ? 'ring-2 ring-blue-500' : ''}`;
     row.onclick = () => toggleAbilitySelected(a.id);
@@ -363,7 +363,7 @@ function getAdjacentCards(cardEl) {
 
 function showTigerOnCard(cardEl, durationSec) {
   const tiger = document.createElement('img');
-  tiger.src = './imgs/assets/hoshi_tiger.png';
+  tiger.src = '/imgs/assets/hoshi_tiger.png';
   tiger.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:10;pointer-events:none;border-radius:inherit;';
   cardEl.style.position = 'relative';
   cardEl.appendChild(tiger);
@@ -828,7 +828,7 @@ function animateTigerLeap(fromCard, toCard, durationSec) {
   const toX = (tRect.left + tRect.right) / 2 - appRect.left - 24;
   const toY = (tRect.top + tRect.bottom) / 2 - appRect.top - 24;
   const tiger = document.createElement('img');
-  tiger.src = './imgs/assets/hoshi_tiger.png';
+  tiger.src = '/imgs/assets/hoshi_tiger.png';
   tiger.style.cssText = ['position:absolute', `left:${fromX}px`, `top:${fromY}px`, 'width:48px', 'height:48px', 'z-index:200', 'pointer-events:none', 'filter:drop-shadow(0 6px 12px rgba(0,0,0,0.35))', 'transition:none', 'will-change:left,top,transform', ].join(';');
   const fxLayer = document.getElementById('abilityFxLayer');
   fxLayer.appendChild(tiger);
@@ -897,7 +897,7 @@ function renderAbilityBar() {
   btnsHost.innerHTML = '';
   abilities.forEach(a => {
     const power = getIdolPower(a.ownerIdol);
-    const imgSrc = `./imgs/${a.ownerIdol}/1.jpg`;
+    const imgSrc = `/imgs/${a.ownerIdol}/1.jpg`;
     const idolName = IDOLS.find(i => i.key === a.ownerIdol)?.display || a.ownerIdol;
     const used = !!GAME_STATE.runtime.activeUses[a.id];
     const btn = document.createElement('button');
