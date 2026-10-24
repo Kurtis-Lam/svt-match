@@ -55,7 +55,7 @@ function renderAvatarsScreen(phase, rarityKey) {
                box-shadow:0 12px 28px rgba(0,0,0,0.10);text-align:left;
                display:flex;align-items:center;justify-content:space-between;">
         <span>${r.label}</span>
-        <span style="font-size:13px;opacity:0.75;display:flex;align-items:center;gap:3px;">${r.price.toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></span>
+        <span style="font-size:13px;opacity:0.75;display:flex;align-items:center;gap:3px;">${r.price.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></span>
       </button>
     `).join('') + `</div>`;
     return;
@@ -87,12 +87,12 @@ function renderAvatarsScreen(phase, rarityKey) {
         align-items:center;gap:6px;
       `;
       card.innerHTML = `
-        <img src="./imgs/assets/avatars/${fullKey}" alt="${label}"
+        <img src="/imgs/assets/avatars/${fullKey}" alt="${label}"
           style="width:100%;aspect-ratio:1;border-radius:12px;object-fit:cover;border:2px solid rgba(255,255,255,0.6);"
-          onerror="this.src='${'./imgs/assets/default_avatar.png'}'"/>
+          onerror="this.src='${'/imgs/assets/default_avatar.png'}'"/>
         <div style="font-size:10px;font-weight:800;color:#0f172a;text-align:center;line-height:1.1;">${label}</div>
         <div style="font-size:9px;font-weight:900;color:${equipped?'#1d4ed8':owned?'#16a34a':'#64748b'};">
-          ${equipped ? '✓ Selected' : owned ? 'Owned' : rarity.price.toLocaleString()+' <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">'}
+          ${equipped ? '✓ Selected' : owned ? 'Owned' : rarity.price.toLocaleString()+' <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">'}
         </div>
       `;
       card.onclick = () => {
@@ -115,11 +115,11 @@ function renderAvatarsScreen(phase, rarityKey) {
 function confirmAvatarPurchase(fullKey, label, rarity) {
   openModal('Buy Avatar?', `
     <div class="glass-card rounded-2xl p-4 text-center">
-      <img src="./imgs/assets/avatars/${fullKey}" alt="${label}"
+      <img src="/imgs/assets/avatars/${fullKey}" alt="${label}"
         style="width:100px;height:100px;border-radius:18px;object-fit:cover;margin:0 auto 10px;display:block;border:2px solid rgba(0,0,0,0.08);"
-        onerror="this.src='${'./imgs/assets/default_avatar.png'}'"/>
+        onerror="this.src='${'/imgs/assets/default_avatar.png'}'"/>
       <p style="font-weight:900;color:#0f172a;">${label}</p>
-      <p style="font-size:12px;color:#64748b;font-weight:700;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:4px;">${rarity.price.toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></p>
+      <p style="font-size:12px;color:#64748b;font-weight:700;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:4px;">${rarity.price.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></p>
     </div>
     <div class="grid grid-cols-2 gap-3 pt-2">
       <button class="btn-confirm-no" onclick="closeModal()">Cancel</button>
@@ -188,7 +188,7 @@ function renderShopLanding() {
     <button class="hub-action-card rounded-2xl p-5 flex items-center gap-4 w-full"
         onclick="openShopIdolGifts()">
         <div class="hub-action-icon-wrap" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));overflow:hidden;">
-        <img alt="Idol Gifts" class="hub-action-icon" src="./imgs/assets/shop_idolgifts.png" style="object-fit:contain;"/>
+        <img alt="Idol Gifts" class="hub-action-icon" src="/imgs/assets/shop_idolgifts.png" style="object-fit:contain;"/>
         </div>
         <div class="text-left min-w-0">
         <p class="font-bold text-gray-800">Idol Gifts</p>
@@ -200,7 +200,7 @@ function renderShopLanding() {
     <button class="hub-action-card rounded-2xl p-5 flex items-center gap-4 w-full"
         onclick="openShopAvatars()">
         <div class="hub-action-icon-wrap" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));overflow:hidden;">
-        <img alt="Avatars" class="hub-action-icon" src="./imgs/assets/shop_avatars.png" style="object-fit:contain;"/>
+        <img alt="Avatars" class="hub-action-icon" src="/imgs/assets/shop_avatars.png" style="object-fit:contain;"/>
         </div>
         <div class="text-left min-w-0">
         <p class="font-bold text-gray-800">Avatars</p>
@@ -210,7 +210,7 @@ function renderShopLanding() {
     </button>
 
     <button class="hub-action-card rounded-2xl p-5 flex items-center gap-4 w-full" onclick="openShopDiamonds()">
-        <div class="hub-action-icon-wrap" style="background:linear-gradient(135deg,#8b5cf6,#38bdf8);"><span style="font-size:26px">💎</span></div>
+        <div class="hub-action-icon-wrap" style="background:linear-gradient(135deg,#8b5cf6,#38bdf8);"><img src="/imgs/assets/diamond.png" alt="" style="width:30px;height:30px;object-fit:contain;"></div>
         <div class="text-left min-w-0"><p class="font-bold text-gray-800">Diamonds</p><p class="text-xs text-gray-500">Buy premium currency · ${Number(GAME_CONFIG.shop.diamondPriceCoins || 1000).toLocaleString()} coins each</p></div>
         <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
     </button>
@@ -241,8 +241,8 @@ function openShopDiamonds() {
   const area = document.getElementById('shopScrollArea');
   const price = Number(GAME_CONFIG.shop.diamondPriceCoins || 1000);
   area.innerHTML = `<div class="glass-card rounded-2xl p-4 shop-currency-page">
-    <div class="flex items-center justify-between"><div><p class="text-lg font-black text-gray-900">💎 Diamonds</p><p class="text-xs text-gray-500 font-bold">Premium currency for idols and frames</p></div><div class="shop-diamond-balance">Balance: <b>${Number(GAME_STATE.diamonds || 0).toLocaleString()} 💎</b></div></div>
-    <div class="glass-card rounded-2xl p-4 mt-4"><div class="text-center"><div style="font-size:44px">💎</div><b class="text-gray-900">1 diamond</b><p class="text-sm text-gray-500 mt-1">${price.toLocaleString()} coins each</p><p class="text-xs text-gray-500 mt-1">Diamond pricing is intentionally expensive. Idol prices use the separate 500-coin conversion configured in config.js.</p></div>
+    <div class="flex items-center justify-between"><div><p class="text-lg font-black text-gray-900"><img src="/imgs/assets/diamond.png" alt="" style="width:1em;height:1em;vertical-align:middle;"> Diamonds</p><p class="text-xs text-gray-500 font-bold">Premium currency for idols and frames</p></div><div class="shop-diamond-balance">Balance: <b>${Number(GAME_STATE.diamonds || 0).toLocaleString()} <img src="/imgs/assets/diamond.png" alt="" style="width:1em;height:1em;vertical-align:middle;"></b></div></div>
+    <div class="glass-card rounded-2xl p-4 mt-4"><div class="text-center"><div><img src="/imgs/assets/diamond.png" alt="Diamond" style="width:44px;height:44px;object-fit:contain;"></div><b class="text-gray-900">1 diamond</b><p class="text-sm text-gray-500 mt-1">${price.toLocaleString()} coins each</p><p class="text-xs text-gray-500 mt-1">Diamond pricing is intentionally expensive. Idol prices use the separate 500-coin conversion configured in config.js.</p></div>
       <div class="shop-quantity-control"><button type="button" onclick="adjustDiamondQuantity(-1)" aria-label="Remove diamond">−</button><input id="diamondQuantity" inputmode="numeric" type="number" min="1" max="100000" value="1" oninput="syncDiamondPurchaseQuote()" aria-label="Quantity to buy"/><button type="button" onclick="adjustDiamondQuantity(1)" aria-label="Add diamond">+</button></div>
       <div class="shop-purchase-total">Total: <b id="diamondPurchaseTotal">${price.toLocaleString()} coins</b></div>
       <button class="btn-theme black-text w-full mt-3" onclick="buyDiamonds()">Buy Diamonds</button>
@@ -288,15 +288,15 @@ function openShopFrames() {
   const area = document.getElementById('shopScrollArea');
   const frames = Array.isArray(GAME_CONFIG.shop.frames) ? GAME_CONFIG.shop.frames : [];
   const ownedIdols = IDOLS.filter(idol => isIdolOwned(idol.key));
-  const instructions = `<div class="ss-card"><b>Adding your own frames</b><p class="mt-2 text-sm">Put each transparent PNG in <code>public/imgs/assets/frames/</code>, then add an entry to <code>GAME_CONFIG.shop.frames</code> in <code>public/js/gameplay/config.js</code> with <code>key</code>, <code>name</code>, <code>priceDiamonds</code>, <code>image</code>, and optional CSS <code>border</code>. Example: <code>{ key: 'rose', name: 'Rose Frame', priceDiamonds: 4, image: './imgs/assets/frames/rose.png', border: 'linear-gradient(135deg,#fb7185,#fbbf24)' }</code>. Run <code>node tools/stamp.mjs</code> after changing config or assets.</p></div>`;
-  area.innerHTML = `<div class="space-y-3"><div class="glass-card rounded-2xl p-4"><div class="flex items-center justify-between"><div><p class="text-lg font-black text-gray-900">Idol Frames</p><p class="text-xs text-gray-500 font-bold">Buy with diamonds and apply to any owned idol card</p></div><b>💎 ${Number(GAME_STATE.diamonds || 0).toLocaleString()}</b></div></div>
+  const instructions = `<div class="ss-card"><b>Adding your own frames</b><p class="mt-2 text-sm">Put each transparent PNG in <code>public/imgs/assets/frames/</code>, then add an entry to <code>GAME_CONFIG.shop.frames</code> in <code>public/js/gameplay/config.js</code> with <code>key</code>, <code>name</code>, <code>priceDiamonds</code>, <code>image</code>, and optional CSS <code>border</code>. Example: <code>{ key: 'rose', name: 'Rose Frame', priceDiamonds: 4, image: '/imgs/assets/frames/rose.png', border: 'linear-gradient(135deg,#fb7185,#fbbf24)' }</code>. Run <code>node tools/stamp.mjs</code> after changing config or assets.</p></div>`;
+  area.innerHTML = `<div class="space-y-3"><div class="glass-card rounded-2xl p-4"><div class="flex items-center justify-between"><div><p class="text-lg font-black text-gray-900">Idol Frames</p><p class="text-xs text-gray-500 font-bold">Buy with diamonds and apply to any owned idol card</p></div><b><img src="/imgs/assets/diamond.png" alt="" style="width:1em;height:1em;vertical-align:middle;"> ${Number(GAME_STATE.diamonds || 0).toLocaleString()}</b></div></div>
   ${frames.length ? frames.map(frame => {
     const own = !!GAME_STATE.ownedFrames?.[frame.key];
     const assigned = IDOLS.find(i => GAME_STATE.idolFrameAssignments?.[i.key] === frame.key)?.key || '';
     const preview = frame.image ? `<img class="shop-frame-preview-img" src="${escapeHtml(frame.image)}" alt="${escapeHtml(frame.name)}" onerror="this.style.display='none'"/>` : '';
     const fallback = `<span class="shop-frame-preview-fallback" style="--frame-border:${String(frame.border || 'linear-gradient(135deg,#fbbf24,#c084fc)')}"></span>`;
     const options = ownedIdols.map(idol => `<option value="${idol.key}" ${assigned === idol.key ? 'selected' : ''}>${escapeHtml(idol.display)}</option>`).join('');
-    return `<div class="glass-card rounded-2xl p-4 shop-frame-card"><div class="shop-frame-preview">${fallback}${preview}</div><div class="shop-frame-info"><b>${escapeHtml(frame.name || frame.key)}</b><div class="text-xs text-gray-500 mt-1">${own ? 'Owned' : `${Number(frame.priceDiamonds || 0).toLocaleString()} 💎`}</div>${own ? `<div class="shop-frame-apply"><select id="frameTarget_${escapeHtml(frame.key)}"><option value="none">Remove from all idols</option>${options}</select><button class="btn-soft-sm" onclick="applyFrameToIdol('${escapeHtml(frame.key)}')">Apply</button></div>` : `<button class="btn-theme black-text mt-2" onclick="buyIdolFrame('${escapeHtml(frame.key)}')">Buy for ${Number(frame.priceDiamonds || 0).toLocaleString()} 💎</button>`}</div></div>`;
+    return `<div class="glass-card rounded-2xl p-4 shop-frame-card"><div class="shop-frame-preview">${fallback}${preview}</div><div class="shop-frame-info"><b>${escapeHtml(frame.name || frame.key)}</b><div class="text-xs text-gray-500 mt-1">${own ? 'Owned' : `${Number(frame.priceDiamonds || 0).toLocaleString()} <img src="/imgs/assets/diamond.png" alt="" style="width:1em;height:1em;vertical-align:middle;">`}</div>${own ? `<div class="shop-frame-apply"><select id="frameTarget_${escapeHtml(frame.key)}"><option value="none">Remove from all idols</option>${options}</select><button class="btn-soft-sm" onclick="applyFrameToIdol('${escapeHtml(frame.key)}')">Apply</button></div>` : `<button class="btn-theme black-text mt-2" onclick="buyIdolFrame('${escapeHtml(frame.key)}')">Buy for ${Number(frame.priceDiamonds || 0).toLocaleString()} <img src="/imgs/assets/diamond.png" alt="" style="width:1em;height:1em;vertical-align:middle;"></button>`}</div></div>`;
   }).join('') : `<div class="glass-card rounded-2xl p-4 text-center"><div style="font-size:36px">🖼️</div><b class="text-gray-900">No frames configured yet</b><p class="text-sm text-gray-500 mt-2">Add your frame art later using the setup guide below. Frame prices are configured in diamonds.</p></div>`}
   ${instructions}</div>`;
 }
@@ -305,7 +305,7 @@ async function buyIdolFrame(frameKey) {
   const frame = (GAME_CONFIG.shop.frames || []).find(f => f.key === frameKey);
   if (!frame || GAME_STATE.ownedFrames?.[frameKey]) { showToast('Frame is unavailable or already owned', 'info'); return; }
   const cost = Math.max(0, Math.floor(Number(frame.priceDiamonds) || 0));
-  if (GAME_STATE.diamonds < cost) { showToast(`Not enough diamonds. Need ${cost.toLocaleString()} 💎`, 'error'); return; }
+  if (GAME_STATE.diamonds < cost) { showToast(`Not enough diamonds. Need ${cost.toLocaleString()} diamonds`, 'error'); return; }
   GAME_STATE.diamonds -= cost;
   GAME_STATE.ownedFrames ||= {};
   GAME_STATE.ownedFrames[frameKey] = true;
@@ -347,8 +347,8 @@ function openShopProfileCards(tab) {
       </div>
       <div style="display:flex;align-items:center;gap:5px;margin-top:10px;font-size:12px;font-weight:800;color:#0f172a;">
         Balance: <span id="profileShopCoins">${GAME_STATE.coins.toLocaleString()}</span>
-        <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">
-        <span style="margin-left:10px;">💎 <span id="profileShopDiamonds">${Number(GAME_STATE.diamonds || 0).toLocaleString()}</span></span>
+        <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">
+        <span style="margin-left:10px;"><img src="/imgs/assets/diamond.png" alt="" style="width:1em;height:1em;vertical-align:middle;"> <span id="profileShopDiamonds">${Number(GAME_STATE.diamonds || 0).toLocaleString()}</span></span>
       </div>
       <div class="mt-3" id="profileShopGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;"></div>
     </div>
@@ -385,7 +385,7 @@ function renderProfileShopGrid() {
         <div style="font-size:10px;font-weight:800;color:#0f172a;text-align:center;line-height:1.1;">${bg.label}</div>
         <div style="font-size:9px;font-weight:900;color:${equipped ? '#1d4ed8' : owned ? '#16a34a' : '#64748b'};display:flex;align-items:center;gap:3px;">
           ${equipped ? '✓ Equipped' : owned ? 'Owned — tap to equip' : bg.price.toLocaleString() + ' '}
-          ${(!equipped && !owned) ? '<img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">' : ''}
+          ${(!equipped && !owned) ? '<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">' : ''}
         </div>
       `;
       card.onclick = () => {
@@ -415,7 +415,7 @@ function renderProfileShopGrid() {
         <div style="font-size:12px;font-weight:900;color:#0f172a;text-align:center;line-height:1.2;">${t.label}</div>
         <div style="font-size:9px;font-weight:900;color:${equipped ? '#1d4ed8' : owned ? '#16a34a' : '#64748b'};display:flex;align-items:center;gap:3px;">
           ${equipped ? '✓ Equipped' : owned ? 'Owned — tap to equip' : t.price.toLocaleString() + ' '}
-          ${(!equipped && !owned) ? '<img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">' : ''}
+          ${(!equipped && !owned) ? '<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">' : ''}
         </div>
       `;
       card.onclick = () => {
@@ -440,7 +440,7 @@ function confirmProfileCosmeticPurchase(kind, item) {
         ? `<div style="width:100px;height:100px;border-radius:18px;margin:0 auto 10px;background:${item.css};"></div>`
         : ''}
       <p style="font-weight:900;color:#0f172a;">${item.label}</p>
-      <p style="font-size:12px;color:#64748b;font-weight:700;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:4px;">${item.price.toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></p>
+      <p style="font-size:12px;color:#64748b;font-weight:700;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:4px;">${item.price.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></p>
     </div>
     <div class="grid grid-cols-2 gap-3 pt-2">
       <button class="btn-confirm-no" onclick="closeModal()">Cancel</button>
@@ -619,7 +619,7 @@ function makeIdolCard(idol, owned) {
   const rarity = IDOL_RARITY[idol.key] || "rare";
   const cost = idolCost(idol.key);
   const wrap = document.createElement('div');
-  const imgSrc = `./imgs/${idol.key}/1.jpg`;
+  const imgSrc = `/imgs/${idol.key}/1.jpg`;
   const pair = IDOL_THEME[idol.key] || ["#f5c6d0", "#9ec5d9"];
   const [t1, t2] = pair;
   wrap.className = `idol-card themed ${owned ? '' : 'idol-locked'}`;
@@ -774,7 +774,7 @@ function openIdolDetailsModal(idolKey) {
   const owned = isIdolOwned(idolKey);
   const rarity = IDOL_RARITY[idolKey] || "rare";
   const rarityColor = rarityDotColor(rarity);
-  const imgSrc = `./imgs/${idolKey}/1.jpg`;
+  const imgSrc = `/imgs/${idolKey}/1.jpg`;
   const power = getIdolPower(idolKey);
   const nextCost = nextPowerUpgradeCost(power);
   const ability = getAbilityForIdol(idolKey);
@@ -812,7 +812,7 @@ function openIdolDetailsModal(idolKey) {
     <button class="btn-theme black-text" onclick="upgradeIdolPower('${idolKey}')">
       <div class="flex items-center justify-between">
         <span>Upgrade to ${power+1}</span>
-        <span class="font-black">${Number(nextCost).toLocaleString()} <img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></span>
+        <span class="font-black">${Number(nextCost).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></span>
       </div>
     </button>
   `) : '';
@@ -834,7 +834,7 @@ function openIdolDetailsModal(idolKey) {
       <button class="btn-theme black-text w-full" onclick="attemptBuyIdol('${idolKey}', this)">
         <div class="flex items-center justify-between">
           <span>Buy</span>
-          <span class="font-black">${cost.toLocaleString()} 💎</span>
+          <span class="font-black">${cost.toLocaleString()} <img src="/imgs/assets/diamond.png" alt="" style="width:1em;height:1em;vertical-align:middle;"></span>
         </div>
       </button>
     `;
@@ -963,11 +963,11 @@ async function attemptBuyIdol(idolKey, sourceBtnEl) {
   if (isIdolOwned(idolKey)) { showToast('You already own this idol', 'info'); return; }
   const rarity = IDOL_RARITY[idolKey] || 'rare';
   const cost = Number(IDOL_SHOP_COST[rarity] ?? 0);
-  if (GAME_STATE.diamonds < cost) { showToast(`Not enough diamonds. Need ${cost.toLocaleString()} 💎`, 'error'); return; }
+  if (GAME_STATE.diamonds < cost) { showToast(`Not enough diamonds. Need ${cost.toLocaleString()} diamonds`, 'error'); return; }
   const idol = IDOLS.find(i => i.key === idolKey);
   confirmPurchaseModal({
     title: 'Confirm Purchase',
-    message: `Buy ${idol?.display || idolKey} for ${cost.toLocaleString()} 💎? Diamonds are premium currency.`,
+    message: `Buy ${idol?.display || idolKey} for ${cost.toLocaleString()} diamonds? Diamonds are premium currency.`,
     onYes: async () => {
       if (isIdolOwned(idolKey)) { showToast('You already own this idol', 'info'); return; }
       if (GAME_STATE.diamonds < cost) { showToast('Not enough diamonds', 'error'); return; }
