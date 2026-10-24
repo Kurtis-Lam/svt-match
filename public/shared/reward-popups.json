@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "defaults": {
+    "actionLabel": "Continue",
+    "closeLabel": "Close",
+    "eyebrow": "REWARD",
+    "icon": "🎁"
+  },
+  "types": {
+    "dailyWheel": {
+      "title": "Daily Draw Reward",
+      "eyebrow": "DAILY DRAW",
+      "icon": "🪙",
+      "description": "Your Daily Draw coins are ready to collect.",
+      "actionLabel": "Claim",
+      "variant": "reward"
+    },
+    "svtPass": {
+      "title": "SVT Pass Rewards",
+      "eyebrow": "SVT PASS",
+      "icon": "🎁",
+      "description": "Scroll through the season and claim each unlocked level.",
+      "actionLabel": "Close",
+      "variant": "track"
+    },
+    "svtPassMission": {
+      "title": "Mission Reward",
+      "eyebrow": "SVT PASS MISSION",
+      "icon": "⭐",
+      "description": "Season XP added to your pass.",
+      "actionLabel": "Continue",
+      "variant": "reward"
+    },
+    "quest": {
+      "title": "Quest Reward",
+      "eyebrow": "QUEST COMPLETE",
+      "icon": "⭐",
+      "description": "You have claimed the quest reward.",
+      "actionLabel": "Continue",
+      "variant": "reward"
+    }
+  }
+}
