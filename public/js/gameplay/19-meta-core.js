@@ -1,4 +1,4 @@
-// File: public/gameplay/js/19-meta-core.js
+// File: public/js/gameplay/19-meta-core.js
 /* ──────────────────────────────────────────────────────────────────────────
    META LOOP — logic
    State lives in GAME_STATE.meta (one additive key in playerState):
@@ -14,18 +14,22 @@ const Meta = (() => {
   const D = META;
   const MAXLV = D.MASTERY_XP.length;
   const state = () => GAME_STATE.meta;
+  let pendingSeasonMetaSave = false;
 
-  // ── Season clock (configurable-duration seasons, HKT midnight boundary) ──
+  // ── Calendar-month season clock; month boundaries use Hong Kong time ──
   function seasonInfo(now = Date.now()) {
     const HK = 8 * 3600e3;
-    const day = Math.floor((now + HK) / 86400e3);
-    const durationDays = Math.max(7, Math.floor(Number(GAME_CONFIG.season?.durationDays) || 28));
-    const elapsedDays = day - D.SEASON_ANCHOR_DAY;
-    const index = Math.max(0, Math.floor(elapsedDays / durationDays));
-    const startDay = D.SEASON_ANCHOR_DAY + index * durationDays;
-    const num = index + 1;
-    const startMs = startDay * 86400e3 - HK;
-    return { id: 's' + startDay, num, startMs, endMs: startMs + durationDays * 86400e3 };
+    const local = new Date(now + HK);
+    const year = local.getUTCFullYear();
+    const monthIndex = local.getUTCMonth();
+    const configStart = GAME_CONFIG.season?.startsOn || [2026, 1, 1];
+    const anchorSerial = Number(configStart[0]) * 12 + Number(configStart[1]) - 1;
+    const currentSerial = year * 12 + monthIndex;
+    const num = Math.max(1, currentSerial - anchorSerial + 1);
+    const monthKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+    const startMs = Date.UTC(year, monthIndex, 1) - HK;
+    const endMs = Date.UTC(year, monthIndex + 1, 1) - HK;
+    return { id: `s${monthKey}`, monthKey, num, startMs, endMs };
   }
 
   function fmtLeft(ms) {
@@ -37,7 +41,8 @@ const Meta = (() => {
   // ── State normalisation (safe to call any time, never grants rewards) ─────
   function freshSeason(info) {
     return {
-      id: info.id, num: info.num, sp: 0, claimed: {}, counted: {}, boxes: 0,
+      id: info.id, num: info.num, monthKey: info.monthKey, startMs: info.startMs, endMs: info.endMs,
+      sp: 0, claimed: {}, counted: {}, boxes: 0,
       goals: { runs: 0, wins: 0, passes: {}, claimed: {} }, day: { key: '', runs: 0 },
     };
   }
@@ -49,6 +54,13 @@ const Meta = (() => {
     if (!g.mastery || typeof g.mastery !== 'object') g.mastery = {};
     if (!g.season || typeof g.season !== 'object' || !g.season.id) g.season = freshSeason(seasonInfo());
     const s = g.season;
+    const activeInfo = seasonInfo();
+    let seasonMetaChanged = false;
+    if (s.id === activeInfo.id) {
+      for (const [key, value] of Object.entries({ num: activeInfo.num, monthKey: activeInfo.monthKey, startMs: activeInfo.startMs, endMs: activeInfo.endMs })) {
+        if (s[key] !== value) { s[key] = value; seasonMetaChanged = true; }
+      }
+    }
     s.sp = Number(s.sp) || 0;
     s.claimed ||= {}; s.counted ||= {};
     s.boxes = Math.max(0, Number(s.boxes) || 0);
@@ -58,6 +70,7 @@ const Meta = (() => {
     s.goals.passes ||= {}; s.goals.claimed ||= {};
     s.day ||= { key: '', runs: 0 };
     if (!g.seeded) seedFromLegacy();
+    if (seasonMetaChanged) pendingSeasonMetaSave = true;
     return g;
   }
 
@@ -73,7 +86,8 @@ const Meta = (() => {
     g.seeded = true;
   }
 
-  function persist() { try { savePlayerState(); } catch (e) { console.warn('[Meta] save failed', e); } }
+  function persist() { pendingSeasonMetaSave = false; try { savePlayerState(); } catch (e) { console.warn('[Meta] save failed', e); } }
+  function flushPendingSeasonMeta() { if (pendingSeasonMetaSave) persist(); }
   const idolName = k => (IDOLS.find(i => i.key === k) || {}).display || k;
 
   // ── Idol Mastery ──────────────────────────────────────────────────────────
@@ -168,28 +182,21 @@ const Meta = (() => {
     return def.sp;
   }
 
-  // ── Season rollover: unclaimed tiers are auto-paid so nothing is ever lost ─
+  // ── Month rollover: rewards are never claimed automatically ──────────────
   function tick() {
     ensure();
     const info = seasonInfo(), g = state(), s = g.season;
     if (s.id === info.id) return false;
     const reached = tierOf(s.sp);
-    let autoCoins = 0, autoRings = 0, autoDiamonds = 0, autoBoxes = 0;
-    for (let i = 0; i < reached; i++) {
-      if (s.claimed['t' + i]) continue;
-      claimAwardSafe('season', { tier: i, prev: true }, true).then(() => { try { renderHub(); } catch (e) {} });
-      const r = grantReward(D.TIERS[i].reward, true);
-      autoCoins += r.coins; autoRings += r.rings; autoDiamonds += r.diamonds; autoBoxes += r.boxes;
-    }
-    g.last = { id: s.id, num: s.num, sp: s.sp, tier: reached, autoCoins, autoRings, autoDiamonds, autoBoxes };
+    g.last = {
+      id: s.id, num: Number(s.num) || 0, monthKey: s.monthKey || '', sp: s.sp,
+      tier: reached, claimed: { ...(s.claimed || {}) }, endedAt: info.startMs,
+    };
     const nextSeason = freshSeason(info);
-    nextSeason.boxes = Math.max(0, Number(s.boxes) || 0) + autoBoxes;
+    nextSeason.boxes = Math.max(0, Number(s.boxes) || 0);
     g.season = nextSeason;
     persist();
-    try {
-      const extra = (autoCoins || autoRings || autoDiamonds || autoBoxes) ? ` Auto-claimed ${autoCoins ? '+' + autoCoins.toLocaleString() + ' coins' : ''}${autoRings ? ' +' + autoRings + ' rings' : ''}${autoDiamonds ? ' +' + autoDiamonds + ' diamonds' : ''}${autoBoxes ? ` +${autoBoxes} SVT Boxes` : ''}.` : '';
-      showToast(`Season ${g.last.num} ended at ${tierName(reached)}.${extra} Season ${info.num} begins!`, 'info');
-    } catch (e) {}
+    try { showToast(`Season ${g.last.num} ended. Season ${info.num} begins! Unclaimed rewards were not auto-claimed.`, 'info'); } catch (e) {}
     return true;
   }
   const tierName = n => n <= 0 ? 'Level 1' : (D.TIERS[n - 1]?.name || `Level ${Math.min(D.TIERS.length, n)}`);
@@ -271,7 +278,7 @@ const Meta = (() => {
   function afterRemoteApply() { ensure(); syncBattles(); try { Meta.ui && Meta.ui.refresh(); } catch (e) {} }
 
   return {
-    seasonInfo, fmtLeft, ensure, tick, syncBattles, onRunComplete, afterRemoteApply,
+    seasonInfo, fmtLeft, ensure, tick, syncBattles, onRunComplete, afterRemoteApply, flushPendingSeasonMeta,
     levelOf, xpOf, progress, fandomPower, coinBonusPct, leadKey, leadSpBonus, ownedKeys, idolName,
     tierOf, tierName, claimTier, claimGoal, claimableTiers, claimableGoals, claimableCount,
     goalValue, goalDone, state, addXp, addSP, grantReward, ui: null,
