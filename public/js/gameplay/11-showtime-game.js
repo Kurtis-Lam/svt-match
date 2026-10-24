@@ -1,4 +1,4 @@
-// File: public/gameplay/js/11-showtime-game.js
+// File: public/js/gameplay/11-showtime-game.js
 const __preloadedUrls = new Set();
 const __preloadQueue = [];
 let __preloadPumping = false;
