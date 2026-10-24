@@ -50,7 +50,8 @@
     overlay.innerHTML = `<section class="reward-popup-panel${trackMode ? ' reward-popup-panel--track' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">${header}${trackMode ? '' : (options.bodyHtml || '')}</section>`;
     overlay.addEventListener('click', event => { if (event.target === overlay && options.dismissOnBackdrop !== false) close(); });
     overlay.querySelector('.reward-popup-close').addEventListener('click', close);
-    document.body.appendChild(overlay);
+    const overlayHost = document.getElementById('app') || document.body;
+    overlayHost.appendChild(overlay);
     activeOverlay = overlay;
     document.addEventListener('keydown', handleEscape);
     return { overlay, def, defaults };
