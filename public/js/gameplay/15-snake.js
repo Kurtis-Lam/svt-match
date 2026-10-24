@@ -1,4 +1,4 @@
-// File: public/gameplay/js/15-snake.js
+// File: public/js/gameplay/15-snake.js
 // ── snakeventeen ──────────────────────────────────────────────
 const SNK = GAME_CONFIG.games.snakeventeen;
 const SNAKE_STATE = {
