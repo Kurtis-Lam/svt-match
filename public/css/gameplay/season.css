@@ -21,8 +21,9 @@
 .ss-bar-lg { height: 12px; }
 .ss-bar-sm { height: 6px; margin-top: 6px; }
 
-.ss-header { padding: 16px; display: flex; align-items: center; justify-content: space-between; }
-.ss-scroll { flex: 1; overflow-y: auto; padding: 0 16px 120px; -webkit-overflow-scrolling: touch; }
+.ss-header { flex: 0 0 auto; padding: max(12px, env(safe-area-inset-top)) 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ss-scroll { flex: 1 1 auto; min-height: 0; max-height: 100%; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; padding: 0 16px calc(24px + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
+#seasonScreen { min-height: 0; overflow: hidden; }
 
 .ss-banner {
   border-radius: 24px; padding: 16px; color: #0f172a; border: 1px solid rgba(255,255,255,.7);
