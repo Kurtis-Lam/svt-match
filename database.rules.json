@@ -32,7 +32,17 @@
 
     "adminLogs": {
       ".read": false,
-      ".write": false
+      ".write": false,
+      ".indexOn": ["at"]
+    },
+
+    "adminPlayerHistory": {
+      ".read": false,
+      ".write": false,
+      "$uid": {
+        "earningsHistory": { ".indexOn": ["at"] },
+        "adminChangeHistory": { ".indexOn": ["at"] }
+      }
     },
 
     "$other": {
