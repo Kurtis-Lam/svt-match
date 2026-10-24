@@ -8,7 +8,7 @@ const publicDir = join(repoDir, 'public');
 const htmlPath = join(publicDir, 'gameplay', 'game.html');
 let html = readFileSync(htmlPath, 'utf8');
 let changed = 0;
-html = html.replace(/((?:src|href)=")(\/(?:js|css)\/[^"?]+)\?v=[^"]*(")/g, (_, before, urlPath, after) => {
+html = html.replace(/((?:src|href)=")(\/(?:js|css|shared)\/[^"?]+)\?v=[^"]*(")/g, (_, before, urlPath, after) => {
   const filePath = join(publicDir, urlPath.slice(1));
   const hash = createHash('md5').update(readFileSync(filePath)).digest('hex').slice(0, 8);
   changed++;
