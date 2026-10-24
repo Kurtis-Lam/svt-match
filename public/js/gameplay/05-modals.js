@@ -117,10 +117,10 @@ function openSpotlightStreakInfoModal() {
 }
 
 function openCoinsInfoModal() {
-  openModalWithHtmlTitle(`<span style="display:flex;align-items:center;gap:6px;"><img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;">Coins &amp; Diamonds</span>`, `
+  openModalWithHtmlTitle(`<span style="display:flex;align-items:center;gap:6px;"><img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">Coins &amp; Diamonds</span>`, `
     <div class="glass-card rounded-2xl p-4 space-y-3">
       <div>
-        <p class="text-sm text-gray-800 font-extrabold flex items-center gap-1"><img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"> Earn coins</p>
+        <p class="text-sm text-gray-800 font-extrabold flex items-center gap-1"><img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"> Earn coins</p>
         <ul class="text-xs text-gray-600 font-bold list-disc pl-5 mt-1 space-y-1">
           <li>Play Showtime, Spotlight, Snakeventeen &amp; Choreo Echo</li>
           <li>Spin the Daily Draw &amp; open Daily Boxes</li>
