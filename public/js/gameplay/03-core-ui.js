@@ -229,11 +229,11 @@ function updateDailyDrawUI() {
 
 function boxImageForStar(star) {
   const s = Math.max(1, Math.min(5, Number(star || 1)));
-  return `./imgs/boxes/${s}.jpg`;
+  return `/imgs/boxes/${s}.jpg`;
 }
 
 function tickImagePath() {
-  return `./imgs/boxes/tick.jpg`;
+  return `/imgs/boxes/tick.jpg`;
 }
 
 function flipImageOnceAndUpdate(imgEl, newSrc, flipDurationMs = 350) {
