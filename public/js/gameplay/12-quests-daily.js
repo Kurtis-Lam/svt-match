@@ -388,14 +388,23 @@ async function _finishQuestClaim(added, el) {
   await saving;
 }
 
+let _claimAllRunning = false;
 async function claimAllQuests(kind) {
-  const jobs = [];
-  if (kind === 'daily') {
-    dailyQuestView().filter(q => questIsDone(q) && !q.claimed).forEach(q => jobs.push(claimDailyQuest(q.id, null)));
-  } else {
-    (GAME_STATE.quests || []).filter(q => questIsDone(q) && !q.claimed).map(q => q.id).forEach(id => jobs.push(claimQuest(id, null)));
+  if (_claimAllRunning) return;
+  _claimAllRunning = true;
+  try {
+    // Keep award requests sequential. A burst of simultaneous claims can hit the
+    // award endpoint's per-user limit and can race the local claim-state saves.
+    const ids = kind === 'daily'
+      ? dailyQuestView().filter(q => questIsDone(q) && !q.claimed).map(q => q.id)
+      : (GAME_STATE.quests || []).filter(q => questIsDone(q) && !q.claimed).map(q => q.id);
+    for (const id of ids) {
+      if (kind === 'daily') await claimDailyQuest(id, null);
+      else await claimQuest(id, null);
+    }
+  } finally {
+    _claimAllRunning = false;
   }
-  await Promise.all(jobs);
 }
 
 const _claimingIds = new Set();
@@ -412,7 +421,9 @@ async function claimDailyQuest(id, el) {
   try {
     const added = Number(res.added) || 0;
     await _finishQuestClaim(added, el);
-    if (el && window.RewardPopups) {
+    if (res.extra && res.extra.alreadyClaimed) {
+      showToast('This quest reward was already recorded. Claim status synced.', 'success');
+    } else if (el && window.RewardPopups) {
       RewardPopups.show({
         type: 'quest',
         title: def.title,
@@ -482,7 +493,9 @@ async function claimQuest(questId, questElForAnim) {
       if (def && ti >= 0 && ti + 1 < def.tiers.length) GAME_STATE.quests[idx] = makeStatQuest(def, ti + 1);
     }
     await _finishQuestClaim(added, questElForAnim);
-    if (questElForAnim && window.RewardPopups) {
+    if (res.extra && res.extra.alreadyClaimed) {
+      showToast('This quest reward was already recorded. Claim status synced.', 'success');
+    } else if (questElForAnim && window.RewardPopups) {
       RewardPopups.show({
         type: 'quest',
         title: claimedQuestTitle,
