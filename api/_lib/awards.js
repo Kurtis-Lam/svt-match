@@ -66,8 +66,8 @@ const RULES = {
   mastery: { perLevel: 100, minLevel: 2, maxLevel: 10, maxIdols: 40 },
   season: {
     sp: { pass: 10, fail: 3, elite: 5, overflow: 1, fullRunsPerDay: 12, maxLeadBonus: 2, goalSp: 150, goalRuns: 25, goalWins: 3, perBattle: 40 },
-    anchorDay: Math.floor(Date.UTC(2026, 9, 12) / 86400000),
-    durationDays: 28,
+    anchorYear: 2026,
+    anchorMonth: 1,
     levels: [
       { sp: 0, coins: 100 },
       { sp: 25, boxes: 1 },
@@ -124,10 +124,22 @@ function dayKey(now) {
   return new Date(now + HK_MS).toISOString().slice(0, 10);
 }
 
+function seasonInfo(now) {
+  const local = new Date(now + HK_MS);
+  const year = local.getUTCFullYear();
+  const monthIndex = local.getUTCMonth();
+  const anchorSerial = Number(RULES.season.anchorYear) * 12 + Number(RULES.season.anchorMonth) - 1;
+  const currentSerial = year * 12 + monthIndex;
+  const monthKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+  return {
+    id: `s${monthKey}`,
+    monthKey,
+    num: Math.max(1, currentSerial - anchorSerial + 1),
+  };
+}
+
 function seasonId(now) {
-  const day = Math.floor((now + HK_MS) / 86400000);
-  const idx = Math.max(0, Math.floor((day - RULES.season.anchorDay) / RULES.season.durationDays));
-  return 's' + (RULES.season.anchorDay + idx * RULES.season.durationDays);
+  return seasonInfo(now).id;
 }
 
 function obj(v) {
@@ -197,10 +209,14 @@ function normalizeLedger(a, now) {
   L.day.runs = obj(L.day.runs);
   L.day.passes = obj(L.day.passes);
   L.day.dq = obj(L.day.dq);
-  const sid = seasonId(now);
+  const activeSeason = seasonInfo(now);
+  const sid = activeSeason.id;
   if (L.se.id !== sid) {
-    L.prevSe = { id: L.se.id, claimed: obj(L.se.claimed), sp: num(L.se.sp) };
-    L.se = { id: sid, claimed: {}, sp: 0, runs: 0, passed: {} };
+    L.prevSe = { id: L.se.id, num: Number(L.se.num) || 0, claimed: obj(L.se.claimed), sp: num(L.se.sp) };
+    L.se = { id: sid, num: activeSeason.num, monthKey: activeSeason.monthKey, claimed: {}, sp: 0, runs: 0, passed: {} };
+  } else {
+    L.se.num = activeSeason.num;
+    L.se.monthKey = activeSeason.monthKey;
   }
   L.se.claimed = obj(L.se.claimed);
   L.se.sp = num(L.se.sp);
@@ -590,4 +606,4 @@ async function processAward(uid, body) {
   return { ok: true, source, added: coins, extra: outcome.extra || {}, values: stateValues || valuesOf(r.value) };
 }
 
-module.exports = { processAward, RULES, seasonId, dayKey };
+module.exports = { processAward, RULES, seasonId, seasonInfo, dayKey };
