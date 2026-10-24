@@ -1,0 +1,342 @@
+/* ═══════════════════════════════════════════════════════════════════
+   SVT MATCH — shared design layer
+   Single source of truth for: tokens, SVT gradient background,
+   glass surfaces, liquid-glass buttons, and motion.
+   Loaded by index / faq / updates / support / admin.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── TOKENS ─────────────────────────────────────────────────────── */
+:root {
+  --pink: #f5c6d0;
+  --blue: #9ec5d9;
+  --pink-deep: #e8889e;
+  --blue-deep: #5a9fc0;
+  --bg1: #f8d7e0;
+  --bg2: #a8d4e6;
+  --theme1: var(--pink);
+  --theme2: var(--blue);
+
+  --text: #1e293b;
+  --muted: #64748b;
+  --faint: #94a3b8;
+
+  --svt-gradient: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+  --svt-accent: linear-gradient(135deg, var(--pink-deep), var(--blue-deep));
+  --svt-accent-h: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
+  --svt-soft: linear-gradient(135deg, rgba(245,198,208,.5), rgba(158,197,217,.5));
+
+  --glass: rgba(255,255,255,.78);
+  --glass-border: 1px solid rgba(255,255,255,.7);
+  --glass-shadow: 0 6px 24px rgba(0,0,0,.07);
+  --blur: blur(14px) saturate(160%);
+
+  --ease: cubic-bezier(.2,.8,.2,1);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: .16s;
+  --t-med: .28s;
+  --t-slow: .45s;
+}
+
+/* ─── BASE ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { min-height: 100%; background: var(--bg2); -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+body {
+  font-family: 'Poppins', sans-serif;
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  background: transparent;
+}
+/* One fixed gradient layer for every page (own compositor layer, no repaint on scroll) */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  background: var(--svt-gradient);
+  pointer-events: none;
+  transform: translateZ(0);
+}
+button, input, textarea, select { font-family: inherit; }
+
+.svt-gradient { background: var(--svt-gradient); }
+.svt-gradient-text,
+.page-title, .logo-text, .topbar-logo, .spotlight-name, .ios-soon,
+footer p span, .econ-val {
+  background: var(--svt-accent-h);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.econ-val { background: var(--svt-accent); -webkit-background-clip: text; background-clip: text; }
+.page-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+/* ─── GLASS SURFACES ─────────────────────────────────────────────── */
+.glass,
+.update-card, .faq-item, .feat-card, .nav-card, .card, .form-card,
+.submissions-panel, .login-card, .user-chip, .topbar, .sidebar,
+.tab-bar, .submissions-toggle-bar {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: var(--glass-border);
+}
+.update-card, .faq-item, .feat-card, .nav-card, .card, .form-card,
+.submissions-panel, .login-card {
+  box-shadow: var(--glass-shadow);
+}
+.tab-bar, .submissions-toggle-bar { background: rgba(255,255,255,.5); }
+
+/* inner "tile" surfaces */
+.sub-card, .support-item, .pub-update-item, .econ-tile {
+  background: rgba(255,255,255,.62);
+  border: 1px solid rgba(255,255,255,.85);
+}
+
+/* inputs */
+.field-input, .pw-input, .chat-input, .login-input,
+input[type="email"], input[type="text"], input[type="password"], textarea {
+  transition: border-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease),
+              background-color var(--t-med) var(--ease), transform var(--t-med) var(--ease);
+}
+.field-input:focus, .pw-input:focus, .chat-input:focus,
+input[type="email"]:focus, input[type="text"]:focus, textarea:focus {
+  border-color: var(--pink-deep);
+  box-shadow: 0 0 0 4px rgba(232,136,158,.14);
+  outline: none;
+}
+
+.spinner, .loading-spinner { animation: svt-spin .8s linear infinite; }
+
+/* ─── LIQUID GLASS BUTTONS ───────────────────────────────────────── */
+/* Every button-like control shares one recipe. Tint comes from --lg-*. */
+.btn, .btn-logout, .btn-login, .login-btn, .btn-submit, .btn-svt, .btn-back,
+.btn-android, .contact-btn, .back-btn, .copy-btn, .step-btn, .filter-btn,
+.chart-toggle-btn, .tab-btn, .tpb, .chip, .chat-send-btn, .remove-bullet,
+.hamburger-btn, .pw-eye, .login-pw-toggle, .faq-toggle, .mobile-nav-item,
+.glass-btn {
+  --lg-tint: rgba(255,255,255,.34);
+  --lg-tint-2: rgba(255,255,255,.12);
+  --lg-ink: var(--text);
+  --lg-glow: rgba(90,159,192,.22);
+  position: relative; isolation: isolate; overflow: hidden;
+  cursor: pointer; text-decoration: none;
+  color: var(--lg-ink);
+  background: linear-gradient(135deg, var(--lg-tint), var(--lg-tint-2));
+  border: 1px solid rgba(255,255,255,.55);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  backdrop-filter: blur(10px) saturate(180%);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255,255,255,.85),
+    inset 0 -1.5px 0 rgba(255,255,255,.18),
+    inset 0 0 14px rgba(255,255,255,.18),
+    0 6px 18px var(--lg-glow),
+    0 1px 3px rgba(15,23,42,.08);
+  transition: transform var(--t-med) var(--spring), box-shadow var(--t-med) var(--ease),
+              background var(--t-med) var(--ease), color var(--t-fast) var(--ease),
+              opacity var(--t-med) var(--ease), border-color var(--t-med) var(--ease),
+              filter var(--t-med) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none;
+}
+/* specular sheen that sweeps across on hover */
+.btn::before, .btn-logout::before, .btn-login::before, .login-btn::before,
+.btn-submit::before, .btn-svt::before, .btn-back::before, .btn-android::before,
+.contact-btn::before, .back-btn::before, .copy-btn::before, .step-btn::before,
+.filter-btn::before, .chart-toggle-btn::before, .tab-btn::before, .tpb::before,
+.chip::before, .chat-send-btn::before, .remove-bullet::before, .hamburger-btn::before,
+.pw-eye::before, .login-pw-toggle::before, .faq-toggle::before, .mobile-nav-item::before,
+.glass-btn::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 52%),
+    linear-gradient(105deg, transparent 35%, rgba(255,255,255,.65) 50%, transparent 65%);
+  background-size: 100% 100%, 260% 100%;
+  background-position: 0 0, 130% 0;
+  background-repeat: no-repeat;
+  transition: background-position .7s var(--ease);
+}
+.btn:hover::before, .btn-logout:hover::before, .btn-login:hover::before, .login-btn:hover::before,
+.btn-submit:hover::before, .btn-svt:hover::before, .btn-back:hover::before, .btn-android:hover::before,
+.contact-btn:hover::before, .back-btn:hover::before, .copy-btn:hover::before, .step-btn:hover::before,
+.filter-btn:hover::before, .chart-toggle-btn:hover::before, .tab-btn:hover::before, .tpb:hover::before,
+.chip:hover::before, .chat-send-btn:hover::before, .remove-bullet:hover::before, .hamburger-btn:hover::before,
+.pw-eye:hover::before, .login-pw-toggle:hover::before, .faq-toggle:hover::before, .mobile-nav-item:hover::before,
+.glass-btn:hover::before {
+  background-position: 0 0, -30% 0;
+}
+@media (hover: hover) {
+  .btn:hover, .btn-logout:hover, .btn-login:hover, .login-btn:hover, .btn-submit:hover,
+  .btn-svt:hover, .btn-back:hover, .btn-android:hover, .contact-btn:hover, .back-btn:hover,
+  .copy-btn:hover, .filter-btn:hover, .chart-toggle-btn:hover, .tab-btn:hover, .tpb:hover,
+  .chip:hover, .chat-send-btn:hover, .hamburger-btn:hover, .glass-btn:hover {
+    transform: translateY(-2px) scale(1.015);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,255,255,.95),
+      inset 0 -1.5px 0 rgba(255,255,255,.22),
+      inset 0 0 18px rgba(255,255,255,.26),
+      0 12px 28px var(--lg-glow),
+      0 2px 6px rgba(15,23,42,.1);
+  }
+  .step-btn:hover, .remove-bullet:hover, .pw-eye:hover, .login-pw-toggle:hover { transform: scale(1.1); }
+}
+.btn:active, .btn-logout:active, .btn-login:active, .login-btn:active, .btn-submit:active,
+.btn-svt:active, .btn-back:active, .btn-android:active, .contact-btn:active, .back-btn:active,
+.copy-btn:active, .step-btn:active, .filter-btn:active, .chart-toggle-btn:active, .tab-btn:active,
+.tpb:active, .chip:active, .chat-send-btn:active, .remove-bullet:active, .hamburger-btn:active,
+.pw-eye:active, .login-pw-toggle:active, .mobile-nav-item:active, .glass-btn:active {
+  transform: scale(.95);
+  transition-duration: var(--t-fast);
+}
+.btn:focus-visible, .btn-login:focus-visible, .login-btn:focus-visible, .btn-submit:focus-visible,
+.tab-btn:focus-visible, .chip:focus-visible, .glass-btn:focus-visible, .back-btn:focus-visible,
+.btn-android:focus-visible, .contact-btn:focus-visible {
+  outline: 2px solid rgba(90,159,192,.7); outline-offset: 2px;
+}
+.btn:disabled, .btn-login:disabled, .login-btn:disabled, .btn-submit:disabled, .btn-svt:disabled,
+.chat-send-btn:disabled, .glass-btn:disabled {
+  opacity: .55; cursor: not-allowed; transform: none !important; filter: saturate(.7);
+}
+
+/* tiny / numerous buttons skip the expensive blur; gradient + insets still read as glass */
+.step-btn, .copy-btn, .remove-bullet, .chat-send-btn, .chip, .filter-btn, .chart-toggle-btn, .tpb {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+
+/* — Tinted variants — */
+.btn-primary, .btn-login, .login-btn, .btn-submit, .btn-svt, .btn-android, .chat-send-btn,
+.tab-btn.active, .tpb.active, .chip.active, .filter-btn.active, .chart-toggle-btn.active,
+.faq-item.open .faq-toggle, .glass-btn.primary {
+  --lg-tint: rgba(232,136,158,.92);
+  --lg-tint-2: rgba(90,159,192,.88);
+  --lg-ink: #fff;
+  --lg-glow: rgba(232,136,158,.38);
+  border-color: rgba(255,255,255,.5);
+  text-shadow: 0 1px 2px rgba(15,23,42,.18);
+}
+.btn-danger, .btn-logout { --lg-tint: rgba(239,68,68,.20); --lg-tint-2: rgba(239,68,68,.08); --lg-ink: #dc2626; --lg-glow: rgba(239,68,68,.18); }
+.btn-success             { --lg-tint: rgba(34,197,94,.22);  --lg-tint-2: rgba(34,197,94,.08);  --lg-ink: #16a34a; --lg-glow: rgba(34,197,94,.18); }
+.btn-warning             { --lg-tint: rgba(245,158,11,.22); --lg-tint-2: rgba(245,158,11,.08); --lg-ink: #d97706; --lg-glow: rgba(245,158,11,.18); }
+.btn-secondary, .btn-back, .contact-btn, .back-btn, .copy-btn {
+  --lg-tint: rgba(255,255,255,.62); --lg-tint-2: rgba(255,255,255,.26);
+}
+.contact-btn { --lg-ink: var(--pink-deep); }
+.btn-back, .back-btn { --lg-ink: #475569; }
+.copy-btn { --lg-ink: var(--muted); }
+.copy-btn.copied { --lg-ink: #16a34a; --lg-tint: rgba(34,197,94,.22); --lg-tint-2: rgba(34,197,94,.08); }
+.tab-btn:not(.active), .tpb:not(.active), .filter-btn:not(.active), .chart-toggle-btn:not(.active) {
+  --lg-ink: var(--muted);
+  --lg-tint: rgba(255,255,255,.28); --lg-tint-2: rgba(255,255,255,.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 1px 2px rgba(15,23,42,.04);
+}
+.tab-btn, .tpb { border-color: transparent; }
+.faq-toggle { --lg-ink: #475569; --lg-tint: rgba(245,198,208,.6); --lg-tint-2: rgba(158,197,217,.6); --lg-glow: rgba(90,159,192,.12); }
+.faq-item.open .faq-toggle { --lg-ink: #fff; }
+.pw-eye, .login-pw-toggle, .hamburger-btn {
+  --lg-ink: var(--faint); --lg-tint: rgba(255,255,255,0); --lg-tint-2: rgba(255,255,255,0);
+  border-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.pw-eye:hover, .login-pw-toggle:hover { --lg-ink: var(--pink-deep); box-shadow: none; }
+.hamburger-btn:hover { box-shadow: none; transform: scale(1.06); }
+.remove-bullet { --lg-tint: rgba(239,68,68,.20); --lg-tint-2: rgba(239,68,68,.08); --lg-ink: #dc2626; --lg-glow: rgba(239,68,68,.15); }
+.step-btn { --lg-tint: rgba(255,255,255,.7); --lg-tint-2: rgba(255,255,255,.3); }
+.btn-android { --lg-glow: rgba(232,136,158,.42); }
+.glass-btn.primary:hover, .btn-primary:hover { filter: brightness(1.04); }
+
+/* ─── MOTION ─────────────────────────────────────────────────────── */
+@keyframes svt-spin { to { transform: rotate(360deg); } }
+@keyframes svt-rise {
+  from { opacity: 0; transform: translate3d(0,14px,0) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes svt-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes svt-pop {
+  from { opacity: 0; transform: translate3d(0,-6px,0) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes svt-slide-in {
+  from { opacity: 0; transform: translate3d(0,-8px,0); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes svt-out { to { opacity: 0; visibility: hidden; } }
+
+/* Page / screen / panel entrance (replays whenever display toggles) */
+.container, header, .login-card, #loginGate, #adminShell, #loginScreen.active,
+#supportScreen.active, .panel.active, #newTicketSection, #mySubmissionsSection,
+.success-screen.show, .submissions-panel, #userResult, .topbar {
+  animation: svt-rise var(--t-slow) var(--ease) backwards;
+}
+#loginGate, #adminShell, .container, header, .topbar { animation-name: svt-fade; animation-duration: var(--t-med); }
+
+/* Stagger children of lists */
+.updates-list > *, .faq-list > *, .nav-cards > *, .features > *, .econ-grid > *,
+.category-chips > *, .login-body > *, .section-label {
+  animation: svt-rise var(--t-slow) var(--ease) backwards;
+}
+:is(.updates-list, .faq-list, .nav-cards, .features, .econ-grid, .category-chips, .login-body) > :nth-child(1) { animation-delay: .04s; }
+:is(.updates-list, .faq-list, .nav-cards, .features, .econ-grid, .category-chips, .login-body) > :nth-child(2) { animation-delay: .08s; }
+:is(.updates-list, .faq-list, .nav-cards, .features, .econ-grid, .category-chips, .login-body) > :nth-child(3) { animation-delay: .12s; }
+:is(.updates-list, .faq-list, .nav-cards, .features, .econ-grid, .category-chips, .login-body) > :nth-child(4) { animation-delay: .16s; }
+:is(.updates-list, .faq-list, .nav-cards, .features, .econ-grid, .category-chips, .login-body) > :nth-child(5) { animation-delay: .20s; }
+:is(.updates-list, .faq-list, .nav-cards, .features, .econ-grid, .category-chips, .login-body) > :nth-child(n+6) { animation-delay: .24s; }
+
+/* Dynamic rows / bubbles */
+.sub-card, .support-item, .pub-update-item, .suggestion-item, .bullet-row,
+.msg-box, .login-error, .login-error-banner,
+.error-msg, .chat-pending-note, .chat-resolved-note, .chat-msg:last-child {
+  animation: svt-pop var(--t-med) var(--ease) backwards;
+}
+.search-suggestions.visible { animation: svt-slide-in var(--t-med) var(--ease) backwards; transform-origin: top; }
+.support-item.expanded .support-detail, .sub-card.expanded .sub-detail { animation: svt-slide-in var(--t-med) var(--ease) backwards; }
+
+/* Hover / interaction transitions on surfaces */
+.update-card, .faq-item, .feat-card, .nav-card, .card, .sub-card, .support-item, .econ-tile,
+.suggestion-item, .nav-item, .step-btn, .history-bar {
+  transition: transform var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease),
+              background-color var(--t-med) var(--ease), border-color var(--t-med) var(--ease);
+}
+@media (hover: hover) {
+  .nav-card:hover, .feat-card:hover, .update-card:hover, .econ-tile:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(15,23,42,.12);
+  }
+  .sub-card:hover, .support-item:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(15,23,42,.1); }
+  .nav-card:hover .nav-card-arrow { transform: translateX(4px); color: var(--pink-deep); }
+}
+.nav-card:active, .feat-card:active { transform: scale(.98); transition-duration: var(--t-fast); }
+.nav-card-arrow { transition: transform var(--t-med) var(--spring), color var(--t-med) var(--ease); }
+.nav-item { transition: background-color var(--t-med) var(--ease), color var(--t-fast) var(--ease), transform var(--t-med) var(--spring); }
+.nav-item:hover { transform: translateX(3px); }
+.nav-item:active { transform: scale(.97); }
+.history-bar { transition: width var(--t-slow) var(--ease); }
+
+/* Sidebar slide */
+.sidebar { transition: transform var(--t-slow) var(--ease); will-change: transform; }
+
+/* FAQ accordion — smooth height via grid rows */
+.faq-answer {
+  display: grid; grid-template-rows: 0fr; max-height: none !important;
+  transition: grid-template-rows var(--t-slow) var(--ease), padding var(--t-med) var(--ease), opacity var(--t-med) var(--ease);
+  opacity: 0; padding-bottom: 0;
+}
+.faq-answer > * { overflow: hidden; min-height: 0; }
+.faq-item.open .faq-answer { grid-template-rows: 1fr; opacity: 1; padding-bottom: 18px; max-height: none !important; }
+.faq-toggle { transition: transform var(--t-med) var(--spring), background var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease), color var(--t-fast); }
+.faq-item.open .faq-toggle { transform: rotate(45deg); }
+
+/* Loading overlay fades out instead of blinking */
+#loadingOverlay { background: var(--svt-gradient); transition: opacity var(--t-med) var(--ease); }
+
+/* Cross-document view transitions between pages (Chrome / Safari) */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: .22s var(--ease) both svt-out; }
+::view-transition-new(root) { animation: .38s var(--ease) both svt-rise; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important; animation-delay: 0s !important;
+    transition-duration: .01ms !important; scroll-behavior: auto !important;
+  }
+  @view-transition { navigation: none; }
+}
+@media (max-width: 640px) {
+  :root { --blur: blur(10px) saturate(150%); }
+}
