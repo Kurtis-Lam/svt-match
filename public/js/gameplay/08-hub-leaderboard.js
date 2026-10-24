@@ -39,7 +39,7 @@ async function fetchLeaderboardRowsFromDb() {
     const ps = u?.playerState || null;
     const username = u?.username || ps?.username || '';
     const displayName = u?.displayName || ps?.displayName || username;
-    const avatarSrc = ps?.equippedAvatarKey ? `./imgs/assets/avatars/${ps.equippedAvatarKey}` : (ps?.equippedIdolKey ? `./imgs/${ps.equippedIdolKey}/1.jpg` : './imgs/assets/default_avatar.png');
+    const avatarSrc = ps?.equippedAvatarKey ? `/imgs/assets/avatars/${ps.equippedAvatarKey}` : (ps?.equippedIdolKey ? `/imgs/${ps.equippedIdolKey}/1.jpg` : '/imgs/assets/default_avatar.png');
     rows.push(lbRowFromPlayerState(uid, username, displayName, ps, avatarSrc));
   });
   return rows.filter(r => r.username);
@@ -56,7 +56,7 @@ function fetchLeaderboardRowsFromLocal() {
     } catch (e) {
       ps = {};
     }
-    const avatarSrc = ps?.equippedIdolKey ? `./imgs/${ps.equippedIdolKey}/1.jpg` : './imgs/assets/default_avatar.png';
+    const avatarSrc = ps?.equippedIdolKey ? `/imgs/${ps.equippedIdolKey}/1.jpg` : '/imgs/assets/default_avatar.png';
     rows.push(lbRowFromPlayerState(uid, u.username, u.displayName || u.username, ps, avatarSrc));
   });
   return rows;
@@ -176,7 +176,7 @@ function lbRowHtml(r, rank, metric, meId) {
   return `
     <div class="lb-row ${me ? 'me' : ''}">
       <div class="lb-rank">${rank}</div>
-      <img class="lb-av" src="${escapeHtml(r.avatarSrc || './imgs/assets/default_avatar.png')}" alt="" loading="lazy" decoding="async"/>
+      <img class="lb-av" src="${escapeHtml(r.avatarSrc || '/imgs/assets/default_avatar.png')}" alt="" loading="lazy" decoding="async"/>
       <div class="lb-who"><b>${name}${me ? ' <em>YOU</em>' : ''}</b><small>@${escapeHtml(r.username)}</small></div>
       <div class="lb-val"><b>${lbFormat(metric, r)}</b><small>${metric.unit}</small></div>
     </div>`;
@@ -194,7 +194,7 @@ function lbPodiumHtml(ranked, metric, meId) {
       <div class="lb-pod-entries">${group.map(e => {
         const r = e.row;
         return `<div class="lb-pod-entry">
-          <img src="${escapeHtml(r.avatarSrc || './imgs/assets/default_avatar.png')}" alt="" loading="lazy" decoding="async"/>
+          <img src="${escapeHtml(r.avatarSrc || '/imgs/assets/default_avatar.png')}" alt="" loading="lazy" decoding="async"/>
           <b class="lb-pod-name">${escapeHtml(r.displayName || r.username)}${r.userId === meId ? ' · YOU' : ''}</b>
           <span class="lb-pod-val">${lbFormat(metric, r)} <small>${metric.unit}</small></span>
         </div>`;
