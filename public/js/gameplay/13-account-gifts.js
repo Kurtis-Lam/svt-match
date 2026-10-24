@@ -1,4 +1,4 @@
-// File: public/gameplay/js/13-account-gifts.js
+// File: public/js/gameplay/13-account-gifts.js
 function checkSession() {
   // PATCH S-05: wrap JSON.parse to handle corrupt localStorage gracefully
   const saved = localStorage.getItem('currentUser');
