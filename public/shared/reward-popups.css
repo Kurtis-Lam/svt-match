@@ -234,7 +234,7 @@
 .reward-track-images { display: flex; align-items: center; justify-content: flex-end; gap: 3px; min-width: 0; }
 .reward-track-images img { display: block; width: 28px; height: 28px; max-width: 30px; object-fit: contain; border-radius: 5px; filter: drop-shadow(0 2px 3px rgba(15, 23, 42, .13)); }
 .reward-track-reward-fallback { display: grid; place-items: center; width: 28px; height: 28px; font-size: 22px; }
-.reward-track-icon.is-claimable .reward-track-images { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--theme2, #9ec5d9) 48%, transparent)); }
+.reward-track-icon.is-claimable .reward-track-images { filter: none; }
 .reward-track-icon.is-claimed .reward-track-images { filter: grayscale(1); }
 .reward-track-claimed-mark { position: absolute; top: -1px; right: -1px; display: grid; place-items: center; width: 16px; height: 16px; border: 2px solid #fafcff; border-radius: 50%; background: #64748b; color: white; font-size: 10px; font-weight: 950; line-height: 1; }
 
@@ -281,12 +281,6 @@
 .reward-track-row:has(.reward-track-icon.is-claimable) .reward-track-node {
   border-color: #22c55e;
   box-shadow: 0 0 0 2px rgba(34, 197, 94, .28), 0 2px 7px rgba(15, 23, 42, .1);
-}
-.reward-track-icon.is-claimable .reward-track-images img,
-.reward-track-icon.is-claimable .reward-track-reward-fallback {
-  outline: 2px solid #22c55e;
-  outline-offset: 2px;
-  border-radius: 7px;
 }
 .reward-track-icon.is-claimable {
   border-radius: 10px;
