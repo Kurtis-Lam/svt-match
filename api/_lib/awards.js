@@ -485,7 +485,7 @@ function awardSeason(L, ctx, now, ps) {
   const prev = ctx.prev === true;
   const se = prev ? L.prevSe : L.se;
   if (!se) throw httpError(409, 'No season to claim from');
-  if (se.claimed[key]) throw httpError(409, 'Reward already claimed');
+  if (se.claimed[key]) return { coins: 0, extra: { tier, alreadyClaimed: true, boxes: 0, diamonds: 0, prev } };
   const stats = obj(obj(ps).stats);
   const battleAllowance = (num(stats.battleWins) + num(stats.battleLosses)) * RULES.season.sp.perBattle;
   const S = RULES.season.sp;
