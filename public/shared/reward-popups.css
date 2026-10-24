@@ -1,0 +1,278 @@
+.reward-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  background: rgba(15, 23, 42, .62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: rewardOverlayIn .18s ease-out;
+}
+
+.reward-popup-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: min(100%, 440px);
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .82);
+  border-radius: 24px;
+  background: rgba(250, 252, 255, .99);
+  box-shadow: 0 28px 90px rgba(15, 23, 42, .32);
+  animation: rewardPanelIn .24s cubic-bezier(.2, .8, .2, 1);
+}
+
+.reward-popup-panel--track {
+  width: min(100%, 480px);
+  height: min(88vh, 820px);
+  height: min(88dvh, 820px);
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
+}
+
+.reward-popup-header {
+  position: relative;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  padding: 15px 54px 14px 17px;
+  color: #111827;
+  background: linear-gradient(125deg, color-mix(in srgb, var(--theme1, #f5c6d0) 86%, white), color-mix(in srgb, var(--theme2, #9ec5d9) 86%, white));
+  border-bottom: 1px solid rgba(255, 255, 255, .78);
+}
+
+.reward-popup-eyebrow {
+  margin-bottom: 4px;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .12em;
+  opacity: .65;
+}
+
+.reward-popup-title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 950;
+}
+
+.reward-popup-desc {
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: #475569;
+}
+
+.reward-popup-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .78);
+  color: #334155;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.reward-popup-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 16px;
+}
+
+.reward-popup-reward-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 140px;
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, .16);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(245, 198, 208, .34), rgba(158, 197, 217, .34));
+  text-align: center;
+}
+
+.reward-popup-reward-icon { font-size: 40px; line-height: 1; }
+.reward-popup-reward-amount { color: #0f172a; font-size: 28px; font-weight: 950; letter-spacing: -.03em; }
+.reward-popup-reward-label { color: #475569; font-size: 12px; font-weight: 850; }
+
+.reward-popup-action {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  min-height: 44px;
+  margin: 0 16px 16px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(120deg, var(--theme1, #f5c6d0), var(--theme2, #9ec5d9));
+  color: #111827;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 950;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .13);
+}
+
+.reward-popup-action:disabled { cursor: wait; opacity: .65; }
+
+.reward-popup-track-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scrollbar-gutter: stable;
+  padding: 2px 15px 8px;
+}
+
+.reward-track-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.reward-track-list::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 24px;
+  bottom: 24px;
+  left: 17px;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--theme1, #f5c6d0) 85%, white), color-mix(in srgb, var(--theme2, #9ec5d9) 85%, white));
+  pointer-events: none;
+}
+
+.reward-track-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  min-height: 62px;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, .17);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: opacity .18s ease;
+}
+
+.reward-track-row:last-child { border-bottom: 0; }
+.reward-track-row.is-current .reward-track-node { box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme2, #9ec5d9) 30%, transparent), 0 3px 9px rgba(15, 23, 42, .14); }
+.reward-track-row.is-claimed { opacity: .54; }
+.reward-track-row.is-locked { opacity: .88; }
+
+.reward-track-node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: 2px solid rgba(255, 255, 255, .96);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--theme1, #f5c6d0), var(--theme2, #9ec5d9));
+  color: #111827;
+  font-size: 12px;
+  font-weight: 950;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, .1);
+}
+
+.reward-track-main { min-width: 0; flex: 1 1 auto; }
+.reward-track-name { display: block; color: #0f172a; font-size: 12px; line-height: 1.3; font-weight: 900; overflow-wrap: anywhere; }
+.reward-track-detail { display: block; margin-top: 4px; color: #64748b; font-size: 10px; line-height: 1.3; font-weight: 800; }
+
+.reward-track-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  width: 66px;
+  min-width: 48px;
+  min-height: 44px;
+  flex: 0 0 66px;
+  padding: 2px 3px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+}
+
+.reward-track-icon:disabled { cursor: default; }
+.reward-track-images { display: flex; align-items: center; justify-content: flex-end; gap: 3px; min-width: 0; }
+.reward-track-images img { display: block; width: 28px; height: 28px; max-width: 30px; object-fit: contain; border-radius: 5px; filter: drop-shadow(0 2px 3px rgba(15, 23, 42, .13)); }
+.reward-track-reward-fallback { display: grid; place-items: center; width: 28px; height: 28px; font-size: 22px; }
+.reward-track-icon.is-claimable .reward-track-images { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--theme2, #9ec5d9) 48%, transparent)); }
+.reward-track-icon.is-claimed .reward-track-images { filter: grayscale(1); }
+.reward-track-claimed-mark { position: absolute; top: -1px; right: -1px; display: grid; place-items: center; width: 16px; height: 16px; border: 2px solid #fafcff; border-radius: 50%; background: #64748b; color: white; font-size: 10px; font-weight: 950; line-height: 1; }
+
+.reward-popup-track-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  padding: 10px 16px max(10px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(148, 163, 184, .18);
+  background: rgba(248, 250, 252, .97);
+  color: #475569;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.reward-popup-track-footer b { color: #0f172a; }
+
+@keyframes rewardOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rewardPanelIn { from { opacity: 0; transform: translateY(12px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes rewardClaimPulse { 50% { transform: scale(1.04); } }
+
+@media (max-height: 620px) {
+  .reward-popup-panel--track { height: calc(100vh - 16px); height: calc(100dvh - 16px); }
+  .reward-popup-header { padding-top: 11px; padding-bottom: 10px; }
+  .reward-popup-title { font-size: 16px; }
+  .reward-track-row { min-height: 55px; padding: 6px 0; }
+  .reward-track-node { width: 32px; height: 32px; flex-basis: 32px; }
+  .reward-track-list::before { left: 15px; }
+  .reward-track-images img { width: 25px; height: 25px; }
+  .reward-popup-track-footer { padding-top: 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reward-popup-overlay, .reward-popup-panel { animation: none; }
+  .reward-track-icon.is-claimable { animation: none; }
+  .reward-popup-track-scroll { scroll-behavior: auto; }
+}
