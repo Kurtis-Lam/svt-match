@@ -5,46 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SVT MATCH</title>
     <link rel="icon" type="image/png" href="imgs/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" onload="this.rel='stylesheet'" />
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" onload="this.rel='stylesheet'" />
+  <noscript>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  </noscript>
+  <link rel="stylesheet" href="/svt.css" />
     <style>
-        html {
-            overflow-x: hidden;
-        }
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        :root {
-            --pink: #f5c6d0;
-            --blue: #9ec5d9;
-            --pink-deep: #e8889e;
-            --blue-deep: #5a9fc0;
-            --bg1: #f8d7e0;
-            --bg2: #a8d4e6;
-            --text: #1e293b;
-            --glass: rgba(255, 255, 255, 0.75);
-        }
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
-            min-height: 100vh;
-            color: var(--text);
-            overflow-x: hidden;
-        }
 
         /* ── NOISE TEXTURE OVERLAY ── */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 0;
-        }
 
         .container {
             max-width: 480px;
@@ -77,15 +50,7 @@
             font-size: 22px;
             box-shadow: 0 8px 24px rgba(232, 136, 158, 0.35);
         }
-        .logo-text {
-            font-size: 24px;
-            font-weight: 900;
-            background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
+        .logo-text { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
 
         /* ── HERO ── */
         .hero {
@@ -107,6 +72,7 @@
             position: relative;
             transform-style: preserve-3d;
             transform-origin: center center;
+            will-change: transform;
         }
         .idol-card {
             position: absolute;
@@ -127,6 +93,7 @@
             cursor: pointer;
             transform-style: preserve-3d;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            will-change: transform;
         }
         /* SVT gradient back face */
         .idol-card::before {
@@ -134,7 +101,7 @@
             position: absolute;
             inset: 0;
             border-radius: 12px;
-            background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+            background: var(--svt-gradient);
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
             transform: rotateY(180deg);
@@ -205,17 +172,7 @@
             margin-bottom: 4px;
             height: 22px;
         }
-        .spotlight-name {
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            transition: opacity 0.3s ease;
-        }
+        .spotlight-name { font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; transition: opacity 0.3s ease; }
 
         /* dot indicators */
         .carousel-dots {
@@ -265,36 +222,13 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            color: #94a3b8;
+            color: var(--faint);
             text-align: center;
             margin-bottom: 14px;
         }
-        .btn-android {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            padding: 18px 24px;
-            background: linear-gradient(135deg, var(--pink-deep) 0%, var(--blue-deep) 100%);
-            color: white;
-            border-radius: 18px;
-            font-size: 16px;
-            font-weight: 700;
-            text-decoration: none;
-            box-shadow: 0 12px 32px rgba(232, 136, 158, 0.4);
-            transition: transform 0.15s ease, box-shadow 0.2s ease;
-            border: none;
-            cursor: pointer;
-            margin-bottom: 12px;
-        }
-        .btn-android:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 16px 40px rgba(232, 136, 158, 0.5);
-        }
-        .btn-android:active {
-            transform: scale(0.98);
-        }
+        .btn-android { display: flex; align-items: center; justify-content: center; gap: 12px;
+            width: 100%; padding: 18px 24px; border-radius: 18px;
+            font-size: 16px; font-weight: 700; margin-bottom: 12px; }
         .btn-android .btn-icon {
             font-size: 24px;
         }
@@ -311,34 +245,16 @@
             font-weight: 800;
         }
 
-        .ios-badge {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            padding: 14px 24px;
-            background: rgba(255, 255, 255, 0.55);
-            border: 1.5px solid rgba(255, 255, 255, 0.8);
-            border-radius: 16px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #64748b;
-            backdrop-filter: blur(10px);
-        }
+        .ios-badge { display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 14px 24px; background: rgba(255,255,255,.5);
+            border: 1.5px solid rgba(255,255,255,.8); border-radius: 16px;
+            font-size: 14px; font-weight: 600; color: var(--muted);
+            -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
         .ios-badge i {
             font-size: 18px;
-            color: #94a3b8;
+            color: var(--faint);
         }
-        .ios-soon {
-            font-size: 10px;
-            font-weight: 700;
-            background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-left: 4px;
-        }
+        .ios-soon { font-size: 10px; font-weight: 700; margin-left: 4px; }
 
         /* ── FEATURES ── */
         .features {
@@ -347,14 +263,7 @@
             gap: 12px;
             margin-bottom: 36px;
         }
-        .feat-card {
-            background: var(--glass);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 16px;
-            padding: 16px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-        }
+        .feat-card { border-radius: 16px; padding: 16px; }
         .feat-card .feat-icon {
             font-size: 24px;
             margin-bottom: 8px;
@@ -366,7 +275,7 @@
         }
         .feat-card .feat-desc {
             font-size: 11px;
-            color: #64748b;
+            color: var(--muted);
             font-weight: 400;
             line-height: 1.5;
         }
@@ -380,35 +289,14 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            color: #94a3b8;
+            color: var(--faint);
             text-align: center;
             margin-bottom: 14px;
         }
-        .nav-cards {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .nav-cards { display: flex; flex-direction: column; gap: 10px; }
         .nav-card {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding: 16px 20px;
-            background: var(--glass);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 16px;
-            text-decoration: none;
-            color: var(--text);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-            transition: transform 0.15s ease, box-shadow 0.2s ease;
-        }
-        .nav-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-        }
-        .nav-card:active {
-            transform: scale(0.98);
+            display: flex; align-items: center; gap: 16px; padding: 16px 20px;
+            border-radius: 16px; text-decoration: none; color: var(--text);
         }
         .nav-card-icon {
             width: 44px;
@@ -439,7 +327,7 @@
         }
         .nav-card-desc {
             font-size: 12px;
-            color: #64748b;
+            color: var(--muted);
         }
         .nav-card-arrow {
             color: #cbd5e1;
@@ -454,7 +342,7 @@
         }
         footer p {
             font-size: 12px;
-            color: #94a3b8;
+            color: var(--faint);
         }
         footer p span {
             background: linear-gradient(90deg, var(--pink-deep), var(--blue-deep));
@@ -600,7 +488,7 @@
                 `rotateY(${slotAngle}deg) translateZ(${RADIUS}px)`;
             card.innerHTML = `
                 <div class="card-inner">
-                    <img src="imgs/${idol.folder}/1.jpg" alt="${idol.name}" class="card-img"
+                    <img src="imgs/${idol.folder}/1.jpg" alt="${idol.name}" class="card-img" decoding="async" loading="${i < 5 || i > N - 4 ? 'eager' : 'lazy'}"
                          onerror="this.style.display='none';this.parentElement.parentElement.style.setProperty('--fb','1');" />
                 </div>
             `;
@@ -652,16 +540,20 @@
 
         function lerp(a, b, t) { return a + (b - a) * t; }
 
+        // Render loop runs only while the ring is actually moving (idle = zero work).
         function animate() {
             const diff = targetRingAngle - currentRingAngle;
             if (Math.abs(diff) > 0.05) {
                 currentRingAngle = lerp(currentRingAngle, targetRingAngle, 0.09);
+                applyRingAngle(currentRingAngle);
+                rafId = requestAnimationFrame(animate);
             } else {
                 currentRingAngle = targetRingAngle;
+                applyRingAngle(currentRingAngle);
+                rafId = null;
             }
-            applyRingAngle(currentRingAngle);
-            rafId = requestAnimationFrame(animate);
         }
+        function kick() { if (!rafId) rafId = requestAnimationFrame(animate); }
 
         function goTo(idx) {
             // Rotate ring so card[idx] faces the viewer.
@@ -683,6 +575,7 @@
 
             updateActive();
             resetAuto();
+            kick();
         }
 
         // Step RIGHT: next card clockwise = index+1, ring rotates more negative
@@ -690,6 +583,7 @@
             targetRingAngle -= anglePerCard;
             currentIdx = ((Math.round(-targetRingAngle / anglePerCard)) % N + N) % N;
             updateActive();
+            kick();
         }
 
         function resetAuto() {
@@ -722,7 +616,7 @@
             if (e.cancelable) e.preventDefault();
 
             targetRingAngle = dragStartRingAngle + dx * 0.4;
-            applyRingAngle(targetRingAngle);
+            kick();
             updateActive();
         }
         function onDragEnd() {
@@ -734,6 +628,7 @@
             currentIdx = ((nearest % N) + N) % N;
             updateActive();
             resetAuto();
+            kick();
         }
 
         ring.addEventListener("mousedown",  onDragStart);
@@ -746,8 +641,17 @@
         // Init
         applyRingAngle(0);
         updateActive();
-        animate();
         resetAuto();
+
+        // Pause auto-rotation when the tab is hidden or the carousel is off-screen.
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) clearInterval(autoTimer); else resetAuto();
+        });
+        if ("IntersectionObserver" in window) {
+            new IntersectionObserver(([e]) => {
+                if (e.isIntersecting) resetAuto(); else clearInterval(autoTimer);
+            }).observe(ring.parentElement);
+        }
     })();
     </script>
 </body>
