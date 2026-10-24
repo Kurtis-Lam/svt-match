@@ -10,7 +10,7 @@ const masteryConfig = GAME_CONFIG.mastery || {};
 const META = {
   VERSION: 2,
   SEASON_ANCHOR_DAY: (() => {
-    const d = GAME_CONFIG.season?.startsOn || [2026, 10, 12];
+    const d = GAME_CONFIG.season?.startsOn || [2026, 1, 1];
     return Math.floor(Date.UTC(Number(d[0]), Number(d[1]) - 1, Number(d[2])) / 86400000);
   })(),
   MASTERY_XP: masteryConfig.levelXp || [0, 60, 150, 280, 450, 680, 960, 1300, 1700, 2200],
