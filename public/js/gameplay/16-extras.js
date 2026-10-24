@@ -1,4 +1,4 @@
-// File: public/gameplay/js/16-extras.js
+// File: public/js/gameplay/16-extras.js
 function opensnakeventeenStreakInfoModal() {
   openModal('ℹ️ Snakeventeen Streak', `
     <div class="glass-card rounded-2xl p-4">
