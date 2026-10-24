@@ -481,7 +481,7 @@
 
   function openResult(rounds, base, streakBonus, passed, perfect, newBest) {
     const s = st();
-    const coin = '<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" alt="">';
+    const coin = '<img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;" alt="">';
     openUndismissibleModal(passed ? '✅ Level Complete!' : '❌ Level Failed', `
       <div class="glass-card rounded-2xl p-4 text-center">
         <p class="text-sm text-gray-500 font-bold">Rounds cleared</p>
