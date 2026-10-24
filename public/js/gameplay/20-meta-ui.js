@@ -168,7 +168,7 @@
 
   function rewardImages(reward) {
     const images = [];
-    if (reward.coins) images.push({ src: '/coin.png', alt: 'Coins' });
+    if (reward.coins) images.push({ src: '/imgs/assets/coins.png', alt: 'Coins' });
     if (reward.diamonds) images.push({ src: '/imgs/assets/diamond.png', alt: 'Diamonds' });
     if (reward.boxes) images.push({ src: '/imgs/boxes/1.jpg', alt: 'SVT Box' });
     if (reward.rings) images.push({ src: '/imgs/assets/shop_ring.png', alt: 'Rings' });
