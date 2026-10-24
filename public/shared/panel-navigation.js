@@ -17,17 +17,20 @@
   const originalShowScreen = window.showScreen;
   if (typeof originalShowScreen !== 'function') return;
 
-  let activePanelId = findVisiblePanel();
+  let activeScreenId = findVisibleScreen();
+  let screenHistory = activeScreenId ? [activeScreenId] : [];
   let cleanupTimer = 0;
   let dockTimer = 0;
   let touchStart = null;
   let suppressClickUntil = 0;
 
-  function findVisiblePanel() {
-    return PANEL_IDS.find(id => {
-      const element = document.getElementById(id);
-      return element && !element.classList.contains('hidden');
-    }) || null;
+  function getScreens() {
+    return Array.from(document.querySelectorAll('.screen'));
+  }
+
+  function findVisibleScreen() {
+    const visible = getScreens().find(screen => !screen.classList.contains('hidden'));
+    return visible ? visible.id : null;
   }
 
   function getDock() {
@@ -35,15 +38,21 @@
   }
 
   function clearTransitionClasses() {
-    PANEL_IDS.forEach(id => {
-      const element = document.getElementById(id);
-      if (element) element.classList.remove(...TRANSITION_CLASSES);
-    });
+    getScreens().forEach(screen => screen.classList.remove(...TRANSITION_CLASSES));
+  }
+
+  function concealScreen(screen) {
+    if (!screen) return;
+    screen.style.transition = 'none';
+    screen.classList.add('hidden');
+    screen.classList.remove(...TRANSITION_CLASSES, 'slide-left');
+    void screen.offsetHeight;
+    screen.style.removeProperty('transition');
   }
 
   function setActivePanel(panelId) {
     const dock = getDock();
-    if (!dock || !PANEL_INDEX.hasOwnProperty(panelId)) return;
+    if (!dock || !Object.prototype.hasOwnProperty.call(PANEL_INDEX, panelId)) return;
     dock.querySelectorAll('[data-main-panel]').forEach(button => {
       const selected = button.dataset.mainPanel === PANEL_NAMES[PANEL_INDEX[panelId]];
       button.classList.toggle('active', selected);
@@ -72,85 +81,82 @@
   }
 
   function hideUnrelatedScreens(fromId, toId) {
-    document.querySelectorAll('.screen').forEach(screen => {
+    getScreens().forEach(screen => {
       if (screen.id === fromId || screen.id === toId) return;
-      screen.classList.add('hidden');
-      screen.classList.remove(...TRANSITION_CLASSES, 'slide-left');
+      concealScreen(screen);
     });
   }
 
   function navigateScreen(screenId) {
-    const targetIsMainPanel = PANEL_IDS.includes(screenId);
-    const visiblePanel = findVisiblePanel();
-    const fromId = activePanelId && document.getElementById(activePanelId) && !document.getElementById(activePanelId).classList.contains('hidden')
-      ? activePanelId
-      : visiblePanel;
-
-    if (!targetIsMainPanel) {
+    const screens = getScreens();
+    const toElement = document.getElementById(screenId);
+    if (!toElement || !toElement.classList.contains('screen')) {
       clearTimeout(cleanupTimer);
       clearTransitionClasses();
       setDockVisible(false);
       originalShowScreen(screenId);
-      activePanelId = null;
+      activeScreenId = null;
+      screenHistory = [];
       return;
     }
 
+    const knownActive = activeScreenId && document.getElementById(activeScreenId);
+    const fromId = knownActive && !knownActive.classList.contains('hidden')
+      ? activeScreenId
+      : findVisibleScreen();
+    const fromElement = fromId ? document.getElementById(fromId) : null;
+
     if (fromId === screenId) {
-      originalShowScreen(screenId);
-      activePanelId = screenId;
+      activeScreenId = screenId;
       setActivePanel(screenId);
       setDockVisible(screenId === 'hubScreen');
       return;
     }
 
+    let movingForward = true;
+    const priorHistoryIndex = screenHistory.lastIndexOf(screenId);
+    if (priorHistoryIndex >= 0 && priorHistoryIndex < screenHistory.length - 1) {
+      screenHistory = screenHistory.slice(0, priorHistoryIndex + 1);
+      movingForward = false;
+    } else if (screenHistory[screenHistory.length - 1] !== screenId) {
+      screenHistory.push(screenId);
+    }
+
     clearTimeout(cleanupTimer);
     clearTransitionClasses();
+    hideUnrelatedScreens(fromId, screenId);
 
-    const fromIndex = Object.prototype.hasOwnProperty.call(PANEL_INDEX, fromId) ? PANEL_INDEX[fromId] : null;
-    const toIndex = PANEL_INDEX[screenId];
-    const fromElement = fromId ? document.getElementById(fromId) : null;
-    const toElement = document.getElementById(screenId);
-
-    if (fromIndex !== null && fromElement && toElement) {
-      const movingRight = toIndex > fromIndex;
-      const exitClass = movingRight ? 'panel-nav-exit-to-left' : 'panel-nav-exit-to-right';
-      const enterClass = movingRight ? 'panel-nav-enter-from-right' : 'panel-nav-enter-from-left';
-
-      hideUnrelatedScreens(fromId, screenId);
-      fromElement.classList.add(exitClass);
-      toElement.classList.add(enterClass);
-      toElement.classList.remove('hidden', 'slide-left');
+    if (fromElement && !fromElement.classList.contains('hidden')) {
+      const exitClass = movingForward ? 'panel-nav-exit-to-left' : 'panel-nav-exit-to-right';
+      const enterClass = movingForward ? 'panel-nav-enter-from-right' : 'panel-nav-enter-from-left';
 
       if (screenId === 'hubScreen' && typeof window.renderHub === 'function') {
         try { window.renderHub(); } catch (e) {}
       }
 
-      setDockVisible(screenId === 'hubScreen');
-      activePanelId = screenId;
+      fromElement.classList.add(exitClass);
+      toElement.classList.remove('hidden', 'slide-left');
+      toElement.classList.add(enterClass);
+      activeScreenId = screenId;
       setActivePanel(screenId);
+      setDockVisible(screenId === 'hubScreen');
+
       cleanupTimer = window.setTimeout(() => {
-        if (fromElement !== toElement) {
-          // The base .screen rule has its own transform transition. Disable it
-          // while hiding the outgoing panel so it cannot slide back across the
-          // screen after the directional exit animation has finished.
-          fromElement.style.transition = 'none';
-          fromElement.classList.add('hidden');
-          clearTransitionClasses();
-          void fromElement.offsetHeight;
-          fromElement.style.removeProperty('transition');
-        } else {
-          clearTransitionClasses();
-        }
+        if (fromElement !== toElement) concealScreen(fromElement);
+        clearTransitionClasses();
       }, TRANSITION_MS);
       return;
     }
 
+    screens.forEach(screen => {
+      if (screen.id === screenId) screen.classList.remove('hidden', 'slide-left');
+      else concealScreen(screen);
+    });
     clearTransitionClasses();
-    originalShowScreen(screenId);
     if (screenId === 'hubScreen' && typeof window.renderHub === 'function') {
       try { window.renderHub(); } catch (e) {}
     }
-    activePanelId = screenId;
+    activeScreenId = screenId;
     setActivePanel(screenId);
     setDockVisible(screenId === 'hubScreen');
   }
@@ -159,7 +165,7 @@
 
   function goToPanel(name) {
     const screenId = PANEL_BY_NAME[name];
-    if (!screenId || activePanelId === screenId) return;
+    if (!screenId || activeScreenId === screenId) return;
     if (name === 'hub') {
       navigateScreen(screenId);
     } else if (name === 'idols' && typeof window.openIdols === 'function') {
@@ -215,7 +221,7 @@
     const deltaY = touch.clientY - start.y;
     if (Math.abs(deltaX) < 58 || Math.abs(deltaX) < Math.abs(deltaY) * 1.18) return;
 
-    const current = activePanelId || findVisiblePanel();
+    const current = PANEL_INDEX.hasOwnProperty(activeScreenId) ? activeScreenId : findVisibleScreen();
     const index = PANEL_INDEX[current];
     if (index === undefined) return;
     const nextIndex = deltaX < 0 ? index + 1 : index - 1;
@@ -233,10 +239,10 @@
     event.stopImmediatePropagation();
   }, true);
 
-  setDockVisible(activePanelId === 'hubScreen');
+  setDockVisible(activeScreenId === 'hubScreen');
 
   window.PanelNavigation = {
     go: goToPanel,
-    current: () => PANEL_NAMES[PANEL_INDEX[activePanelId]] || null
+    current: () => PANEL_NAMES[PANEL_INDEX[activeScreenId]] || null
   };
 })();
