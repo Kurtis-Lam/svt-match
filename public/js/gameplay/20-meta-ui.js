@@ -159,7 +159,6 @@
         </div>
         <div class="ss-bar ss-bar-lg"><i style="width:${progress.pct}%"></i></div>
         <div class="ss-banner-sub">XP: ${xpBottom}</div>
-        <div class="ss-banner-hint"><span>🎁</span> Tap to view and claim level rewards</div>
       </button>
       <section class="ss-missions">
         <div class="ss-section-heading">Missions to earn XP</div>
@@ -167,14 +166,14 @@
       </section>`;
   }
 
-  function rewardIcons(reward) {
-    const icons = [];
-    if (reward.coins) icons.push('🪙');
-    if (reward.diamonds) icons.push('💎');
-    if (reward.boxes) icons.push('🎁');
-    if (reward.rings) icons.push('💍');
-    if (reward.xp) icons.push('⭐');
-    return icons.length ? icons : ['🎁'];
+  function rewardImages(reward) {
+    const images = [];
+    if (reward.coins) images.push({ src: '/imgs/assets/coins.png', alt: 'Coins' });
+    if (reward.diamonds) images.push({ src: '/imgs/assets/diamond.png', alt: 'Diamonds' });
+    if (reward.boxes) images.push({ src: '/imgs/boxes/1.jpg', alt: 'SVT Box' });
+    if (reward.rings) images.push({ src: '/imgs/assets/shop_ring.png', alt: 'Rings' });
+    if (reward.xp) images.push({ fallback: '⭐', alt: 'Mastery XP' });
+    return images.length ? images : [{ src: '/imgs/boxes/1.jpg', alt: 'Reward' }];
   }
 
   function rewardDescription(reward) {
@@ -196,25 +195,27 @@
       const reached = s.sp >= tier.sp;
       const claimed = !!s.claimed['t' + index];
       const current = level === progress.level;
-      const icons = rewardIcons(tier.reward).map(icon => `<span>${icon}</span>`).join('');
+      const rewardHtml = rewardImages(tier.reward).map(item => item.src
+        ? `<img src="${item.src}" alt="${esc(item.alt)}" loading="lazy">`
+        : `<span class="reward-track-reward-fallback" role="img" aria-label="${esc(item.alt)}">${item.fallback}</span>`
+      ).join('');
       const detail = rewardDescription(tier.reward);
-      const button = claimed
-        ? `<button type="button" class="reward-track-icon is-claimed" disabled aria-label="Level ${level} reward already claimed"><span>✓</span><span class="reward-track-icon-label">Claimed</span></button>`
-        : reached
-          ? `<button type="button" class="reward-track-icon is-claimable" onclick="claimSeasonTier(${index})" aria-label="Claim Level ${level} reward" title="Claim Level ${level} reward"><span class="reward-track-icons">${icons}</span><span class="reward-track-icon-label">Claim</span></button>`
-          : `<button type="button" class="reward-track-icon" disabled aria-label="Level ${level} reward locked"><span>🔒</span><span class="reward-track-icon-label">Locked</span></button>`;
-      const tag = claimed ? 'Claimed' : reached ? (current ? 'Current level · Ready to claim' : 'Ready to claim') : `${amount(Math.max(0, tier.sp - s.sp))} XP to unlock`;
+      const buttonClass = claimed ? 'is-claimed' : reached ? 'is-claimable' : 'is-locked';
+      const buttonLabel = claimed ? `Level ${level} reward claimed` : reached ? `Claim Level ${level}: ${detail}` : `Level ${level} reward, requires ${amount(tier.sp)} XP`;
+      const clickAction = !claimed && reached ? ` onclick="claimSeasonTier(${index})"` : ' disabled';
       return `<article class="reward-track-row ${current ? 'is-current' : ''} ${claimed ? 'is-claimed' : ''} ${!reached ? 'is-locked' : ''}" data-level="${level}">
-        <span class="reward-track-node">${level}</span>
-        <span class="reward-track-main"><span class="reward-track-name">Level ${level}</span><span class="reward-track-detail">${amount(tier.sp)} XP · ${esc(detail)}</span><span class="reward-track-tag">${esc(tag)}</span></span>
-        ${button}
+        <span class="reward-track-node" aria-label="Level ${level}">${level}</span>
+        <span class="reward-track-main"><span class="reward-track-name">${esc(detail)}</span><span class="reward-track-detail">${amount(tier.sp)} XP required</span></span>
+        <button type="button" class="reward-track-icon ${buttonClass}"${clickAction} aria-label="${esc(buttonLabel)}" title="${esc(buttonLabel)}">
+          <span class="reward-track-images">${rewardHtml}</span>${claimed ? '<span class="reward-track-claimed-mark" aria-hidden="true">✓</span>' : ''}
+        </button>
       </article>`;
     }).join('');
     if (window.RewardPopups) {
       RewardPopups.showTrack({
         type: 'svtPass',
         title: `Season ${Meta.seasonInfo().num} Rewards`,
-        description: 'Tap the reward icon on an unlocked level to claim it. Claimed rewards are greyed out.',
+        description: '',
         bodyHtml: `<div class="reward-track-list">${rows}</div>`,
         currentLevel: progress.level,
         xpText: amount(s.sp),
