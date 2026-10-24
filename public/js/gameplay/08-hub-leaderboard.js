@@ -1,4 +1,4 @@
-// File: public/gameplay/js/08-hub-leaderboard.js
+// File: public/js/gameplay/08-hub-leaderboard.js
 // ── Leaderboard rows ──────────────────────────────────────────────────────
 function lbRowFromPlayerState(uid, username, displayName, ps, avatarSrc) {
   const marriedIdols = ps?.marriedIdols || {};
