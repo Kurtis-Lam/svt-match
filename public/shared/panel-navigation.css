@@ -31,16 +31,13 @@
   transition: transform 300ms cubic-bezier(.22,.78,.26,1), opacity 220ms ease;
   padding-bottom: max(.75rem, env(safe-area-inset-bottom));
   will-change: transform, opacity;
+  z-index: 70;
 }
 
-.panel-nav-dock.panel-nav-dock-exit {
+.panel-nav-dock.panel-nav-dock-hidden {
   transform: translateY(calc(100% + 18px));
   opacity: 0;
   pointer-events: none;
-}
-
-.panel-nav-dock.panel-nav-dock-enter {
-  animation: panelDockEnter 340ms cubic-bezier(.22,.78,.26,1) both;
 }
 
 #hubNavigationDock .nav-item {
@@ -93,17 +90,12 @@
   to { transform: translateX(0); opacity: 1; }
 }
 
-@keyframes panelDockEnter {
-  from { transform: translateY(calc(100% + 18px)); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .screen.panel-nav-enter-from-right:not(.hidden),
-  .screen.panel-nav-enter-from-left:not(.hidden),
-  .panel-nav-dock.panel-nav-dock-enter {
+  .screen.panel-nav-enter-from-left:not(.hidden) {
     animation-duration: 1ms !important;
   }
+
   .screen.hidden.panel-nav-exit-to-left,
   .screen.hidden.panel-nav-exit-to-right,
   .panel-nav-dock {
