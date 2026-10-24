@@ -165,6 +165,11 @@ const Meta = (() => {
     const res = await claimAwardSafe('season', { tier: i });
     if (!res) return false;
     if (s.claimed['t' + i]) return false;
+    if (res.extra && res.extra.alreadyClaimed) {
+      s.claimed['t' + i] = 1;
+      persist();
+      return { alreadyClaimed: true };
+    }
     s.claimed['t' + i] = 1;
     const g = grantReward(D.TIERS[i].reward, true);
     g.coins = Number(res.added) || 0;
