@@ -839,25 +839,25 @@ function resetLevelCompleteOverlayHTML() {
         </div>
         <div class="text-right">
         <p class="text-xs text-gray-500 font-bold">Total</p>
-        <p class="text-lg font-black text-gray-900">+<span id="lcTotal">0</span><img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></p>
+        <p class="text-lg font-black text-gray-900">+<span id="lcTotal">0</span><img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></p>
         </div>
     </div>
     </div>
     <div class="earn-row" id="lcBaseRow">
     <div class="label">Base</div>
-    <div class="val">+<span id="lcBase">100</span><img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+    <div class="val">+<span id="lcBase">100</span><img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row muted" id="lcStreakRow">
     <div class="label" id="lcStreakLabel"><img src="/imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Bonus</div>
-    <div class="val" id="lcStreakVal">+<span id="lcBonus">0</span><img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+    <div class="val" id="lcStreakVal">+<span id="lcBonus">0</span><img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row muted hidden" id="lcKkumaRow">
     <div class="label">🐾 Kkuma Bonus</div>
-    <div class="val">+5000<img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+    <div class="val">+5000<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row muted hidden" id="lcIdolBonusRow">
     <div class="label">🎭 Idol Bonus</div>
-    <div class="val">+<span id="lcIdolBonus">0</span><img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+    <div class="val">+<span id="lcIdolBonus">0</span><img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
     </div>
     <div class="earn-row muted" id="lcXpRow"><div class="label">Season XP</div><div class="val">+<span id="lcSeasonXp">0</span> XP</div></div>
     <div class="grid grid-cols-2 gap-3 pt-2">
@@ -996,7 +996,7 @@ function openLevelCompleteOverlay({
       // Show streak multiplier like Spotlight
       const currentStreak = GAME_STATE.streak || 1;
       if (streakLabel) streakLabel.innerHTML = `<img src="/imgs/assets/fire.png" style="width:1em;height:1em;vertical-align:middle;"> Streak (${currentStreak}x)`;
-      if (streakVal) streakVal.innerHTML = `+<span id="lcBonus">${Number(streakBonus || 0).toLocaleString()}</span> <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;">`;
+      if (streakVal) streakVal.innerHTML = `+<span id="lcBonus">${Number(streakBonus || 0).toLocaleString()}</span> <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
     }
   }
   // Kkuma Logic
@@ -1004,7 +1004,7 @@ function openLevelCompleteOverlay({
     if (kkumaBonus > 0) {
       kkumaRow.classList.remove('hidden');
       const valDiv = kkumaRow.querySelector('.val');
-      if (valDiv) valDiv.innerHTML = `+${Number(kkumaBonus).toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;">`;
+      if (valDiv) valDiv.innerHTML = `+${Number(kkumaBonus).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">`;
     } else {
       kkumaRow.classList.add('hidden');
     }
