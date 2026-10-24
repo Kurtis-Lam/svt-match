@@ -47,7 +47,7 @@
         ${description ? `<p class="reward-popup-desc">${esc(description)}</p>` : ''}
         <button class="reward-popup-close" type="button" aria-label="${esc(defaults.closeLabel || 'Close')}">×</button>
       </header>`;
-    overlay.innerHTML = `<section class="reward-popup-panel${trackMode ? ' reward-popup-panel--track' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">${header}${options.bodyHtml || ''}</section>`;
+    overlay.innerHTML = `<section class="reward-popup-panel${trackMode ? ' reward-popup-panel--track' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">${header}${trackMode ? '' : (options.bodyHtml || '')}</section>`;
     overlay.addEventListener('click', event => { if (event.target === overlay && options.dismissOnBackdrop !== false) close(); });
     overlay.querySelector('.reward-popup-close').addEventListener('click', close);
     document.body.appendChild(overlay);
@@ -108,11 +108,8 @@
       const list = body.querySelector('.reward-track-list');
       const current = list && list.querySelector(`[data-level="${Number(options.currentLevel) || 1}"]`);
       if (list && current) {
-        const centerPadding = Math.max(0, Math.floor((body.clientHeight - current.offsetHeight) / 2));
-        list.style.paddingTop = `${centerPadding}px`;
-        list.style.paddingBottom = `${centerPadding}px`;
-        body.scrollTop = Math.max(0, current.offsetTop - centerPadding);
-        current.scrollIntoView({ block: 'center', behavior: 'auto' });
+        const centeredTop = current.offsetTop - Math.max(0, (body.clientHeight - current.offsetHeight) / 2);
+        body.scrollTop = Math.max(0, centeredTop);
       }
       const closeButton = overlay.querySelector('.reward-popup-close');
       if (closeButton) closeButton.focus({ preventScroll: true });
