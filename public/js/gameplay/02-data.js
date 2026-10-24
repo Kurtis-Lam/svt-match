@@ -182,17 +182,17 @@ const IDOL_SHOP_COST = { kkuma: 5, ...Object.fromEntries(Object.entries(GAME_CON
 const BATTLE_GAMES = {
   showtime: {
     name: 'Showtime',
-    icon: './imgs/assets/hub_play_showtime.png',
+    icon: '/imgs/assets/hub_play_showtime.png',
     levelKey: 'level'
   },
   spotlight: {
     name: 'Spotlight',
-    icon: './imgs/assets/hub_play_props.png',
+    icon: '/imgs/assets/hub_play_props.png',
     levelKey: 'spotlightLevel'
   },
   snakeventeen: {
     name: 'Snakeventeen',
-    icon: './imgs/assets/hub_snake.png',
+    icon: '/imgs/assets/hub_snake.png',
     levelKey: 'snakeventeenLevel'
   },
 };
