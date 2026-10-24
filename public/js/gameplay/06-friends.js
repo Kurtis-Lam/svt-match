@@ -150,7 +150,7 @@ function buildFriendMetaFromPs(userId, u, ps) {
   const username = u?.username || ps?.username || '';
   const displayName = u?.displayName || ps?.displayName || username || 'Friend';
   const level = Number(ps?.level || 1);
-  const avatarSrc = ps?.equippedAvatarKey ? `./imgs/assets/avatars/${ps.equippedAvatarKey}` : (ps?.equippedIdolKey ? `./imgs/${ps.equippedIdolKey}/1.jpg` : './imgs/assets/default_avatar.png');
+  const avatarSrc = ps?.equippedAvatarKey ? `/imgs/assets/avatars/${ps.equippedAvatarKey}` : (ps?.equippedIdolKey ? `/imgs/${ps.equippedIdolKey}/1.jpg` : '/imgs/assets/default_avatar.png');
   const spotlightLevel = Number(ps?.spotlightLevel || 0);
   const snakeventeenLevel = Number(ps?.snakeventeenLevel || 0);
   // ── NEW: total love level ─────────────────────────
@@ -431,7 +431,7 @@ async function renderFriends() {
       row.className = "glass-card rounded-2xl p-4 flex items-center justify-between gap-3";
       row.innerHTML = `
         <div class="flex items-center gap-3 min-w-0">
-          <img class="avatar-sm" src="${f.avatarSrc || './imgs/assets/default_avatar.png'}" alt="avatar"/>
+          <img class="avatar-sm" src="${f.avatarSrc || '/imgs/assets/default_avatar.png'}" alt="avatar"/>
           <div class="min-w-0">
             <div class="font-extrabold text-gray-900 truncate">${escapeHtml(f.displayName || f.username)}</div>
             <div class="text-xs text-gray-500 font-bold truncate">@${escapeHtml(f.username || '')}</div>
@@ -512,10 +512,10 @@ async function renderFriends() {
         displayName: req.fromDisplayName
       };
       // Try to refresh avatar from latest PS (BUG-S04: equippedAvatarKey takes priority)
-      let avatarSrc = req.fromAvatarSrc || './imgs/assets/default_avatar.png';
+      let avatarSrc = req.fromAvatarSrc || '/imgs/assets/default_avatar.png';
       const data = await getPlayerStateByUserId(other.id);
-      if (data?.playerState?.equippedAvatarKey) avatarSrc = `./imgs/assets/avatars/${data.playerState.equippedAvatarKey}`;
-      else if (data?.playerState?.equippedIdolKey) avatarSrc = `./imgs/${data.playerState.equippedIdolKey}/1.jpg`;
+      if (data?.playerState?.equippedAvatarKey) avatarSrc = `/imgs/assets/avatars/${data.playerState.equippedAvatarKey}`;
+      else if (data?.playerState?.equippedIdolKey) avatarSrc = `/imgs/${data.playerState.equippedIdolKey}/1.jpg`;
       const row = document.createElement('div');
       row.className = "friend-pending-row p-4 flex items-center justify-between gap-3";
       row.innerHTML = `
@@ -550,10 +550,10 @@ async function renderFriends() {
         displayName: req.toDisplayName
       };
       // Try avatar (BUG-S04 pattern: check equippedAvatarKey first)
-      let avatarSrc = './imgs/assets/default_avatar.png';
+      let avatarSrc = '/imgs/assets/default_avatar.png';
       const data = await getPlayerStateByUserId(other.id);
-      if (data?.playerState?.equippedAvatarKey) avatarSrc = `./imgs/assets/avatars/${data.playerState.equippedAvatarKey}`;
-      else if (data?.playerState?.equippedIdolKey) avatarSrc = `./imgs/${data.playerState.equippedIdolKey}/1.jpg`;
+      if (data?.playerState?.equippedAvatarKey) avatarSrc = `/imgs/assets/avatars/${data.playerState.equippedAvatarKey}`;
+      else if (data?.playerState?.equippedIdolKey) avatarSrc = `/imgs/${data.playerState.equippedIdolKey}/1.jpg`;
       const row = document.createElement('div');
       row.className = "friend-outgoing-row p-4 flex items-center justify-between gap-3";  // BUG-F01: was friend-pending-row
       row.innerHTML = `
@@ -861,7 +861,7 @@ async function writeAcceptFriendToOtherUser_Standard(otherUserId, originalReq) {
     username: otherUser?.username || originalReq?.fromUsername || '',
     displayName: otherUser?.displayName || otherPs?.displayName || originalReq?.fromDisplayName || originalReq?.fromUsername || 'Friend',
     level: Number(otherPs?.level || 1),
-    avatarSrc: otherPs?.equippedIdolKey ? `./imgs/${otherPs.equippedIdolKey}/1.jpg` : (originalReq?.fromAvatarSrc || './imgs/assets/default_avatar.png')
+    avatarSrc: otherPs?.equippedIdolKey ? `/imgs/${otherPs.equippedIdolKey}/1.jpg` : (originalReq?.fromAvatarSrc || '/imgs/assets/default_avatar.png')
   };
   if (db) {
     // Read ONLY friends subtree for both users
