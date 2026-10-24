@@ -1,7 +1,9 @@
 .reward-popup-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 12000;
+  box-sizing: border-box;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -19,8 +21,7 @@
   flex-direction: column;
   box-sizing: border-box;
   width: min(100%, 440px);
-  max-height: calc(100vh - 16px);
-  max-height: calc(100dvh - 16px);
+  max-height: calc(100% - 16px);
   min-height: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, .82);
@@ -32,10 +33,8 @@
 
 .reward-popup-panel--track {
   width: min(100%, 480px);
-  height: min(88vh, 820px);
-  height: min(88dvh, 820px);
-  max-height: calc(100vh - 16px);
-  max-height: calc(100dvh - 16px);
+  height: min(88%, 820px);
+  max-height: calc(100% - 16px);
 }
 
 .reward-popup-header {
@@ -261,7 +260,7 @@
 @keyframes rewardClaimPulse { 50% { transform: scale(1.04); } }
 
 @media (max-height: 620px) {
-  .reward-popup-panel--track { height: calc(100vh - 16px); height: calc(100dvh - 16px); }
+  .reward-popup-panel--track { height: calc(100% - 16px); max-height: calc(100% - 16px); }
   .reward-popup-header { padding-top: 11px; padding-bottom: 10px; }
   .reward-popup-title { font-size: 16px; }
   .reward-track-row { min-height: 55px; padding: 6px 0; }
