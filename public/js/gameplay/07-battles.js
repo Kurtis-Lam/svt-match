@@ -103,14 +103,14 @@ async function refreshBattleLogAvatars() {
       if (data && data.playerState) {
         const ps = data.playerState;
         if (ps?.equippedAvatarKey) {
-          avatarMap[uid] = `./imgs/assets/avatars/${ps.equippedAvatarKey}`;
+          avatarMap[uid] = `/imgs/assets/avatars/${ps.equippedAvatarKey}`;
         } else if (ps?.equippedIdolKey) {
-          avatarMap[uid] = `./imgs/${ps.equippedIdolKey}/1.jpg`;
+          avatarMap[uid] = `/imgs/${ps.equippedIdolKey}/1.jpg`;
         } else {
-          avatarMap[uid] = './imgs/assets/default_avatar.png';
+          avatarMap[uid] = '/imgs/assets/default_avatar.png';
         }
       } else {
-        avatarMap[uid] = './imgs/assets/default_avatar.png';
+        avatarMap[uid] = '/imgs/assets/default_avatar.png';
       }
     }
   }
@@ -154,8 +154,8 @@ function renderBattleLogsOnly() {
       // ── TIE layout ─────────────────────────────────
       const me = (l.player1?.userId === currentUser?.id) ? l.player1 : l.player2;
       const opp = me === l.player1 ? l.player2 : l.player1;
-      const meAvatar = me?.avatarSrc || './imgs/assets/default_avatar.png';
-      const oppAvatar = opp?.avatarSrc || './imgs/assets/default_avatar.png';
+      const meAvatar = me?.avatarSrc || '/imgs/assets/default_avatar.png';
+      const oppAvatar = opp?.avatarSrc || '/imgs/assets/default_avatar.png';
       // PATCH G-03: escape display names in TIE log branch
       const meName = escapeHtml(me?.displayName || me?.username || 'You');
       const oppName = escapeHtml(opp?.displayName || opp?.username || 'Opponent');
@@ -200,8 +200,8 @@ function renderBattleLogsOnly() {
       const isYouWinner = l?.winner?.username === currentUser?.username;
       const me = isYouWinner ? l?.winner : l?.loser;
       const opp = isYouWinner ? l?.loser : l?.winner;
-      const meAvatar = me?.avatarSrc || './imgs/assets/default_avatar.png';
-      const oppAvatar = opp?.avatarSrc || './imgs/assets/default_avatar.png';
+      const meAvatar = me?.avatarSrc || '/imgs/assets/default_avatar.png';
+      const oppAvatar = opp?.avatarSrc || '/imgs/assets/default_avatar.png';
       // PATCH G-03 (win/loss branch): escape display names
       const meName = escapeHtml(me?.displayName || me?.username || 'You');
       const oppName = escapeHtml(opp?.displayName || opp?.username || 'Opponent');
@@ -303,8 +303,8 @@ function winnerLoserLayoutHtml(l) {
   const isYouWinner = l?.winner?.username === currentUser?.username;
   const me = isYouWinner ? l?.winner : l?.loser;
   const opp = isYouWinner ? l?.loser : l?.winner;
-  const meAvatar = escapeHtml(me?.avatarSrc || './imgs/assets/default_avatar.png');  // S-03 FIX
-  const oppAvatar = escapeHtml(opp?.avatarSrc || './imgs/assets/default_avatar.png');  // S-03 FIX
+  const meAvatar = escapeHtml(me?.avatarSrc || '/imgs/assets/default_avatar.png');  // S-03 FIX
+  const oppAvatar = escapeHtml(opp?.avatarSrc || '/imgs/assets/default_avatar.png');  // S-03 FIX
   // PATCH G-02: escape display names before injecting into innerHTML
   const meName = escapeHtml(me?.displayName || me?.username || 'You');
   const oppName = escapeHtml(opp?.displayName || opp?.username || 'Opponent');
@@ -406,7 +406,7 @@ function openBattleFriendSelection(gameKey) {
     const friendLevel = f[levelKey] ?? 0;
     return `
       <button class="select-row" onclick="selectBattleOpponent('${escapeHtml(f.userId)}', '${escapeHtml(gameKey)}', this)" id="friend_${escapeHtml(f.userId)}">
-        <img src="${escapeHtml(f.avatarSrc || './imgs/assets/default_avatar.png')}" alt="${escapeHtml(f.displayName || f.username)}" style="width:32px;height:32px;border-radius:12px;object-fit:cover;" />
+        <img src="${escapeHtml(f.avatarSrc || '/imgs/assets/default_avatar.png')}" alt="${escapeHtml(f.displayName || f.username)}" style="width:32px;height:32px;border-radius:12px;object-fit:cover;" />
         <div class="flex-1 min-w-0">
             <div class="name" style="font-size:13px; font-weight:800; color:#0f172a;">${f.displayName || f.username}</div>
             <div class="sub" style="font-size:11px; color:#64748b; margin-top:2px;">@${f.username || ''} • Lv. ${friendLevel}</div>
@@ -726,14 +726,14 @@ async function finalizeFriendReplyBattleIfNeeded(timeSec) {
     userId: b.fromUserId,
     username: b.fromUsername,
     displayName: b.fromDisplayName || b.fromUsername,
-    avatarSrc: './imgs/assets/default_avatar.png'
+    avatarSrc: '/imgs/assets/default_avatar.png'
   };
   // Try to get opponent's real avatar
   if (db && b.fromUserId) {
     try {
       const snap = await db.ref(`users/${b.fromUserId}/playerState`).once('value').catch(() => null);
       const ps = snap?.val() || null;
-      if (ps?.equippedIdolKey) oppMeta.avatarSrc = `./imgs/${ps.equippedIdolKey}/1.jpg`;
+      if (ps?.equippedIdolKey) oppMeta.avatarSrc = `/imgs/${ps.equippedIdolKey}/1.jpg`;
     } catch (e) {}
   }
   // Create log entry with tie support
