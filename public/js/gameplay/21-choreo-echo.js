@@ -1,4 +1,4 @@
-// File: public/gameplay/js/21-choreo-echo.js
+// File: public/js/gameplay/21-choreo-echo.js
 /* ──────────────────────────────────────────────────────────────────────────
    CHOREO ECHO — 4th game mode (Simon-style idol sequence memory)
    Watch the idols light up, then repeat the choreography. Round N shows N steps.
