@@ -71,17 +71,23 @@
 
     /* ─── LAYOUT ─── */
     .admin-layout {
-      position: relative;
+      display: flex;
+      align-items: stretch;
       min-height: calc(100vh - 60px);
+      overflow: clip;
     }
 
     .sidebar {
-      position: absolute; top: 0; left: 0; bottom: 0; width: 220px;
-      border-width: 0 1px 0 0; padding: 20px 12px; z-index: 100;
+      position: relative; top: auto; left: auto; bottom: auto;
+      flex: 0 0 220px; width: 220px; min-width: 220px;
+      border-width: 0 1px 0 0; padding: 20px 12px; z-index: 20;
+      margin-left: 0; transform: translateX(0);
+      transition: margin-left .28s cubic-bezier(.22,.78,.26,1), transform .28s cubic-bezier(.22,.78,.26,1);
+      overflow-y: auto;
     }
-    .sidebar.collapsed { transform: translateX(-100%); }
+    .sidebar.collapsed { margin-left: -220px; transform: translateX(0); }
 
-    .admin-main { flex: 1; padding: 28px; overflow-y: auto; width: 100%; margin-left: 0; }
+    .admin-main { flex: 1 1 auto; min-width: 0; padding: 28px; overflow-y: auto; width: auto; margin-left: 0; }
 
     .nav-item {
       display: flex; align-items: center; gap: 12px;
@@ -298,6 +304,32 @@
     .chart-note {
       font-size: 11px; color: var(--faint); margin-top: 8px; font-style: italic;
     }
+
+    .state-editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+    .state-editor-field { min-width: 0; padding: 10px; border: 1px solid rgba(148,163,184,.2); border-radius: 12px; background: rgba(255,255,255,.55); }
+    .state-editor-field label { display: block; font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 5px; overflow-wrap: anywhere; }
+    .state-editor-field small { display: block; color: var(--faint); font-size: 10px; margin-top: 4px; overflow-wrap: anywhere; }
+    .state-editor-field .field-input { padding: 8px 10px; font-size: 13px; }
+    .state-editor-field.state-boolean { display: flex; align-items: center; gap: 9px; }
+    .state-editor-field.state-boolean label { flex: 1; margin: 0; }
+    .state-editor-field.state-boolean input { width: 18px; height: 18px; accent-color: var(--pink-deep); }
+    .state-group { border: 1px solid rgba(148,163,184,.22); border-radius: 13px; margin: 8px 0; overflow: hidden; background: rgba(255,255,255,.35); }
+    .state-group > summary { cursor: pointer; padding: 11px 13px; font-size: 13px; font-weight: 850; background: rgba(148,163,184,.09); overflow-wrap: anywhere; }
+    .state-group-content { padding: 10px; }
+    .state-group-count { margin-left: 6px; color: var(--faint); font-weight: 600; font-size: 10px; }
+    .pass-editor { margin-bottom: 16px; padding: 14px; border: 1px solid rgba(34,197,94,.22); border-radius: 16px; background: rgba(34,197,94,.035); }
+    .pass-editor-head { font-size: 14px; font-weight: 900; margin-bottom: 10px; }
+    .pass-editor-values { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 10px; }
+    .pass-claim-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(95px,1fr)); gap: 8px; margin-top: 12px; }
+    .pass-claim-item { display: flex; align-items: center; gap: 7px; padding: 8px 9px; border: 1px solid rgba(148,163,184,.2); border-radius: 10px; background: rgba(255,255,255,.7); font-size: 12px; font-weight: 750; }
+    .pass-claim-item input { width: 16px; height: 16px; accent-color: #16a34a; }
+    .earnings-row { padding: 11px 0; border-bottom: 1px solid rgba(15,23,42,.07); }
+    .earnings-row:last-child { border-bottom: 0; }
+    .earnings-row-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .earnings-row-title { font-weight: 850; font-size: 13px; }
+    .earnings-row-meta { color: var(--faint); font-size: 11px; margin-top: 3px; }
+    .earnings-row-detail { color: var(--muted); font-size: 12px; margin-top: 5px; overflow-wrap: anywhere; }
+    @media (max-width: 720px) { .admin-main { padding: 16px; } .sidebar { flex-basis: 190px; min-width: 190px; width: 190px; } .sidebar.collapsed { margin-left: -190px; } }
     .econ-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 14px;
     }
@@ -623,28 +655,29 @@
             <div id="extraStatsMsg"></div>
           </div>
 
-          <div class="card" id="rawCard">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-              <div style="font-size:16px;font-weight:800;">Raw data editor</div>
-              <button class="btn btn-secondary btn-sm" onclick="loadAccountPanel(currentUserKey)"><i class="fas fa-rotate"></i> Reload</button>
+          <div class="card" id="earningsHistoryCard">
+            <div style="font-size:16px;font-weight:800;margin-bottom:6px;">🪙 Earnings history (Hong Kong time)</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Server-recorded coin rewards and manual coin adjustments.</div>
+            <div id="earningsHistoryContent" style="font-size:12px;color:var(--muted);">Select a player to load history.</div>
+            <div class="divider"></div>
+            <div style="font-size:15px;font-weight:850;margin-bottom:6px;">🧾 Admin change history (Hong Kong time)</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Every saved field change includes the admin and old/new values.</div>
+            <div id="adminChangeHistoryContent" style="font-size:12px;color:var(--muted);">Select a player to load history.</div>
+          </div>
+
+          <div class="card" id="stateEditorCard">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+              <div style="font-size:16px;font-weight:800;">🛠 Player state editor</div>
+              <button class="btn btn-secondary btn-sm" type="button" onclick="loadAccountPanel(currentUserKey)"><i class="fas fa-rotate"></i> Reload values</button>
             </div>
-            <pre id="rawView" style="max-height:360px;overflow:auto;background:rgba(15,23,42,0.05);border-radius:12px;padding:12px;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;"></pre>
-            <div style="font-size:12px;color:var(--muted);margin:0 0 10px;">Edit any user database field, including nested objects. You can set a whole object by using its parent path and entering valid JSON. Sensitive account credentials are managed by dedicated account actions.</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px;">
-              <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('rawPath').value='playerState/meta/season';">SVT Pass XP / claims</button>
-              <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('rawPath').value='playerState/ownedIdols';">Owned idols</button>
-              <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('rawPath').value='playerState';">Entire player state</button>
-              <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('rawPath').value='';document.getElementById('rawValue').value='';">Clear fields</button>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Expand a section, edit its input boxes, then save once. Numbers, text, and toggles keep their data types. Passwords and account security controls remain in Account Management.</div>
+            <div id="passStateEditor"></div>
+            <div id="structuredStateEditor"><span style="color:var(--faint);">Select a player to load their fields.</span></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;">
+              <button class="btn btn-primary" id="saveStructuredStateBtn" type="button" onclick="saveStructuredPlayerState()"><i class="fas fa-save"></i> Save changes</button>
+              <button class="btn btn-secondary btn-sm" type="button" onclick="loadAccountPanel(currentUserKey)">Discard edits</button>
             </div>
-            <div class="field-label" style="margin-top:12px;">Path (relative to this player, e.g. playerState/ownedIdols/key)</div>
-            <input class="field-input" id="rawPath" placeholder="playerState/coins" />
-            <div class="field-label" style="margin-top:10px;">Value (JSON)</div>
-            <textarea class="field-input" id="rawValue" rows="3" placeholder='12345 or "text" or {"a":1}'></textarea>
-            <div style="display:flex;gap:8px;margin-top:12px;">
-              <button class="btn btn-primary btn-sm" onclick="rawApply('set')">Set value</button>
-              <button class="btn btn-danger btn-sm" onclick="rawApply('remove')">Remove path</button>
-            </div>
-            <div id="rawMsg"></div>
+            <div id="stateEditorMsg" aria-live="polite"></div>
           </div>
         </div>
       </div>
@@ -2186,6 +2219,196 @@
   let _players = [];
   let _playersLoaded = false;
   let _acct = null;
+  let _stateEditorSnapshot = {};
+  let _stateEditorFieldCount = 0;
+
+  function adminStatePath(root, path) {
+    return String(path || '').split('/').filter(Boolean).reduce((cur, key) => cur && typeof cur === 'object' ? cur[key] : undefined, root);
+  }
+
+  function adminValuesEqual(a, b) {
+    return JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+  }
+
+  function isPassEditorPath(path) {
+    return path === 'meta/season/id' || path === 'meta/season/sp' || path === 'meta/season/boxes' || /^meta\/season\/claimed\/t\d+$/.test(path);
+  }
+
+  function stateFieldLabel(key) {
+    return String(key).replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ');
+  }
+
+  function renderStateLeaf(path, value) {
+    if (_stateEditorFieldCount >= 2000 || isPassEditorPath(path)) return '';
+    _stateEditorFieldCount++;
+    const key = path.split('/').pop();
+    const label = escapeHtml(stateFieldLabel(key));
+    const safePath = escapeHtml(path);
+    const type = value === null ? 'null' : typeof value;
+    if (type === 'boolean') {
+      return `<div class="state-editor-field state-boolean"><label><input type="checkbox" data-state-path="${safePath}" data-state-kind="boolean" ${value ? 'checked' : ''}> ${label}</label><small>${safePath}</small></div>`;
+    }
+    if (type === 'number') {
+      return `<div class="state-editor-field"><label>${label}</label><input class="field-input" type="number" step="${Number.isInteger(value) ? '1' : 'any'}" data-state-path="${safePath}" data-state-kind="number" value="${escapeHtml(String(value))}"><small>${safePath}</small></div>`;
+    }
+    if (type === 'string' || type === 'null') {
+      const raw = type === 'null' ? '' : value;
+      return `<div class="state-editor-field"><label>${label}</label><input class="field-input" type="text" data-state-path="${safePath}" data-state-kind="${type}" value="${escapeHtml(String(raw))}" placeholder="${type === 'null' ? '(empty value)' : ''}"><small>${safePath}</small></div>`;
+    }
+    return '';
+  }
+
+  function renderStateObject(value, prefix, depth) {
+    if (!value || typeof value !== 'object') return renderStateLeaf(prefix, value);
+    const entries = Object.entries(value);
+    const children = [];
+    entries.forEach(([key, child]) => {
+      const path = prefix ? `${prefix}/${key}` : key;
+      if (child !== null && typeof child === 'object') {
+        const nested = renderStateObject(child, path, depth + 1);
+        if (!nested) return;
+        const summary = `${escapeHtml(stateFieldLabel(key))}<span class="state-group-count">${Object.keys(child).length} fields</span>`;
+        children.push(`<details class="state-group" ${depth === 0 ? 'open' : ''}><summary>${summary}</summary><div class="state-group-content">${nested}</div></details>`);
+      } else {
+        const leaf = renderStateLeaf(path, child);
+        if (leaf) children.push(leaf);
+      }
+    });
+    if (!children.length) return '';
+    return prefix ? children.join('') : `<div class="state-editor-grid">${children.join('')}</div>`;
+  }
+
+  function renderPlayerStateEditor(playerState) {
+    const ps = playerState && typeof playerState === 'object' ? playerState : {};
+    try { _stateEditorSnapshot = JSON.parse(JSON.stringify(ps)); } catch (e) { _stateEditorSnapshot = {}; }
+    const season = (ps.meta && ps.meta.season) || {};
+    const claimed = season.claimed || {};
+    const passHost = document.getElementById('passStateEditor');
+    const stateHost = document.getElementById('structuredStateEditor');
+    if (passHost) {
+      const levelBoxes = Array.from({ length: 17 }, (_, i) => {
+        const isClaimed = !!claimed['t' + i];
+        return `<label class="pass-claim-item"><input type="checkbox" data-pass-claim="${i}" ${isClaimed ? 'checked' : ''}> Level ${i + 1} ${isClaimed ? '· claimed' : '· unclaimed'}</label>`;
+      }).join('');
+      passHost.innerHTML = `<div class="pass-editor"><div class="pass-editor-head">SVT Pass progress and reward claims</div><div class="pass-editor-values"><div><div class="field-label">Current pass XP</div><input class="field-input" type="number" min="0" step="1" data-pass-path="meta/season/sp" value="${escapeHtml(String(Number(season.sp) || 0))}"></div><div><div class="field-label">Unopened SVT Boxes</div><input class="field-input" type="number" min="0" step="1" data-pass-path="meta/season/boxes" value="${escapeHtml(String(Number(season.boxes) || 0))}"></div><div><div class="field-label">Season ID</div><input class="field-input" type="text" value="${escapeHtml(String(season.id || 'Not initialized'))}" readonly></div></div><div class="field-label" style="margin-top:14px;">Claimed / unclaimed level rewards</div><div class="pass-claim-grid">${levelBoxes}</div></div>`;
+    }
+    _stateEditorFieldCount = 0;
+    if (stateHost) {
+      const html = renderStateObject(ps, '', 0);
+      stateHost.innerHTML = html || '<div style="font-size:12px;color:var(--faint);">No editable fields found.</div>';
+      if (_stateEditorFieldCount >= 2000) stateHost.insertAdjacentHTML('beforeend', '<div class="msg-box msg-error">Only the first 2,000 simple fields are shown. Contact the project maintainer for unusually large records.</div>');
+    }
+    const msg = document.getElementById('stateEditorMsg');
+    if (msg) msg.innerHTML = '';
+  }
+
+  function stateInputValue(input) {
+    const kind = input.dataset.stateKind;
+    if (kind === 'boolean') return !!input.checked;
+    if (kind === 'number') {
+      if (input.value.trim() === '') return null;
+      const n = Number(input.value);
+      if (!Number.isFinite(n)) throw new Error('Enter a valid number for ' + input.dataset.statePath);
+      return n;
+    }
+    if (kind === 'null') return input.value === '' ? null : input.value;
+    return input.value;
+  }
+
+  async function saveStructuredPlayerState() {
+    const uid = currentUserKey;
+    if (!uid) return;
+    const updates = {};
+    try {
+      document.querySelectorAll('#structuredStateEditor [data-state-path]').forEach(input => {
+        const path = input.dataset.statePath;
+        const value = stateInputValue(input);
+        const original = adminStatePath(_stateEditorSnapshot, path);
+        if (!adminValuesEqual(original, value)) updates[path] = value;
+      });
+      document.querySelectorAll('#passStateEditor [data-pass-path]').forEach(input => {
+        const path = input.dataset.passPath;
+        if (input.value.trim() === '') throw new Error('SVT Pass values cannot be empty.');
+        const value = Number(input.value);
+        if (!Number.isFinite(value) || value < 0) throw new Error('SVT Pass XP and box count must be zero or greater.');
+        const next = Math.floor(value);
+        const original = Number(adminStatePath(_stateEditorSnapshot, path)) || 0;
+        if (original !== next) updates[path] = next;
+      });
+      document.querySelectorAll('#passStateEditor [data-pass-claim]').forEach(input => {
+        const index = Number(input.dataset.passClaim);
+        const path = `meta/season/claimed/t${index}`;
+        const wasClaimed = !!adminStatePath(_stateEditorSnapshot, path);
+        if (input.checked !== wasClaimed) updates[path] = input.checked ? 1 : null;
+      });
+    } catch (e) {
+      showMsg('stateEditorMsg', '❌ ' + e.message, 'error');
+      return;
+    }
+
+    if (!Object.keys(updates).length) {
+      showMsg('stateEditorMsg', 'No changes to save.', 'success');
+      return;
+    }
+    const btn = document.getElementById('saveStructuredStateBtn');
+    if (btn) btn.disabled = true;
+    try {
+      const result = await apiFetch('/api/admin/edit-state', { body: { uid, updates } });
+      await loadAccountPanel(uid);
+      showMsg('stateEditorMsg', `✅ Saved ${Number(result.updated) || 0} field changes. Each change was added to the admin history.`, 'success');
+    } catch (e) {
+      showMsg('stateEditorMsg', '❌ ' + e.message, 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function formatHistoryValue(value) {
+    if (value === null || value === undefined) return '—';
+    if (typeof value === 'object') return JSON.stringify(value).slice(0, 180);
+    return String(value).slice(0, 180);
+  }
+
+  async function loadPlayerHistories(uid) {
+    const earningsEl = document.getElementById('earningsHistoryContent');
+    const changesEl = document.getElementById('adminChangeHistoryContent');
+    if (!uid || !earningsEl || !changesEl) return;
+    earningsEl.innerHTML = 'Loading…';
+    changesEl.innerHTML = 'Loading…';
+    try {
+      const result = await apiFetch('/api/admin/users?view=earnings&uid=' + encodeURIComponent(uid));
+      if (uid !== currentUserKey) return;
+      const earnings = result.earnings || [];
+      earningsEl.innerHTML = earnings.map(entry => {
+        const adjustment = entry.type === 'admin_adjustment';
+        const amount = Number(entry.amount) || 0;
+        const amountText = (amount > 0 ? '+' : '') + _num(amount);
+        const title = adjustment ? 'Admin coin adjustment ' + amountText : 'Earned ' + amountText + ' coins · ' + escapeHtml(entry.source || 'reward');
+        const actor = adjustment ? `<div class="earnings-row-meta">Changed by ${escapeHtml(entry.adminEmail || entry.adminUid || 'admin')}</div>` : '';
+        const detail = `Coin balance: ${_num(entry.coinsBefore)} → ${_num(entry.coinsAfter)}`;
+        return `<div class="earnings-row"><div class="earnings-row-top"><div class="earnings-row-title">${title}</div><span class="tag ${adjustment ? 'tag-orange' : 'tag-green'}">${adjustment ? 'ADMIN EDIT' : 'EARNING'}</span></div><div class="earnings-row-meta">${escapeHtml(toHKT(entry.at))}</div>${actor}<div class="earnings-row-detail">${detail}</div></div>`;
+      }).join('') || '<div style="padding:8px 0;color:var(--faint);">No earnings history has been recorded yet.</div>';
+
+      const changes = result.changes || [];
+      changesEl.innerHTML = changes.map(entry => {
+        const detail = entry.detail || {};
+        const actor = detail.adminEmail || entry.by || 'admin';
+        let rows = '';
+        if (Array.isArray(detail.changes) && detail.changes.length) {
+          rows = detail.changes.map(change => `<div class="earnings-row-detail"><b>${escapeHtml(change.path || 'field')}</b>: ${escapeHtml(formatHistoryValue(change.from))} → ${escapeHtml(formatHistoryValue(change.to))}</div>`).join('');
+        } else if (detail.path) {
+          rows = `<div class="earnings-row-detail"><b>${escapeHtml(detail.path)}</b>: ${escapeHtml(formatHistoryValue(detail.before))} → ${escapeHtml(formatHistoryValue(detail.after))}</div>`;
+        } else {
+          rows = `<div class="earnings-row-detail">${escapeHtml(JSON.stringify(detail).slice(0, 300))}</div>`;
+        }
+        return `<div class="earnings-row"><div class="earnings-row-title">${escapeHtml(entry.action || 'admin change')}</div><div class="earnings-row-meta">${escapeHtml(toHKT(entry.at))} · Admin: ${escapeHtml(actor)}</div>${rows}</div>`;
+      }).join('') || '<div style="padding:8px 0;color:var(--faint);">No admin field changes recorded for this player.</div>';
+    } catch (e) {
+      if (uid !== currentUserKey) return;
+      earningsEl.innerHTML = `<span style="color:#dc2626;">${escapeHtml(e.message)}</span>`;
+      changesEl.innerHTML = `<span style="color:#dc2626;">${escapeHtml(e.message)}</span>`;
+    }
+  }
 
   function _ago(ms) {
     if (!ms) return '—';
@@ -2260,7 +2483,7 @@
       ['Last sign-in', a ? dt(a.lastSignInAt) : '—'],
       ['Game status', g.banned ? '<span class="tag tag-orange">Banned</span> ' + escapeHtml(g.banned.reason || '') : 'Active'],
       ['Anti-cheat flags', g.strikes ? '<b>' + g.strikes + '</b> (last ' + _ago(g.lastFlagAt) + ')' : 'None'],
-      ['Legacy password in DB', _acct.hasLegacyPassword ? '<span class="tag tag-orange">Present</span> (remove via raw editor: password)' : 'No']
+      ['Legacy password in DB', _acct.hasLegacyPassword ? '<span class="tag tag-orange">Present</span> (account credentials are managed separately)' : 'No']
     ];
     document.getElementById('accountInfo').innerHTML = rows.map(r => '<div><span style="display:inline-block;min-width:150px;color:var(--faint);">' + r[0] + '</span>' + r[1] + '</div>').join('');
     document.getElementById('banBtn').style.display = g.banned ? 'none' : '';
@@ -2274,7 +2497,8 @@
     document.getElementById('xWins').value = st.battleWins ?? 0;
     document.getElementById('xLosses').value = st.battleLosses ?? 0;
     document.getElementById('xLevelsDone').value = st.levelsCompleted ?? 0;
-    document.getElementById('rawView').textContent = JSON.stringify(u, null, 2);
+    renderPlayerStateEditor(ps);
+    loadPlayerHistories(currentUserKey);
   }
 
   async function accountAction(action) {
@@ -2341,21 +2565,6 @@
     } catch (e) { showMsg('extraStatsMsg', '❌ ' + e.message, 'error'); }
   }
 
-  async function rawApply(op) {
-    if (!currentUserKey) return;
-    const path = document.getElementById('rawPath').value.trim().replace(/^\/+|\/+$/g, '');
-    if (!path) { showMsg('rawMsg', '❌ Enter a path.', 'error'); return; }
-    const body = { uid: currentUserKey, op, path };
-    if (op === 'set') {
-      try { body.value = JSON.parse(document.getElementById('rawValue').value); }
-      catch (e) { showMsg('rawMsg', '❌ Value must be valid JSON.', 'error'); return; }
-    } else if (!confirm('Remove users/' + currentUserKey + '/' + path + ' ?')) return;
-    try {
-      await apiFetch('/api/admin/raw', { body });
-      showMsg('rawMsg', '✅ Applied.', 'success');
-      await loadAccountPanel(currentUserKey);
-    } catch (e) { showMsg('rawMsg', '❌ ' + e.message, 'error'); }
-  }
 
   async function loadAudit() {
     const fl = document.getElementById('flagsList');
