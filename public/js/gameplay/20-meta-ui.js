@@ -83,6 +83,13 @@
   window.claimSeasonTier = async function (i) {
     const g = await Meta.claimTier(i);
     if (!g) return;
+    if (g.alreadyClaimed) {
+      showToast('This reward was already claimed. Your SVT Pass has been synced.', 'info');
+      renderHub();
+      renderSeason();
+      openSeasonRewards();
+      return;
+    }
     const bits = [];
     if (g.coins) bits.push(`+${amount(g.coins)} coins`);
     if (g.diamonds) bits.push(`+${amount(g.diamonds)} diamonds`);
