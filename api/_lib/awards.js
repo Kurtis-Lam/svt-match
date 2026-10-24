@@ -407,7 +407,7 @@ function awardQuest(L, ctx, now, ps) {
     const id = String(ctx.id || '');
     const def = Q.daily[id];
     if (!def) throw httpError(400, 'Unknown quest');
-    if (L.day.dq[id]) throw httpError(409, 'Quest already claimed');
+    if (L.day.dq[id]) return { coins: 0, extra: { kind, id, alreadyClaimed: true } };
     const src = def.metric === 'passes' ? L.day.passes : L.day.runs;
     const progress = def.game === 'any' ? GAMES.reduce((s, g) => s + num(src[g]), 0) : num(src[def.game]);
     if (progress < def.target) throw httpError(403, 'Quest is not complete');
@@ -417,18 +417,22 @@ function awardQuest(L, ctx, now, ps) {
 
   const claimKey = (k) => {
     L.ma.q = obj(L.ma.q);
-    if (L.ma.q[k]) throw httpError(409, 'Quest already claimed');
+    if (L.ma.q[k]) return false;
     if (Object.keys(L.ma.q).length > 400) throw httpError(400, 'Too many claims');
     L.ma.q[k] = 1;
+    return true;
   };
 
   if (kind === 'idol') {
     const key = String(ctx.idolKey || '');
     const tier = int(ctx.tier, 1, 1000, 'tier');
     if (!KEY_RE.test(key) || !Q.idol.tiers.includes(tier)) throw httpError(400, 'Unknown quest');
+    const claimId = `i:${key}:${tier}`;
+    L.ma.q = obj(L.ma.q);
+    if (L.ma.q[claimId]) return { coins: 0, extra: { kind, key, tier, alreadyClaimed: true } };
     const have = num(L.c.im[key]);
     if (have < Math.ceil(tier * Q.idol.leniency)) throw httpError(403, 'Quest is not complete');
-    claimKey(`i:${key}:${tier}`);
+    if (!claimKey(claimId)) return { coins: 0, extra: { kind, key, tier, alreadyClaimed: true } };
     return { coins: Q.idol.coins[tier], extra: { kind, key, tier } };
   }
 
@@ -436,9 +440,12 @@ function awardQuest(L, ctx, now, ps) {
     const def = Q.timed[kind];
     const tier = int(ctx.tier, 1, 1000, 'tier');
     if (!def.tiers.includes(tier)) throw httpError(400, 'Unknown quest');
+    const claimId = `${kind}:${tier}`;
+    L.ma.q = obj(L.ma.q);
+    if (L.ma.q[claimId]) return { coins: 0, extra: { kind, tier, alreadyClaimed: true } };
     const have = num(kind === 'fast' ? L.c.s30 : L.c.s20);
     if (have < tier) throw httpError(403, 'Quest is not complete');
-    claimKey(`${kind}:${tier}`);
+    if (!claimKey(claimId)) return { coins: 0, extra: { kind, tier, alreadyClaimed: true } };
     return { coins: def.coins[tier], extra: { kind, tier } };
   }
 
@@ -449,6 +456,9 @@ function awardQuest(L, ctx, now, ps) {
     if (!def) throw httpError(400, 'Unknown quest');
     const idx = def.tiers.indexOf(tier);
     if (idx < 0) throw httpError(400, 'Unknown quest');
+    const claimId = `t:${id}:${tier}`;
+    L.ma.q = obj(L.ma.q);
+    if (L.ma.q[claimId]) return { coins: 0, extra: { kind, id, tier, alreadyClaimed: true } };
     const s = obj(ps);
     const echo = obj(obj(s.meta).echo);
     const stats = {
@@ -461,7 +471,7 @@ function awardQuest(L, ctx, now, ps) {
       echoBest: num(L.c.echoBest)
     };
     if (stats[def.stat] < tier) throw httpError(403, 'Quest is not complete');
-    claimKey(`t:${id}:${tier}`);
+    if (!claimKey(claimId)) return { coins: 0, extra: { kind, id, tier, alreadyClaimed: true } };
     return { coins: def.rewards[idx], extra: { kind, id, tier } };
   }
 
@@ -581,11 +591,15 @@ async function processAward(uid, body) {
 
   const coins = Math.max(0, Math.floor(num(outcome.coins)));
   let stateValues = null;
+  let coinsBefore = 0;
+  let totalCoinsEarnedBefore = 0;
   const r = await txn(`users/${uid}/playerState`, (cur) => {
     const st = cur && typeof cur === 'object' ? JSON.parse(JSON.stringify(cur)) : {};
     st.stats = obj(st.stats);
-    st.coins = Math.max(0, Math.floor(num(st.coins))) + coins;
-    st.stats.totalCoinsEarned = Math.max(0, num(st.stats.totalCoinsEarned)) + coins;
+    coinsBefore = Math.max(0, Math.floor(num(st.coins)));
+    totalCoinsEarnedBefore = Math.max(0, num(st.stats.totalCoinsEarned));
+    st.coins = coinsBefore + coins;
+    st.stats.totalCoinsEarned = totalCoinsEarnedBefore + coins;
     if (outcome.levelField) st[outcome.levelField] = Math.max(0, Math.floor(num(st[outcome.levelField]))) + 1;
     const counts = obj(outcome.counts);
     for (const k of Object.keys(counts)) st.stats[k] = Math.max(0, num(st.stats[k])) + num(counts[k]);
@@ -603,7 +617,22 @@ async function processAward(uid, body) {
     await db().ref(`users/${uid}/playerState`).remove().catch(() => {});
     throw httpError(404, 'Profile not found');
   }
+  if (coins > 0) {
+    const values = stateValues || valuesOf(r.value);
+    const historyRef = db().ref(`adminPlayerHistory/${uid}/earningsHistory`).push();
+    await historyRef.set({
+      at: now,
+      type: 'earning',
+      source,
+      amount: coins,
+      coinsBefore,
+      coinsAfter: Number(values.coins) || (coinsBefore + coins),
+      totalCoinsEarnedBefore,
+      totalCoinsEarnedAfter: Number(values.totalCoinsEarned) || (totalCoinsEarnedBefore + coins),
+      detail: outcome.extra || {}
+    }).catch((e) => console.error('[earnings-history] failed:', e && e.message));
+  }
   return { ok: true, source, added: coins, extra: outcome.extra || {}, values: stateValues || valuesOf(r.value) };
 }
 
-module.exports = { processAward, RULES, seasonId, seasonInfo, dayKey };
+module.exports = { processAward, RULES, seasonId, seasonInfo, dayKey, seedLedger };
