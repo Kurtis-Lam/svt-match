@@ -629,6 +629,13 @@
               <button class="btn btn-secondary btn-sm" onclick="loadAccountPanel(currentUserKey)"><i class="fas fa-rotate"></i> Reload</button>
             </div>
             <pre id="rawView" style="max-height:360px;overflow:auto;background:rgba(15,23,42,0.05);border-radius:12px;padding:12px;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;"></pre>
+            <div style="font-size:12px;color:var(--muted);margin:0 0 10px;">Edit any user database field, including nested objects. You can set a whole object by using its parent path and entering valid JSON. Sensitive account credentials are managed by dedicated account actions.</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px;">
+              <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('rawPath').value='playerState/meta/season';">SVT Pass XP / claims</button>
+              <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('rawPath').value='playerState/ownedIdols';">Owned idols</button>
+              <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('rawPath').value='playerState';">Entire player state</button>
+              <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('rawPath').value='';document.getElementById('rawValue').value='';">Clear fields</button>
+            </div>
             <div class="field-label" style="margin-top:12px;">Path (relative to this player, e.g. playerState/ownedIdols/key)</div>
             <input class="field-input" id="rawPath" placeholder="playerState/coins" />
             <div class="field-label" style="margin-top:10px;">Value (JSON)</div>
