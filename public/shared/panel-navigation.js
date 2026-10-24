@@ -11,6 +11,7 @@
     'panel-nav-enter-from-right', 'panel-nav-enter-from-left',
     'panel-nav-exit-to-left', 'panel-nav-exit-to-right'
   ];
+  const DOCK_HIDDEN_CLASS = 'panel-nav-dock-hidden';
 
   const originalShowScreen = window.showScreen;
   if (typeof originalShowScreen !== 'function') return;
@@ -42,7 +43,7 @@
     const dock = getDock();
     if (!dock) return;
     dock.querySelectorAll('[data-main-panel]').forEach(button => {
-      const selected = panelId === 'hubScreen' && button.dataset.mainPanel === 'hub';
+      const selected = button.dataset.mainPanel === PANEL_NAMES[PANEL_INDEX[panelId]];
       button.classList.toggle('active', selected);
       button.classList.toggle('text-gray-400', !selected);
       button.setAttribute('aria-current', selected ? 'page' : 'false');
@@ -59,7 +60,7 @@
       clearTimeout(cleanupTimer);
       clearTransitionClasses();
       const dock = getDock();
-      if (dock) dock.classList.remove('panel-nav-dock-enter', 'panel-nav-dock-exit');
+      if (dock) dock.classList.add(DOCK_HIDDEN_CLASS);
       originalShowScreen(screenId);
       activePanelId = null;
       return;
@@ -69,6 +70,8 @@
       originalShowScreen(screenId);
       activePanelId = screenId;
       setActivePanel(screenId);
+      const dock = getDock();
+      if (dock) dock.classList.toggle(DOCK_HIDDEN_CLASS, screenId !== 'hubScreen');
       return;
     }
 
@@ -91,13 +94,10 @@
     }
 
     const dock = getDock();
-    if (dock) {
-      dock.classList.remove('panel-nav-dock-enter', 'panel-nav-dock-exit');
-      if (fromId === 'hubScreen' && screenId !== 'hubScreen') {
-        dock.classList.add('panel-nav-dock-exit');
-      } else if (screenId === 'hubScreen' && fromId !== 'hubScreen') {
-        dock.classList.add('panel-nav-dock-enter');
-      }
+    if (dock) dock.classList.toggle(DOCK_HIDDEN_CLASS, screenId !== 'hubScreen');
+
+    if (screenId === 'hubScreen' && typeof window.renderHub === 'function') {
+      try { window.renderHub(); } catch (e) {}
     }
 
     originalShowScreen(screenId);
@@ -106,8 +106,6 @@
 
     cleanupTimer = window.setTimeout(() => {
       clearTransitionClasses();
-      const currentDock = getDock();
-      if (currentDock) currentDock.classList.remove('panel-nav-dock-enter', 'panel-nav-dock-exit');
     }, TRANSITION_MS);
   }
 
@@ -115,9 +113,8 @@
 
   function goToPanel(name) {
     const screenId = PANEL_BY_NAME[name];
-    if (!screenId) return;
+    if (!screenId || activePanelId === screenId) return;
     if (name === 'hub') {
-      if (typeof window.renderHub === 'function') window.renderHub();
       navigateScreen(screenId);
     } else if (name === 'idols' && typeof window.openIdols === 'function') {
       window.openIdols();
