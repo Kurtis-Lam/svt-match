@@ -46,7 +46,7 @@ function showIdolUnlockAnimation(idolKey, onDone) {
   const idol = IDOLS.find(i => i.key === idolKey);
   const rarity = IDOL_RARITY[idolKey] || 'rare';
   const desc = IDOL_DESCRIPTIONS[idolKey] || '';
-  const imgSrc = `./imgs/${idolKey}/1.jpg`;
+  const imgSrc = `/imgs/${idolKey}/1.jpg`;
   const rarityColor = rarityDotColor(rarity);
   const bgGrad = RARITY_BG_GRADIENT[rarity] || RARITY_BG_GRADIENT.rare;
   const ability = getAbilityForIdol(idolKey);
