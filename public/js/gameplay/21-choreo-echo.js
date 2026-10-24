@@ -145,7 +145,7 @@
     E.padEls.forEach((el, i) => {
       const key = E.pads[i];
       const img = el.firstChild;
-      img.src = `./imgs/${key}/1.jpg`;
+      img.src = `/imgs/${key}/1.jpg`;
       const theme = (typeof IDOL_THEME !== 'undefined' && IDOL_THEME[key]) || ['#f5c6d0', '#9ec5d9'];
       el.style.setProperty('--glow', theme[0]);
       el.classList.remove('lit', 'wrong', 'right');
@@ -236,7 +236,7 @@
     }
     buildBoard();
     if (typeof lowPriorityPreload === 'function') {
-      lowPriorityPreload(E.pads.map(k => `./imgs/${k}/1.jpg`));
+      lowPriorityPreload(E.pads.map(k => `/imgs/${k}/1.jpg`));
     }
     showScreen('echoScreen');
     paintHud();
@@ -481,7 +481,7 @@
 
   function openResult(rounds, base, streakBonus, passed, perfect, newBest) {
     const s = st();
-    const coin = '<img src="./imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" alt="">';
+    const coin = '<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;" alt="">';
     openUndismissibleModal(passed ? '✅ Level Complete!' : '❌ Level Failed', `
       <div class="glass-card rounded-2xl p-4 text-center">
         <p class="text-sm text-gray-500 font-bold">Rounds cleared</p>
