@@ -1,0 +1,112 @@
+#hubScreen, #idolsScreen, #shopScreen, #questsScreen {
+  touch-action: pan-y pinch-zoom;
+  will-change: transform, opacity;
+}
+
+.screen.panel-nav-enter-from-right:not(.hidden) {
+  animation: panelEnterFromRight 360ms cubic-bezier(.22,.78,.26,1) both !important;
+}
+
+.screen.panel-nav-enter-from-left:not(.hidden) {
+  animation: panelEnterFromLeft 360ms cubic-bezier(.22,.78,.26,1) both !important;
+}
+
+.screen.hidden.panel-nav-exit-to-left {
+  transform: translateX(-100%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: transform 360ms cubic-bezier(.22,.78,.26,1), opacity 260ms ease, visibility 0s linear 360ms !important;
+}
+
+.screen.hidden.panel-nav-exit-to-right {
+  transform: translateX(100%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: transform 360ms cubic-bezier(.22,.78,.26,1), opacity 260ms ease, visibility 0s linear 360ms !important;
+}
+
+.panel-nav-dock {
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 300ms cubic-bezier(.22,.78,.26,1), opacity 220ms ease;
+  padding-bottom: max(.75rem, env(safe-area-inset-bottom));
+  will-change: transform, opacity;
+}
+
+.panel-nav-dock.panel-nav-dock-exit {
+  transform: translateY(calc(100% + 18px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.panel-nav-dock.panel-nav-dock-enter {
+  animation: panelDockEnter 340ms cubic-bezier(.22,.78,.26,1) both;
+}
+
+#hubNavigationDock .nav-item {
+  min-height: 54px;
+  justify-content: center;
+  border-radius: 15px;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: color 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+#hubNavigationDock .nav-item:active {
+  transform: scale(.94);
+  background: rgba(148, 163, 184, .12);
+}
+
+#hubNavigationDock .nav-item .nav-icon {
+  width: 30px;
+  height: 30px;
+  transition: transform 220ms cubic-bezier(.2,.8,.2,1);
+}
+
+#hubNavigationDock .nav-item:active .nav-icon {
+  transform: translateY(-2px) scale(1.05);
+}
+
+#hubNavigationDock .nav-item.active::before {
+  top: -5px;
+  height: 3px;
+  width: 28px;
+  background: linear-gradient(90deg, var(--theme1), var(--theme2));
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--theme2) 45%, transparent);
+}
+
+.diamond-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  object-fit: contain;
+  vertical-align: -0.12em;
+}
+
+@keyframes panelEnterFromRight {
+  from { transform: translateX(100%); opacity: .72; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes panelEnterFromLeft {
+  from { transform: translateX(-100%); opacity: .72; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes panelDockEnter {
+  from { transform: translateY(calc(100% + 18px)); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen.panel-nav-enter-from-right:not(.hidden),
+  .screen.panel-nav-enter-from-left:not(.hidden),
+  .panel-nav-dock.panel-nav-dock-enter {
+    animation-duration: 1ms !important;
+  }
+  .screen.hidden.panel-nav-exit-to-left,
+  .screen.hidden.panel-nav-exit-to-right,
+  .panel-nav-dock {
+    transition-duration: 1ms !important;
+  }
+}
