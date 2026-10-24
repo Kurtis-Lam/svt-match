@@ -1,6 +1,9 @@
-#hubScreen, #idolsScreen, #shopScreen, #questsScreen {
-  touch-action: pan-y pinch-zoom;
-  will-change: transform, opacity;
+.screen.panel-nav-enter-from-right:not(.hidden),
+.screen.panel-nav-enter-from-left:not(.hidden),
+.screen.panel-nav-exit-to-left:not(.hidden),
+.screen.panel-nav-exit-to-right:not(.hidden) {
+  transition: none !important;
+  will-change: transform;
   backface-visibility: hidden;
 }
 
@@ -84,23 +87,23 @@
 }
 
 @keyframes panelEnterFromRight {
-  from { transform: translate3d(100%, 0, 0); opacity: .72; }
-  to { transform: translate3d(0, 0, 0); opacity: 1; }
+  from { transform: translate3d(100%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
 }
 
 @keyframes panelEnterFromLeft {
-  from { transform: translate3d(-100%, 0, 0); opacity: .72; }
-  to { transform: translate3d(0, 0, 0); opacity: 1; }
+  from { transform: translate3d(-100%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
 }
 
 @keyframes panelExitToLeft {
-  from { transform: translate3d(0, 0, 0); opacity: 1; }
-  to { transform: translate3d(-28%, 0, 0); opacity: .55; }
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-100%, 0, 0); }
 }
 
 @keyframes panelExitToRight {
-  from { transform: translate3d(0, 0, 0); opacity: 1; }
-  to { transform: translate3d(28%, 0, 0); opacity: .55; }
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(100%, 0, 0); }
 }
 
 @keyframes dockBounceDown {
