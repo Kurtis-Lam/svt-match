@@ -193,8 +193,8 @@ const GAME_CONFIG = {
 
   /* ── 8. SEASON / BRAWL PASS ────────────────────────────────────────────── */
   season: {
-    startsOn: [2026, 10, 12],
-    durationDays: 28,
+    startsOn: [2026, 1, 1],
+    calendarMonths: true,
     sxp: {
       levelPassed: 10,
       levelFailed: 3,
