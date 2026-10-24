@@ -1,4 +1,4 @@
-// File: public/gameplay/js/14-spotlight.js
+// File: public/js/gameplay/14-spotlight.js
 function buildSpotlightRevealSchedule(targetKey, gridCards, targetGridIdx, isKkuma) {
   // Pre‑generate every reveal that will happen during the 20‑second game.
   // Each entry: { timeSec: number, cardIdx: number, idolKey: string, display: string, src: string, rarity: string, isTarget: boolean, showDuration: number }
