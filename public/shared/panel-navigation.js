@@ -12,12 +12,14 @@
     'panel-nav-exit-to-left', 'panel-nav-exit-to-right'
   ];
   const DOCK_HIDDEN_CLASS = 'panel-nav-dock-hidden';
+  const DOCK_ENTER_CLASS = 'panel-nav-dock-entering';
 
   const originalShowScreen = window.showScreen;
   if (typeof originalShowScreen !== 'function') return;
 
   let activePanelId = findVisiblePanel();
   let cleanupTimer = 0;
+  let dockTimer = 0;
   let touchStart = null;
   let suppressClickUntil = 0;
 
@@ -41,7 +43,7 @@
 
   function setActivePanel(panelId) {
     const dock = getDock();
-    if (!dock) return;
+    if (!dock || !PANEL_INDEX.hasOwnProperty(panelId)) return;
     dock.querySelectorAll('[data-main-panel]').forEach(button => {
       const selected = button.dataset.mainPanel === PANEL_NAMES[PANEL_INDEX[panelId]];
       button.classList.toggle('active', selected);
@@ -50,17 +52,44 @@
     });
   }
 
+  function setDockVisible(visible) {
+    const dock = getDock();
+    if (!dock) return;
+    clearTimeout(dockTimer);
+    dock.classList.remove(DOCK_ENTER_CLASS);
+    if (!visible) {
+      dock.classList.add(DOCK_HIDDEN_CLASS);
+      dock.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    const wasHidden = dock.classList.contains(DOCK_HIDDEN_CLASS);
+    dock.classList.remove(DOCK_HIDDEN_CLASS);
+    dock.setAttribute('aria-hidden', 'false');
+    if (wasHidden) {
+      dock.classList.add(DOCK_ENTER_CLASS);
+      dockTimer = window.setTimeout(() => dock.classList.remove(DOCK_ENTER_CLASS), TRANSITION_MS + 30);
+    }
+  }
+
+  function hideUnrelatedScreens(fromId, toId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+      if (screen.id === fromId || screen.id === toId) return;
+      screen.classList.add('hidden');
+      screen.classList.remove(...TRANSITION_CLASSES, 'slide-left');
+    });
+  }
+
   function navigateScreen(screenId) {
     const targetIsMainPanel = PANEL_IDS.includes(screenId);
+    const visiblePanel = findVisiblePanel();
     const fromId = activePanelId && document.getElementById(activePanelId) && !document.getElementById(activePanelId).classList.contains('hidden')
       ? activePanelId
-      : findVisiblePanel();
+      : visiblePanel;
 
     if (!targetIsMainPanel) {
       clearTimeout(cleanupTimer);
       clearTransitionClasses();
-      const dock = getDock();
-      if (dock) dock.classList.add(DOCK_HIDDEN_CLASS);
+      setDockVisible(false);
       originalShowScreen(screenId);
       activePanelId = null;
       return;
@@ -70,43 +99,60 @@
       originalShowScreen(screenId);
       activePanelId = screenId;
       setActivePanel(screenId);
-      const dock = getDock();
-      if (dock) dock.classList.toggle(DOCK_HIDDEN_CLASS, screenId !== 'hubScreen');
+      setDockVisible(screenId === 'hubScreen');
       return;
     }
 
     clearTimeout(cleanupTimer);
     clearTransitionClasses();
 
-    const fromIndex = fromId in PANEL_INDEX ? PANEL_INDEX[fromId] : null;
+    const fromIndex = Object.prototype.hasOwnProperty.call(PANEL_INDEX, fromId) ? PANEL_INDEX[fromId] : null;
     const toIndex = PANEL_INDEX[screenId];
-    let exitClass = '';
-    let enterClass = '';
+    const fromElement = fromId ? document.getElementById(fromId) : null;
+    const toElement = document.getElementById(screenId);
 
-    if (fromIndex !== null) {
+    if (fromIndex !== null && fromElement && toElement) {
       const movingRight = toIndex > fromIndex;
-      exitClass = movingRight ? 'panel-nav-exit-to-left' : 'panel-nav-exit-to-right';
-      enterClass = movingRight ? 'panel-nav-enter-from-right' : 'panel-nav-enter-from-left';
-      const fromElement = document.getElementById(fromId);
-      const toElement = document.getElementById(screenId);
-      if (fromElement) fromElement.classList.add(exitClass);
-      if (toElement) toElement.classList.add(enterClass);
+      const exitClass = movingRight ? 'panel-nav-exit-to-left' : 'panel-nav-exit-to-right';
+      const enterClass = movingRight ? 'panel-nav-enter-from-right' : 'panel-nav-enter-from-left';
+
+      hideUnrelatedScreens(fromId, screenId);
+      fromElement.classList.add(exitClass);
+      toElement.classList.add(enterClass);
+      toElement.classList.remove('hidden', 'slide-left');
+
+      if (screenId === 'hubScreen' && typeof window.renderHub === 'function') {
+        try { window.renderHub(); } catch (e) {}
+      }
+
+      setDockVisible(screenId === 'hubScreen');
+      activePanelId = screenId;
+      setActivePanel(screenId);
+      cleanupTimer = window.setTimeout(() => {
+        if (fromElement !== toElement) {
+          // The base .screen rule has its own transform transition. Disable it
+          // while hiding the outgoing panel so it cannot slide back across the
+          // screen after the directional exit animation has finished.
+          fromElement.style.transition = 'none';
+          fromElement.classList.add('hidden');
+          clearTransitionClasses();
+          void fromElement.offsetHeight;
+          fromElement.style.removeProperty('transition');
+        } else {
+          clearTransitionClasses();
+        }
+      }, TRANSITION_MS);
+      return;
     }
 
-    const dock = getDock();
-    if (dock) dock.classList.toggle(DOCK_HIDDEN_CLASS, screenId !== 'hubScreen');
-
+    clearTransitionClasses();
+    originalShowScreen(screenId);
     if (screenId === 'hubScreen' && typeof window.renderHub === 'function') {
       try { window.renderHub(); } catch (e) {}
     }
-
-    originalShowScreen(screenId);
     activePanelId = screenId;
     setActivePanel(screenId);
-
-    cleanupTimer = window.setTimeout(() => {
-      clearTransitionClasses();
-    }, TRANSITION_MS);
+    setDockVisible(screenId === 'hubScreen');
   }
 
   window.showScreen = navigateScreen;
@@ -126,7 +172,8 @@
   }
 
   document.addEventListener('click', event => {
-    const button = event.target.closest('[data-main-panel]');
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target && target.closest('[data-main-panel]');
     if (!button || !getDock() || !getDock().contains(button)) return;
     event.preventDefault();
     goToPanel(button.dataset.mainPanel);
@@ -185,6 +232,8 @@
     event.preventDefault();
     event.stopImmediatePropagation();
   }, true);
+
+  setDockVisible(activePanelId === 'hubScreen');
 
   window.PanelNavigation = {
     go: goToPanel,
