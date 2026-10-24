@@ -1,4 +1,4 @@
-// File: public/gameplay/js/01b-secure-db.js
+// File: public/js/gameplay/01b-secure-db.js
 (function () {
   if (typeof db === 'undefined' || !db || typeof auth === 'undefined' || !auth) return;
 
