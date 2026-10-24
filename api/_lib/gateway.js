@@ -8,7 +8,7 @@ const { LIMITS, num, clone, same, toArr } = G;
 const SEG_RE = /^[A-Za-z0-9_\-:@+~]{1,200}$/;
 const UID_RE = /^[A-Za-z0-9_-]{6,128}$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const SEASON_RE = /^s\d{1,8}$/;
+const SEASON_RE = /^s(?:\d{1,8}|\d{4}-\d{2})$/;
 const REQ_RE = /^[A-Za-z0-9_\-]{1,120}$/;
 
 const OTHER_PLAYER_PATHS = new Set([
