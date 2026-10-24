@@ -55,7 +55,7 @@ function renderAvatarsScreen(phase, rarityKey) {
                box-shadow:0 12px 28px rgba(0,0,0,0.10);text-align:left;
                display:flex;align-items:center;justify-content:space-between;">
         <span>${r.label}</span>
-        <span style="font-size:13px;opacity:0.75;display:flex;align-items:center;gap:3px;">${r.price.toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></span>
+        <span style="font-size:13px;opacity:0.75;display:flex;align-items:center;gap:3px;">${r.price.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></span>
       </button>
     `).join('') + `</div>`;
     return;
@@ -92,7 +92,7 @@ function renderAvatarsScreen(phase, rarityKey) {
           onerror="this.src='${'/imgs/assets/default_avatar.png'}'"/>
         <div style="font-size:10px;font-weight:800;color:#0f172a;text-align:center;line-height:1.1;">${label}</div>
         <div style="font-size:9px;font-weight:900;color:${equipped?'#1d4ed8':owned?'#16a34a':'#64748b'};">
-          ${equipped ? '✓ Selected' : owned ? 'Owned' : rarity.price.toLocaleString()+' <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;">'}
+          ${equipped ? '✓ Selected' : owned ? 'Owned' : rarity.price.toLocaleString()+' <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">'}
         </div>
       `;
       card.onclick = () => {
@@ -119,7 +119,7 @@ function confirmAvatarPurchase(fullKey, label, rarity) {
         style="width:100px;height:100px;border-radius:18px;object-fit:cover;margin:0 auto 10px;display:block;border:2px solid rgba(0,0,0,0.08);"
         onerror="this.src='${'/imgs/assets/default_avatar.png'}'"/>
       <p style="font-weight:900;color:#0f172a;">${label}</p>
-      <p style="font-size:12px;color:#64748b;font-weight:700;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:4px;">${rarity.price.toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></p>
+      <p style="font-size:12px;color:#64748b;font-weight:700;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:4px;">${rarity.price.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></p>
     </div>
     <div class="grid grid-cols-2 gap-3 pt-2">
       <button class="btn-confirm-no" onclick="closeModal()">Cancel</button>
@@ -351,7 +351,7 @@ function openShopProfileCards(tab) {
       </div>
       <div style="display:flex;align-items:center;gap:5px;margin-top:10px;font-size:12px;font-weight:800;color:#0f172a;">
         Balance: <span id="profileShopCoins">${GAME_STATE.coins.toLocaleString()}</span>
-        <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;">
+        <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">
         <span style="margin-left:10px;"><img src="/imgs/assets/diamond.png" alt="" style="width:1em;height:1em;vertical-align:middle;"> <span id="profileShopDiamonds">${Number(GAME_STATE.diamonds || 0).toLocaleString()}</span></span>
       </div>
       <div class="mt-3" id="profileShopGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;"></div>
@@ -389,7 +389,7 @@ function renderProfileShopGrid() {
         <div style="font-size:10px;font-weight:800;color:#0f172a;text-align:center;line-height:1.1;">${bg.label}</div>
         <div style="font-size:9px;font-weight:900;color:${equipped ? '#1d4ed8' : owned ? '#16a34a' : '#64748b'};display:flex;align-items:center;gap:3px;">
           ${equipped ? '✓ Equipped' : owned ? 'Owned — tap to equip' : bg.price.toLocaleString() + ' '}
-          ${(!equipped && !owned) ? '<img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;">' : ''}
+          ${(!equipped && !owned) ? '<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">' : ''}
         </div>
       `;
       card.onclick = () => {
@@ -419,7 +419,7 @@ function renderProfileShopGrid() {
         <div style="font-size:12px;font-weight:900;color:#0f172a;text-align:center;line-height:1.2;">${t.label}</div>
         <div style="font-size:9px;font-weight:900;color:${equipped ? '#1d4ed8' : owned ? '#16a34a' : '#64748b'};display:flex;align-items:center;gap:3px;">
           ${equipped ? '✓ Equipped' : owned ? 'Owned — tap to equip' : t.price.toLocaleString() + ' '}
-          ${(!equipped && !owned) ? '<img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;">' : ''}
+          ${(!equipped && !owned) ? '<img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;">' : ''}
         </div>
       `;
       card.onclick = () => {
@@ -444,7 +444,7 @@ function confirmProfileCosmeticPurchase(kind, item) {
         ? `<div style="width:100px;height:100px;border-radius:18px;margin:0 auto 10px;background:${item.css};"></div>`
         : ''}
       <p style="font-weight:900;color:#0f172a;">${item.label}</p>
-      <p style="font-size:12px;color:#64748b;font-weight:700;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:4px;">${item.price.toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></p>
+      <p style="font-size:12px;color:#64748b;font-weight:700;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:4px;">${item.price.toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></p>
     </div>
     <div class="grid grid-cols-2 gap-3 pt-2">
       <button class="btn-confirm-no" onclick="closeModal()">Cancel</button>
@@ -816,7 +816,7 @@ function openIdolDetailsModal(idolKey) {
     <button class="btn-theme black-text" onclick="upgradeIdolPower('${idolKey}')">
       <div class="flex items-center justify-between">
         <span>Upgrade to ${power+1}</span>
-        <span class="font-black">${Number(nextCost).toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></span>
+        <span class="font-black">${Number(nextCost).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></span>
       </div>
     </button>
   `) : '';
