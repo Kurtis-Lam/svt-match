@@ -329,7 +329,7 @@ async function loadPlayerState() {
 }
 
 function defaultAvatarSvgDataUri() {
-  return './imgs/assets/default_avatar.png';
+  return '/imgs/assets/default_avatar.png';
 }
 
 function getThemeIdolKey() {
@@ -342,12 +342,12 @@ function getThemeIdolKey() {
 function equippedAvatarSrc() {
   // If user has a purchased avatar, use it
   if (GAME_STATE.equippedAvatarKey) {
-    return `./imgs/assets/avatars/${GAME_STATE.equippedAvatarKey}`;
+    return `/imgs/assets/avatars/${GAME_STATE.equippedAvatarKey}`;
   }
   // Fall back to idol image only if no avatar purchased
   const k = getThemeIdolKey();
-  if (!k) return './imgs/assets/default_avatar.png';
-  return `./imgs/${k}/1.jpg`;
+  if (!k) return '/imgs/assets/default_avatar.png';
+  return `/imgs/${k}/1.jpg`;
 }
 
 function applyThemeForEquippedIdol() {
