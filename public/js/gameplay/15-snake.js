@@ -544,12 +544,12 @@ function openSnakeResultModal(coins, streakBonus, length, passedLevel = false) {
         </div>
         <div class="earn-row">
           <div class="label">Length × ${SNK.coinsPerLength}</div>
-          <div class="val">+${Number(coins).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+          <div class="val">+${Number(coins).toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
         </div>
         ${streakBonus > 0 ? `` : ''}
         <div class="earn-row" style="background:linear-gradient(135deg,var(--theme1),var(--theme2));border:none;">
           <div class="label font-black">Total</div>
-          <div class="val font-black">+${Number(total).toLocaleString()} <img src="/imgs/assets/coins.png" style="width:1em;height:1em;vertical-align:middle;"></div>
+          <div class="val font-black">+${Number(total).toLocaleString()} <img src="/coin.png" style="width:1em;height:1em;vertical-align:middle;"></div>
         </div>
         <div class="earn-row"><div class="label">Season XP</div><div class="val">+${Number(GAME_STATE.meta?.lastRunXpGained || 0).toLocaleString()} XP</div></div>
         <div class="grid grid-cols-2 gap-3">
