@@ -3,8 +3,6 @@
 credentials/
 node_modules/
 
-public/imgs/
-
 .env.local
 format.py
 misc.txt
